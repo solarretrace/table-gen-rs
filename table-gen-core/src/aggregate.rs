@@ -151,13 +151,19 @@ impl<'a, R> Aggregate<'a, R>
     }
 
     /// The column widths.
-    pub (in crate) fn rows(&self) -> &[SplitRow<'a, R>] { &self.rows[..] }
+    pub (in crate) fn rows(&self) -> &[SplitRow<'a, R>] {
+        &self.rows[..]
+    }
 
     /// The column output descriptors.
-    pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] { &self.col_descs[..] }
+    pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
+        &self.col_descs[..]
+    }
 
     /// The column widths.
-    pub (in crate) fn col_widths(&self) -> &[usize] { &self.col_widths[..] }
+    pub (in crate) fn col_widths(&self) -> &[usize] {
+        &self.col_widths[..]
+    }
 
     /// The header row.
     pub (in crate) fn header_row(&self) -> Option<&TextRow<'_>> {

@@ -15,6 +15,7 @@ use table_gen_core::Renderer;
 // DebugRenderer
 ////////////////////////////////////////////////////////////////////////////////
 /// A table renderer that prints called methods args.
+#[derive(Debug, Clone, Copy, Default)]
 pub struct DebugRenderer;
 
 impl Renderer for DebugRenderer {
@@ -420,6 +421,10 @@ mod test {
     use super::*;
     use table_gen_core::Table;
     use table_gen_core::ColumnDesc;
+    use table_gen_core::VertAlign;
+    use table_gen_core::HorzAlign;
+    use table_gen_core::DisplayFmt;
+    use table_gen_core::Sign;
 
     #[test]
     fn table_empty() {
@@ -700,6 +705,97 @@ write_data_cell_line_end(row: 0, col: 2, line: 0)
 write_data_cell_end(row: 0, col: 2)
 write_data_line_end(row: 0, line: 0)
 write_data_row_end(row: 0)
+write_data_end()
+write_table_end()
+");
+    }
+
+    #[test]
+    fn tuple_table_subselect_float() {
+        let data: Vec<(f32, char)> = vec![
+            ( 0.0, 'a'),
+            (-1.9, 'b'),
+            ( 2.8, 'c'),
+            (-3.7, 'd'),
+            ( 4.6, 'e'),
+            (-5.5, 'f'),
+            ( 6.4, 'g'),
+            (-7.3, 'h'),
+            ( 8.2, 'i'),
+            (-9.1, 'j'),
+        ];
+
+        let col_descs = vec![
+            ColumnDesc::new()
+                .with_header("<-0->")
+                .with_display_fmt(DisplayFmt::new()
+                    .with_precision(2)
+                    .with_sign(Sign::Plus))
+                .with_horz_align(HorzAlign::Left)
+                .with_vert_align(VertAlign::Top),
+            ColumnDesc::new()
+                .with_header("<-1->")
+                .with_horz_align(HorzAlign::Center)
+                .with_vert_align(VertAlign::Center),
+        ];
+
+        let mut table = Table::new_builder(data, DebugRenderer)
+            .with_row_selection(3..5)
+            .with_column_descs(&col_descs)
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        //println!("{}", out);
+
+        assert_eq!(out, "\
+write_table_start()
+write_header_start()
+write_header_row_start(row: 0)
+write_header_line_start(row: 0, line: 0)
+write_header_cell_start(row: 0, col: 0
+write_header_cell_line_start(row: 0, col: 0, line: 0)
+write_header_cell_line(row: 0, col: 0, line: 0, width: 5, align: Left, text: \"<-0->\")
+write_header_cell_line_end(row: 0, col: 0, line: 0)
+write_header_cell_end(row: 0, col: 0
+write_header_cell_start(row: 0, col: 1
+write_header_cell_line_start(row: 0, col: 1, line: 0)
+write_header_cell_line(row: 0, col: 1, line: 0, width: 5, align: Center, text: \"<-1->\")
+write_header_cell_line_end(row: 0, col: 1, line: 0)
+write_header_cell_end(row: 0, col: 1
+write_header_line_end(row: 0, line: 0)
+write_header_row_end(row: 0)
+write_header_end()
+write_data_start()
+write_data_row_start(row: 0)
+write_data_line_start(row: 0, line: 0)
+write_data_cell_start(row: 0, col: 0)
+write_data_cell_line_start(row: 0, col: 0, line: 0)
+write_data_cell_line(row: 0, col: 0, line: 0, width: 5, align: Left, text: \"-3.70\")
+write_data_cell_line_end(row: 0, col: 0, line: 0)
+write_data_cell_end(row: 0, col: 0)
+write_data_cell_start(row: 0, col: 1)
+write_data_cell_line_start(row: 0, col: 1, line: 0)
+write_data_cell_line(row: 0, col: 1, line: 0, width: 5, align: Center, text: \"d\")
+write_data_cell_line_end(row: 0, col: 1, line: 0)
+write_data_cell_end(row: 0, col: 1)
+write_data_line_end(row: 0, line: 0)
+write_data_row_end(row: 0)
+write_data_row_start(row: 1)
+write_data_line_start(row: 1, line: 0)
+write_data_cell_start(row: 1, col: 0)
+write_data_cell_line_start(row: 1, col: 0, line: 0)
+write_data_cell_line(row: 1, col: 0, line: 0, width: 5, align: Left, text: \"+4.60\")
+write_data_cell_line_end(row: 1, col: 0, line: 0)
+write_data_cell_end(row: 1, col: 0)
+write_data_cell_start(row: 1, col: 1)
+write_data_cell_line_start(row: 1, col: 1, line: 0)
+write_data_cell_line(row: 1, col: 1, line: 0, width: 5, align: Center, text: \"e\")
+write_data_cell_line_end(row: 1, col: 1, line: 0)
+write_data_cell_end(row: 1, col: 1)
+write_data_line_end(row: 1, line: 0)
+write_data_row_end(row: 1)
 write_data_end()
 write_table_end()
 ");

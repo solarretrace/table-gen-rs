@@ -179,7 +179,9 @@ impl DisplayFmt {
     /// Sets the precision and returns the `DisplayFmt`.
     ///
     /// See https://doc.rust-lang.org/std/fmt/index.html for details.
-    pub const fn with_precision(mut self, precision: Option<usize>) -> Self {
+    pub const fn with_precision_option(mut self, precision: Option<usize>)
+        -> Self 
+    {
         self.precision = precision;
         self
     }
@@ -187,8 +189,28 @@ impl DisplayFmt {
     /// Sets the sign and returns the `DisplayFmt`.
     ///
     /// See https://doc.rust-lang.org/std/fmt/index.html for details.
-    pub const fn with_sign(mut self, sign: Option<Sign>) -> Self {
+    pub const fn with_sign_option(mut self, sign: Option<Sign>) -> Self {
         self.sign = sign;
+        self
+    }
+
+    /// Sets the precision and returns the `DisplayFmt`.
+    ///
+    /// See https://doc.rust-lang.org/std/fmt/index.html for details.
+    pub fn with_precision<T>(mut self, precision: T) -> Self 
+        where T: Into<Option<usize>>
+    {
+        self.precision = precision.into();
+        self
+    }
+
+    /// Sets the sign and returns the `DisplayFmt`.
+    ///
+    /// See https://doc.rust-lang.org/std/fmt/index.html for details.
+    pub fn with_sign<T>(mut self, sign: T) -> Self 
+        where T: Into<Option<Sign>>
+    {
+        self.sign = sign.into();
         self
     }
     
@@ -197,15 +219,16 @@ impl DisplayFmt {
     pub fn apply<C>(&self, cell: C) -> Box<str>
         where C: Display
     {
+        use Sign::*;
         match (self.precision, self.sign) {
-            (Some(p), Some(Sign::Plus))     => format!("{:+.p$}", cell, p=p),
-            (Some(p), Some(Sign::Minus))    => format!("{:-.p$}", cell, p=p),
-            (Some(p), Some(Sign::Zero))     => format!("{:0.p$}", cell, p=p),
-            (Some(p), None)                 => format!("{:.p$}", cell, p=p),
-            (None,    Some(Sign::Plus))     => format!("{:+}", cell),
-            (None,    Some(Sign::Minus))    => format!("{:-}", cell),
-            (None,    Some(Sign::Zero))     => format!("{:0}", cell),
-            (None,    None)                 => format!("{}", cell),
+            (Some(p), Some(Plus))  => format!("{:+.p$}", cell, p=p),
+            (Some(p), Some(Minus)) => format!("{:-.p$}", cell, p=p),
+            (Some(p), Some(Zero))  => format!("{:0.p$}", cell, p=p),
+            (Some(p), None)        => format!("{:.p$}", cell, p=p),
+            (None,    Some(Plus))  => format!("{:+}", cell),
+            (None,    Some(Minus)) => format!("{:-}", cell),
+            (None,    Some(Zero))  => format!("{:0}", cell),
+            (None,    None)        => format!("{}", cell),
         }
         .into_boxed_str()
     }

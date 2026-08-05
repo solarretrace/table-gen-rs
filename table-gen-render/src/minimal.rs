@@ -14,6 +14,7 @@ use table_gen_core::Renderer;
 // MinimalRenderer
 ////////////////////////////////////////////////////////////////////////////////
 /// A table renderer that renders tables with minimal decoration.
+#[derive(Debug, Clone, Copy, Default)]
 pub struct MinimalRenderer {
     col_final: usize,
 }
@@ -54,10 +55,12 @@ impl Renderer for MinimalRenderer {
 #[cfg(test)]
 mod test {
     use super::*;
-    use table_gen_core::Table;
     use table_gen_core::ColumnDesc;
-    use table_gen_core::VertAlign;
+    use table_gen_core::DisplayFmt;
     use table_gen_core::HorzAlign;
+    use table_gen_core::Sign;
+    use table_gen_core::Table;
+    use table_gen_core::VertAlign;
 
     #[test]
     fn table_empty() {
@@ -207,4 +210,51 @@ N <-1-> <-2-> <-3->
 ");
     }
     
+    #[test]
+    fn tuple_table_subselect() {
+        let data: Vec<(f32, char)> = vec![
+            ( 0.0, 'a'),
+            (-1.9, 'b'),
+            ( 2.8, 'c'),
+            (-3.7, 'd'),
+            ( 4.6, 'e'),
+            (-5.5, 'f'),
+            ( 6.4, 'g'),
+            (-7.3, 'h'),
+            ( 8.2, 'i'),
+            (-9.1, 'j'),
+        ];
+
+        let col_descs = vec![
+            ColumnDesc::new()
+                .with_header("<-0->")
+                .with_display_fmt(DisplayFmt::new()
+                    .with_precision(2)
+                    .with_sign(Sign::Plus))
+                .with_horz_align(HorzAlign::Left)
+                .with_vert_align(VertAlign::Top),
+            ColumnDesc::new()
+                .with_header("<-1->")
+                .with_horz_align(HorzAlign::Center)
+                .with_vert_align(VertAlign::Center),
+        ];
+
+        let mut table = Table::new_builder(data, MinimalRenderer::new())
+            .with_row_selection(3..7)
+            .with_column_descs(&col_descs)
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        //println!("{}", out);
+
+        assert_eq!(out, "\
+<-0-> <-1->
+-3.70   d  
++4.60   e  
+-5.50   f  
++6.40   g  
+");
+    }
 }

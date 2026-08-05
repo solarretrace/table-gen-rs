@@ -32,7 +32,7 @@ You will usually want to extend this pattern by providing additional configurati
             .with_header("Header")               // Header text for the column
             .with_footer("Footer")               // Footer text for the column
             .with_display_fmt(DisplayFmt::new()  // Formatting for cell values
-                .with_precision(Some(3))         // Precision for numerical cols
+                .with_precision(3)               // Precision for numerical cols
                 .with_sign(Sign::Plus))          // Sign for numerical cols
             .with_min_width(10)                  // Minimum column width
             .with_max_width(15)                  // Maximum column width
