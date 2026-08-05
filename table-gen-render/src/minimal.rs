@@ -211,7 +211,7 @@ N <-1-> <-2-> <-3->
     }
     
     #[test]
-    fn tuple_table_subselect() {
+    fn tuple_table_subselect_float() {
         let data: Vec<(f32, char)> = vec![
             ( 0.0, 'a'),
             (-1.9, 'b'),
