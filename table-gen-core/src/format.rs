@@ -90,6 +90,7 @@ impl<'a, R, S> Iterator for Format<'a, S>
 // FormatRow
 ////////////////////////////////////////////////////////////////////////////////
 /// A single table row with collated column selection and ordering.
+#[derive(Debug, Clone)]
 pub (in crate) struct FormatRow<'a, R> {
     /// The row to format.
     inner: CollateRow<'a, R>,
@@ -114,6 +115,8 @@ impl<R> Row for FormatRow<'_, R>
 impl<'a, R> FormatRow<'a, R>
     where R: Row,
 {
+    /// Constructs a new `FormatRow` over the given `CollateRow` and
+    /// `ColumnDesc`s.
     pub (in crate) fn new(
         inner: CollateRow<'a, R>,
         col_descs: &'a [ColumnDesc<'a>])
@@ -127,6 +130,7 @@ impl<'a, R> FormatRow<'a, R>
         }
     }
 
+    /// Returns the text of the cell at the given column index.
     pub (in crate) fn text(&self, col_idx: usize) -> &str {
         self.cache[col_idx].get_or_init(|| match self.inner.cell(col_idx) {
             Some(cell) => self.col_descs
@@ -158,13 +162,32 @@ impl Default for DisplayFmt {
 }
 
 impl DisplayFmt {
+    /// Constructs a new `DisplayFmt` with the default settings.
     pub const fn new() -> Self {
         Self {
             precision: None,
             sign: None,
         }
     }
+
+    /// Sets the precision and returns the `DisplayFmt`.
+    ///
+    /// See https://doc.rust-lang.org/std/fmt/index.html for details.
+    pub const fn with_precision(mut self, precision: Option<usize>) -> Self {
+        self.precision = precision;
+        self
+    }
+
+    /// Sets the sign and returns the `DisplayFmt`.
+    ///
+    /// See https://doc.rust-lang.org/std/fmt/index.html for details.
+    pub const fn with_sign(mut self, sign: Option<Sign>) -> Self {
+        self.sign = sign;
+        self
+    }
     
+    /// Applies the `DisplayFmt` to the given cell, rendering it as a
+    /// `Box<str>`.
     pub fn apply<C>(&self, cell: C) -> Box<str>
         where C: Display
     {
@@ -183,9 +206,14 @@ impl DisplayFmt {
 }
 
 /// Format sign specifier.
+    ///
+    /// See https://doc.rust-lang.org/std/fmt/index.html for details.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Sign {
+    /// Format numerical values with the '+' format option.
     Plus,
+    /// Format numerical values with the '-' format option.
     Minus,
+    /// Format numerical values with the '0' format option.
     Zero,
 }

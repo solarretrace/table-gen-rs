@@ -23,6 +23,7 @@ use std::ops::RangeBounds;
 // TableBuilder
 ////////////////////////////////////////////////////////////////////////////////
 /// A builder-style constructor for a `Table`.
+#[derive(Debug, Clone)]
 pub struct TableBuilder<'a, S, T> {
     /// The table data source.
     inner: Collate<'a, S>,
@@ -110,6 +111,7 @@ impl<'a, R, S, T> From<TableBuilder<'a, S, T>> for Table<'a, R, T>
 // Table
 ////////////////////////////////////////////////////////////////////////////////
 /// A driver for a table renderer operating on a data source.
+#[derive(Debug, Clone)]
 pub struct Table<'a, R, T> {
     /// The table data source.
     inner: Aggregate<'a, R>,

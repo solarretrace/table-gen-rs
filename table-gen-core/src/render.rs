@@ -28,10 +28,12 @@ bitflags! {
 ////////////////////////////////////////////////////////////////////////////////
 // Renderer
 ////////////////////////////////////////////////////////////////////////////////
+/// Provides methods needed to implement a table renderer.
 pub trait Renderer {
     /// Returns the supported features for the renderer.
     fn features(&self) -> Features;
 
+    /// Initializes the renderer. Will be called before any rendering begins.
     fn init(&mut self, _row_count: usize, _col_widths: &[usize]) {}
 
     // Data writing hooks

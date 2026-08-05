@@ -131,6 +131,7 @@ impl<'a, R, S> Iterator for Collate<'a, S>
 // CollateRow
 ////////////////////////////////////////////////////////////////////////////////
 /// A single table row with collated column selection and ordering.
+#[derive(Debug, Clone)]
 pub (in crate) struct CollateRow<'a, R> {
     /// The row to collate.
     inner: R,
@@ -159,19 +160,25 @@ impl<R> Row for CollateRow<'_, R>
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // ColumnDesc
 ////////////////////////////////////////////////////////////////////////////////
 /// Provides formatting and metadata for a table column.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ColumnDesc<'a> {
+    /// The column header text.
     pub header: &'a str,
+    /// The column footer text.
     pub footer: &'a str,
+    /// The `DisplayFmt` to use for cells in this column.
     pub display_fmt: DisplayFmt,
+    /// The minimum width of the column.
     pub min_width: usize,
+    /// The maximum width of the column.
     pub max_width: usize,
+    /// The horizontal alignment of text in the column.
     pub horz_align: HorzAlign,
+    /// The vertical alignment of text in the column.
     pub vert_align: VertAlign,
 }
 
@@ -182,6 +189,7 @@ impl Default for ColumnDesc<'_> {
 }
 
 impl<'a> ColumnDesc<'a> {
+    /// Constructs a new `ColumnDesc` with a default value.
     pub const fn new() -> Self {
         Self {
             header: "",
@@ -194,42 +202,50 @@ impl<'a> ColumnDesc<'a> {
         }
     }
     
+    /// Sets the header text and returns the `ColumnDesc`.
     pub const fn with_header(mut self, header: &'a str) -> Self {
         self.header = header;
         self
     }
     
+    /// Sets the footer text and returns the `ColumnDesc`.
     pub const fn with_footer(mut self, footer: &'a str) -> Self {
         self.footer = footer;
         self
     }
     
+    /// Sets the `DisplayFmt` and returns the `ColumnDesc`.
     pub const fn with_display_fmt(mut self, display_fmt: DisplayFmt) -> Self {
         self.display_fmt = display_fmt;
         self
     }
     
+    /// Sets the minimum and maximum column widths and returns the `ColumnDesc`.
     pub const fn with_width(mut self, width: usize) -> Self {
         self.min_width = width;
         self.max_width = width;
         self
     }
     
+    /// Sets the minimum column widths and returns the `ColumnDesc`.
     pub const fn with_min_width(mut self, min_width: usize) -> Self {
         self.min_width = min_width;
         self
     }
     
+    /// Sets the maximum column widths and returns the `ColumnDesc`.
     pub const fn with_max_width(mut self, max_width: usize) -> Self {
         self.max_width = max_width;
         self
     }
     
+    /// Sets the horizontal text alignment and returns the `ColumnDesc`.
     pub const fn with_horz_align(mut self, horz_align: HorzAlign) -> Self {
         self.horz_align = horz_align;
         self
     }
     
+    /// Sets the vertical text alignment and returns the `ColumnDesc`.
     pub const fn with_vert_align(mut self, vert_align: VertAlign) -> Self {
         self.vert_align = vert_align;
         self
@@ -237,16 +253,27 @@ impl<'a> ColumnDesc<'a> {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+// Alignment
+////////////////////////////////////////////////////////////////////////////////
+/// Horizontal alignment specifier for cell text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum HorzAlign {
+    /// Align to the left of the cell.
     Left,
+    /// Align to the center of the cell.
     Center,
+    /// Align to the right of the cell.
     Right,
 }
 
+/// Vertical alignment specifier for cell text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum VertAlign {
+    /// Align to the top of the cell.
     Top,
+    /// Align to the center of the cell.
     Center,
+    /// Align to the bottom of the cell.
     Bottom,
 }

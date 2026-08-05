@@ -18,6 +18,7 @@ use crate::TextRow;
 // Aggregate
 ////////////////////////////////////////////////////////////////////////////////
 /// Table cell column aggregator.
+#[derive(Debug, Clone)]
 pub (in crate) struct Aggregate<'a, R> {
     /// The materialized rows of the table.
     rows: Vec<SplitRow<'a, R>>,

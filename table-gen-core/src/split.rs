@@ -108,6 +108,7 @@ impl<'a, R, S> Iterator for Split<'a, R, S>
 // SplitRow
 ////////////////////////////////////////////////////////////////////////////////
 /// A single table row with line splitting.
+#[derive(Debug, Clone)]
 pub (in crate) struct SplitRow<'a, R> {
     /// The row to format.
     inner: FormatRow<'a, R>,
