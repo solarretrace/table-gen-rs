@@ -5,12 +5,11 @@
 //! Table generator column collation module.
 ////////////////////////////////////////////////////////////////////////////////
 
-
 // Internal library imports.
-use crate::Row;
 use crate::Cell;
+use crate::ColumnOrd;
 use crate::DisplayFmt;
-use crate::ColOrd;
+use crate::Row;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -27,7 +26,7 @@ pub struct Collate<'a, S> {
     /// The column output specifications.
     col_descs: &'a [ColumnDesc<'a>],
     /// The sort parameters for columns, in order of sort priority.
-    col_order: &'a [ColOrd],
+    col_order: &'a [ColumnOrd],
 
 }
 
@@ -71,7 +70,7 @@ impl<'a, R, S> Collate<'a, S>
     }
 
     /// Returns the `Collate` with the given column orderings.
-    pub fn with_column_order(mut self, col_order: &'a [ColOrd]) -> Self {
+    pub fn with_column_order(mut self, col_order: &'a [ColumnOrd]) -> Self {
         self.col_order = col_order;
         self
     }
@@ -83,7 +82,7 @@ impl<'a, R, S> Collate<'a, S>
     pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] { &self.col_descs[..] }
 
     /// The sort parameters for columns, in order of sort priority.
-    pub fn column_order(&self) -> &'a [ColOrd] { &self.col_order[..] }
+    pub fn column_order(&self) -> &'a [ColumnOrd] { &self.col_order[..] }
 }
 
 
@@ -92,27 +91,27 @@ impl<'a, R, S> Iterator for Collate<'a, S>
         S: Iterator<Item=R>,
         R: Row,
 {
-    type Item = CollatedRow<'a, R>;
+    type Item = CollateRow<'a, R>;
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
             .next()
-            .map(|r| CollatedRow { inner: r, col_select: &self.col_select[..], })
+            .map(|r| CollateRow { inner: r, col_select: &self.col_select[..], })
     }
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// CollatedRow
+// CollateRow
 ////////////////////////////////////////////////////////////////////////////////
 /// A single table row with collated column selection and ordering.
-pub struct CollatedRow<'a, R> {
+pub struct CollateRow<'a, R> {
     /// The row to collate.
     inner: R,
     /// The column selection and order.
     col_select: &'a [usize]
 }
 
-impl<'a, R> Row for CollatedRow<'a, R>
+impl<'a, R> Row for CollateRow<'a, R>
     where R: Row
 {
     fn len(&self) -> usize {

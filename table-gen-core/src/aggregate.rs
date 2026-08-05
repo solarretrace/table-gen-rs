@@ -5,13 +5,12 @@
 //! Table generator row sorting module.
 ////////////////////////////////////////////////////////////////////////////////
 
-
 // Internal library imports.
+use crate::ColumnDesc;
 use crate::Row;
 use crate::Split;
 use crate::SplitRow;
 use crate::TextRow;
-use crate::ColumnDesc;
 
 
 

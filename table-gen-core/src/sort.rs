@@ -5,20 +5,19 @@
 //! Table generator row sorting module.
 ////////////////////////////////////////////////////////////////////////////////
 
-
 // Internal library imports.
-use crate::Row;
-use crate::Format;
-use crate::FormattedRow;
-use crate::ColumnDesc;
 use crate::Collate;
+use crate::ColumnDesc;
+use crate::Format;
+use crate::FormatRow;
+use crate::Row;
 
 // External library imports.
 use bitflags::bitflags;
 
 // Standard library imports.
-use std::vec::IntoIter;
 use std::cmp::Ordering;
+use std::vec::IntoIter;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -28,7 +27,7 @@ use std::cmp::Ordering;
 pub struct Sort<'a, R, S> {
     /// The table data source.
     inner: Format<'a, S>,
-    sorted: Option<IntoIter<FormattedRow<'a, R>>>,
+    sorted: Option<IntoIter<FormatRow<'a, R>>>,
 }
 
 impl<'a, R, S, I> From<I> for Sort<'a, R, S>
@@ -75,28 +74,29 @@ impl<'a, R, S> Sort<'a, R, S>
         }
     }
 
-    /// The table output columns, in output order.
-    pub fn column_selection(&self) -> &'a [usize] { self.inner.column_selection() }
-
     /// The column output specifications.
-    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] { self.inner.column_descs() }
+    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
+        self.inner.column_descs()
+    }
 
     /// The sort parameters for columns, in order of sort priority.
-    pub fn column_order(&self) -> &'a [ColOrd] { self.inner.column_order() }
+    pub fn column_order(&self) -> &'a [ColumnOrd] {
+        self.inner.column_order()
+    }
 
-    /// Compares two `FormattedRow`s according to the ordering given by
-    /// `[ColOrd]`.
+    /// Compares two `FormatRow`s according to the ordering given by
+    /// `[ColumnOrd]`.
     fn compare_rows(
-        row_a: &FormattedRow<'_, R>,
-        row_b: &FormattedRow<'_, R>,
-        col_ord: &'_ [ColOrd])
+        row_a: &FormatRow<'_, R>,
+        row_b: &FormatRow<'_, R>,
+        col_ord: &'_ [ColumnOrd])
         -> Ordering
     {
         let mut res = Ordering::Equal;
         for ord in col_ord {
-            let text = ord.flags.contains(ColOrdFlags::FORMATTED);
-            let rev = ord.flags.contains(ColOrdFlags::REVERSE);
-            let nl = if ord.flags.contains(ColOrdFlags::NONE_LESS) {
+            let text = ord.flags.contains(ColumnOrdFlags::FORMATTED);
+            let rev = ord.flags.contains(ColumnOrdFlags::REVERSE);
+            let nl = if ord.flags.contains(ColumnOrdFlags::NONE_LESS) {
                 Ordering::Less
             } else {
                 Ordering::Greater
@@ -128,7 +128,7 @@ impl<'a, R, S> Iterator for Sort<'a, R, S>
         S: Iterator<Item=R>,
         R: Row,
 {
-    type Item = FormattedRow<'a, R>;
+    type Item = FormatRow<'a, R>;
     fn next(&mut self) -> Option<Self::Item> {
         let col_order = self.column_order();
         let iter = self.sorted.get_or_insert_with(|| {
@@ -143,15 +143,15 @@ impl<'a, R, S> Iterator for Sort<'a, R, S>
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// ColOrd
+// ColumnOrd
 ////////////////////////////////////////////////////////////////////////////////
 /// A column ordering.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ColOrd {
+pub struct ColumnOrd {
     /// The column index
     pub idx: usize,
     /// The column ordering flags.
-    pub flags: ColOrdFlags,
+    pub flags: ColumnOrdFlags,
 
 }
 
@@ -159,7 +159,7 @@ pub struct ColOrd {
 bitflags! {
     /// Columns ordering flags.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-    pub struct ColOrdFlags: u8 {
+    pub struct ColumnOrdFlags: u8 {
         /// Indicates that the column should be sorted in reverse order.
         const REVERSE    = 0b_0000_0001;
         /// Indicates that the ordering should be done on the formatted text

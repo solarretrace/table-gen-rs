@@ -7,8 +7,8 @@
 
 // Workspace library imports.
 use table_gen_core::Features;
-use table_gen_core::Renderer;
 use table_gen_core::HorzAlign;
+use table_gen_core::Renderer;
 
 
 ////////////////////////////////////////////////////////////////////////////////

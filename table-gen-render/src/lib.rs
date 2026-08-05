@@ -5,8 +5,10 @@
 //! Table generator default table format, data source, ad cell implementations.
 ////////////////////////////////////////////////////////////////////////////////
 
+// Internal modules.
 mod debug;
 mod minimal;
 
+// Exports.
 pub use debug::*;
 pub use minimal::*;

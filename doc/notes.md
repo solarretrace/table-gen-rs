@@ -23,6 +23,5 @@
 
 # Documentation & API tasks:
 
-+ Make internals private
 + Write API documentation
 

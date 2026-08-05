@@ -13,7 +13,7 @@ use crate::Aggregate;
 use crate::TextRow;
 use crate::SplitRow;
 use crate::ColumnDesc;
-use crate::ColOrd;
+use crate::ColumnOrd;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -62,13 +62,15 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 
     /// Prepares the table builder with the given default column output
     /// specification.
-    pub fn with_default_col_desc(mut self, default_col_desc: ColumnDesc<'a>) -> Self {
+    pub fn with_default_col_desc(mut self, default_col_desc: ColumnDesc<'a>)
+        -> Self
+    {
         self.default_col_desc = default_col_desc;
         self
     }
 
     /// Prepares the table builder with the given output column orderings.
-    pub fn with_column_order(mut self, col_order: &'a [ColOrd]) -> Self {
+    pub fn with_column_order(mut self, col_order: &'a [ColumnOrd]) -> Self {
         self.inner = self.inner.with_column_order(col_order);
         self
     }

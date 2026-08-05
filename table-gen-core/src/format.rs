@@ -5,18 +5,17 @@
 //! Table generator cell formatting module.
 ////////////////////////////////////////////////////////////////////////////////
 
-
 // Internal library imports.
-use crate::Row;
 use crate::Cell;
-use crate::ColumnDesc;
-use crate::ColOrd;
 use crate::Collate;
-use crate::CollatedRow;
+use crate::CollateRow;
+use crate::ColumnDesc;
+use crate::ColumnOrd;
+use crate::Row;
 
 // Standard library imports.
-use std::fmt::Display;
 use std::cell::OnceCell;
+use std::fmt::Display;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -62,14 +61,15 @@ impl<'a, R, S> Format<'a, S>
         }
     }
 
-    /// The table output columns, in output order.
-    pub fn column_selection(&self) -> &'a [usize] { self.inner.column_selection() }
-
     /// The column output specifications.
-    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] { self.inner.column_descs() }
+    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
+        self.inner.column_descs()
+    }
 
     /// The sort parameters for columns, in order of sort priority.
-    pub fn column_order(&self) -> &'a [ColOrd] { self.inner.column_order() }
+    pub fn column_order(&self) -> &'a [ColumnOrd] {
+        self.inner.column_order()
+    }
 }
 
 impl<'a, R, S> Iterator for Format<'a, S>
@@ -77,29 +77,29 @@ impl<'a, R, S> Iterator for Format<'a, S>
         S: Iterator<Item=R>,
         R: Row,
 {
-    type Item = FormattedRow<'a, R>;
+    type Item = FormatRow<'a, R>;
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
             .next()
-            .map(|r| FormattedRow::new(r, self.inner.column_descs()))
+            .map(|r| FormatRow::new(r, self.inner.column_descs()))
     }
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// FormattedRow
+// FormatRow
 ////////////////////////////////////////////////////////////////////////////////
 /// A single table row with collated column selection and ordering.
-pub struct FormattedRow<'a, R> {
+pub struct FormatRow<'a, R> {
     /// The row to format.
-    inner: CollatedRow<'a, R>,
+    inner: CollateRow<'a, R>,
     /// The column output specifications,
     col_descs: &'a [ColumnDesc<'a>],
     /// The cached cell texts.
     cache: Vec<OnceCell<Box<str>>>,
 }
 
-impl<'a, R> Row for FormattedRow<'a, R>
+impl<'a, R> Row for FormatRow<'a, R>
     where R: Row
 {
     fn len(&self) -> usize {
@@ -111,10 +111,10 @@ impl<'a, R> Row for FormattedRow<'a, R>
     }
 }
 
-impl<'a, R> FormattedRow<'a, R>
+impl<'a, R> FormatRow<'a, R>
     where R: Row,
 {
-    pub fn new(inner: CollatedRow<'a, R>, col_descs: &'a [ColumnDesc]) -> Self {
+    pub fn new(inner: CollateRow<'a, R>, col_descs: &'a [ColumnDesc]) -> Self {
         let cache = vec![OnceCell::new(); inner.len()];
         Self {
             inner,

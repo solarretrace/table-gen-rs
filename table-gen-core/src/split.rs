@@ -7,14 +7,13 @@
 
 
 // Internal library imports.
-use crate::Row;
 use crate::Cell;
 use crate::Collate;
-use crate::Format;
-use crate::Sort;
 use crate::ColumnDesc;
-use crate::ColOrd;
-use crate::FormattedRow;
+use crate::Format;
+use crate::FormatRow;
+use crate::Row;
+use crate::Sort;
 use crate::VertAlign;
 
 // External library imports.
@@ -85,21 +84,10 @@ impl<'a, R, S> Split<'a, R, S>
         }
     }
 
-    /// The table output columns, in output order.
-    pub fn column_selection(&self) -> &'a [usize] {
-        self.inner.column_selection()
-    }
-
     /// The column output specifications.
     pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
         self.inner.column_descs()
     }
-
-    /// The sort parameters for columns, in order of sort priority.
-    pub fn column_order(&self) -> &'a [ColOrd] {
-        self.inner.column_order()
-    }
-
 }
 
 impl<'a, R, S> Iterator for Split<'a, R, S>
@@ -122,7 +110,7 @@ impl<'a, R, S> Iterator for Split<'a, R, S>
 /// A single table row with line splitting.
 pub struct SplitRow<'a, R> {
     /// The row to format.
-    inner: FormattedRow<'a, R>,
+    inner: FormatRow<'a, R>,
     /// The maximum number of lines in the row.
     height: usize,
 }
@@ -142,7 +130,7 @@ impl<'a, R> Row for SplitRow<'a, R>
 impl<'a, R> SplitRow<'a, R>
     where R: Row,
 {
-    pub fn new(inner: FormattedRow<'a, R>) -> Self {
+    pub fn new(inner: FormatRow<'a, R>) -> Self {
         let height = (0..inner.len())
             .map(|c| inner.text(c).lines().count())
             .max()
@@ -162,7 +150,7 @@ impl<'a, R> SplitRow<'a, R>
     }
 
     pub fn lines(&self, col_idx: usize) -> Lines<'_> {
-        self.inner.text(col_idx).lines()
+        self.text(col_idx).lines()
     }
     
     pub fn line_vert_aligned(
