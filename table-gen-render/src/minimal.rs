@@ -1,0 +1,210 @@
+////////////////////////////////////////////////////////////////////////////////
+// This code is dual licenced using the MIT or Apache 2 license.
+// See licence-mit.md and licence-apache.md for details.
+////////////////////////////////////////////////////////////////////////////////
+//! A table renderer that renders tables with minimal decoration.
+////////////////////////////////////////////////////////////////////////////////
+
+// Workspace library imports.
+use table_gen_core::Features;
+use table_gen_core::Renderer;
+
+
+////////////////////////////////////////////////////////////////////////////////
+// MinimalRenderer
+////////////////////////////////////////////////////////////////////////////////
+/// A table renderer that renders tables with minimal decoration.
+pub struct MinimalRenderer {
+    col_final: usize,
+}
+
+impl MinimalRenderer {
+    pub fn new() -> Self {
+        Self {
+            col_final: 0,
+        }
+    }
+}
+
+impl Renderer for MinimalRenderer {
+    fn features(&self) -> Features {
+        Features::LINES_SUPPORTED
+    }
+
+    fn init(&mut self, _row_count: usize, col_widths: &[usize]) {
+        self.col_final = col_widths.len().saturating_sub(1);
+    }
+
+    fn write_data_cell_line_end<W>(
+        &mut self,
+        out: &mut W,
+        _row: usize,
+        col: usize,
+        _line: usize)
+        -> std::io::Result<()>
+        where W: std::io::Write
+    {
+        if col == self.col_final { return Ok(()); }
+        write!(out, " ")
+    }
+}
+
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use table_gen_core::Table;
+    use table_gen_core::ColSpec;
+    use table_gen_core::VertAlign;
+    use table_gen_core::HorzAlign;
+
+    #[test]
+    fn table_empty() {
+        let data: Vec<[usize; 0]> = vec![];
+
+        let mut table = Table::new_builder(data, MinimalRenderer::new())
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        //println!("{}", out);
+
+        assert_eq!("", out);
+    }
+
+
+    #[test]
+    fn array_table_single_row() {
+        let data: Vec<[usize; 4]> = vec![
+            [1, 10, 100, 1000],
+        ];
+
+        let mut table = Table::new_builder(data, MinimalRenderer::new())
+            .with_columns(&[0, 2, 3])
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        //println!("{}", out);
+
+        assert_eq!("1 100 1000\n", out);
+    }
+
+
+    #[test]
+    fn tuple_table_two_rows_short_col_specs() {
+        let data: Vec<(i32, char)> = vec![
+            (-17, 'b'),
+            (170000, '&'),
+        ];
+
+        let specs = vec![
+            ColSpec::new()
+                .with_header("H0")
+                .with_footer("F0"),
+        ];
+        let mut table = Table::new_builder(data, MinimalRenderer::new())
+            .with_col_specs(&specs)
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        //println!("{}", out);
+
+        assert_eq!(out, "\
+H0      
+-17    b
+170000 &
+F0      
+");
+    }
+    
+    
+    #[test]
+    fn align_odd() {
+        let data: Vec<[&str; 2]> = vec![
+            ["1\n2\n3", "a\nb"],
+        ];
+        
+        let col_specs = vec![
+            ColSpec::new()
+                .with_header("N"),
+            ColSpec::new()
+                .with_header("<-1->")
+                .with_horz_align(HorzAlign::Left)
+                .with_vert_align(VertAlign::Top),
+            ColSpec::new()
+                .with_header("<-2->")
+                .with_horz_align(HorzAlign::Center)
+                .with_vert_align(VertAlign::Center),
+            ColSpec::new()
+                .with_header("<-3->")
+                .with_horz_align(HorzAlign::Right)
+                .with_vert_align(VertAlign::Bottom),
+        ];
+
+        let mut table = Table::new_builder(data, MinimalRenderer::new())
+            .with_columns(&[0, 1, 1, 1])
+            .with_col_specs(&col_specs)
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        println!("{}", out);
+
+        assert_eq!(out, "\
+N <-1-> <-2-> <-3->
+1 a       a        
+2 b       b       a
+3                 b
+");
+    }
+    
+    #[test]
+    fn align_even() {
+        let data: Vec<[&str; 2]> = vec![
+            ["1\n2\n3\n4", "a\nb"],
+        ];
+        
+        let col_specs = vec![
+            ColSpec::new()
+                .with_header("N"),
+            ColSpec::new()
+                .with_header("<-1->")
+                .with_horz_align(HorzAlign::Right)
+                .with_vert_align(VertAlign::Top),
+            ColSpec::new()
+                .with_header("<-2->")
+                .with_horz_align(HorzAlign::Center)
+                .with_vert_align(VertAlign::Center),
+            ColSpec::new()
+                .with_header("<-3->")
+                .with_horz_align(HorzAlign::Left)
+                .with_vert_align(VertAlign::Bottom),
+        ];
+
+        let mut table = Table::new_builder(data, MinimalRenderer::new())
+            .with_columns(&[0, 1, 1, 1])
+            .with_col_specs(&col_specs)
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        println!("{}", out);
+
+        assert_eq!(out, "\
+N <-1-> <-2-> <-3->
+1     a            
+2     b   a        
+3         b   a    
+4             b    
+");
+    }
+    
+}

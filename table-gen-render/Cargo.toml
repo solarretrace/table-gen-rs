@@ -1,0 +1,18 @@
+[package]
+name = "table-gen-render"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "table-gen renderer implementations"
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+homepage.workspace = true
+
+[lib]
+name = "table_gen_render"
+
+[dependencies]
+table-gen-core.workspace = true

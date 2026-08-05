@@ -1,0 +1,38 @@
+[workspace]
+resolver = "3"
+members = [
+	"table-gen-*"
+]
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Skylor R Schermer <skyschermer@gmail.com>"]
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/solarretrace/table-fmt-rs"
+description = "A formatted table generator library"
+readme = "readme.md"
+keywords = []
+categories = []
+homepage = "https://github.com/solarretrace/table-fmt-rs"
+exclude = [
+	"*.sublime-project",
+	"*.sublime-workspace",
+	".kateproject",
+]
+
+# Required dependencies
+[workspace.dependencies]
+table-gen-render = { version = "*", path = "./table-gen-render" }
+table-gen-core = { version = "*", path = "./table-gen-core" }
+
+
+# The development profile, used for `cargo build`
+[profile.dev]
+opt-level = 0
+debug = false
+
+# The release profile, used for `cargo build --release`
+[profile.release]
+opt-level = 2
+debug = true
