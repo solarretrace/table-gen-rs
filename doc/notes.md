@@ -2,7 +2,6 @@
 
 # Implementation tasks:
 
-+ Implement subselect
 + Implement Features
 + Implement parallelism
 + Implement custom aggregation
