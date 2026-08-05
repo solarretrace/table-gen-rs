@@ -2,8 +2,8 @@
 
 # Implementation tasks:
 
-+ Implement Features
 + Implement subselect
++ Implement Features
 + Implement parallelism
 + Implement custom aggregation
 + Support unicode string widths

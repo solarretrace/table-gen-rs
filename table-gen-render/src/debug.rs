@@ -22,7 +22,6 @@ impl Renderer for DebugRenderer {
         Features::LINES_SUPPORTED
     }
 
-
     // Data writing hooks
     ///////////////////////////////////////////////
     fn write_data_cell_line<W>(

@@ -15,6 +15,9 @@ use crate::SplitRow;
 use crate::ColumnDesc;
 use crate::ColumnOrd;
 
+// Standard library imports.
+use std::ops::RangeBounds;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // TableBuilder
@@ -50,6 +53,15 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
     /// the given order.
     pub fn with_column_selection(mut self, col_select: &'a [usize]) -> Self {
         self.inner = self.inner.with_column_selection(col_select);
+        self
+    }
+
+    /// Prepares the table builder such that only the given rows will be
+    /// rendered.
+    pub fn with_row_selection<B>(mut self, row_select: B) -> Self 
+        where B: RangeBounds<usize>
+    {
+        self.inner = self.inner.with_row_selection(row_select);
         self
     }
 

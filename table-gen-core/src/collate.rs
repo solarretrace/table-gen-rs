@@ -11,6 +11,10 @@ use crate::ColumnOrd;
 use crate::DisplayFmt;
 use crate::Row;
 
+// Standard library imports.
+use std::ops::RangeBounds;
+use std::ops::Bound;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Collate
@@ -23,6 +27,8 @@ pub struct Collate<'a, S> {
     inner: S,
     /// The table output columns, in output order.
     col_select: &'a [usize],
+    /// The table output rows.
+    row_select: (Bound<usize>, Bound<usize>),
     /// The column output specifications.
     col_descs: &'a [ColumnDesc<'a>],
     /// The sort parameters for columns, in order of sort priority.
@@ -51,6 +57,7 @@ impl<'a, R, S> Collate<'a, S>
         Self {
             inner,
             col_select: &[],
+            row_select: (Bound::Included(0), Bound::Unbounded),
             col_descs: &[],
             col_order: &[],
         }
@@ -60,6 +67,17 @@ impl<'a, R, S> Collate<'a, S>
     /// given order.
     pub fn with_column_selection(mut self, col_select: &'a [usize]) -> Self {
         self.col_select = col_select;
+        self
+    }
+
+    /// Prepares the table builder such that only the given rows will be
+    /// rendered.
+    pub fn with_row_selection<B>(mut self, row_select: B) -> Self 
+        where B: RangeBounds<usize>
+    {
+        self.row_select = (
+            row_select.start_bound().cloned(),
+            row_select.end_bound().cloned());
         self
     }
 
