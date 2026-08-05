@@ -420,7 +420,7 @@ impl Renderer for DebugRenderer {
 mod test {
     use super::*;
     use table_gen_core::Table;
-    use table_gen_core::ColSpec;
+    use table_gen_core::ColumnDesc;
 
     #[test]
     fn table_empty() {
@@ -447,15 +447,15 @@ write_table_end()
         let data: Vec<[usize; 2]> = vec![];
 
         let specs = vec![
-            ColSpec::new()
+            ColumnDesc::new()
                 .with_header("H0")
                 .with_footer("F0"),
-            ColSpec::new()
+            ColumnDesc::new()
                 .with_header("H1")
                 .with_footer("F1"),
         ];
         let mut table = Table::new_builder(data, DebugRenderer)
-            .with_col_specs(&specs)
+            .with_column_descs(&specs)
             .finish();
 
         let mut out: Vec<u8> = Vec::new();
@@ -491,15 +491,15 @@ write_table_end()
         ];
 
         let specs = vec![
-            ColSpec::new()
+            ColumnDesc::new()
                 .with_header("H0")
                 .with_footer("F0"),
-            ColSpec::new()
+            ColumnDesc::new()
                 .with_header("H1")
                 .with_footer("F1"),
         ];
         let mut table = Table::new_builder(data, DebugRenderer)
-            .with_col_specs(&specs)
+            .with_column_descs(&specs)
             .finish();
 
         let mut out: Vec<u8> = Vec::new();
@@ -576,19 +576,19 @@ write_table_end()
     }
 
     #[test]
-    fn tuple_table_two_rows_short_col_specs() {
+    fn tuple_table_two_rows_short_column_descs() {
         let data: Vec<(i32, char)> = vec![
             (-17, 'b'),
             (170000, '&'),
         ];
 
         let specs = vec![
-            ColSpec::new()
+            ColumnDesc::new()
                 .with_header("H0")
                 .with_footer("F0"),
         ];
         let mut table = Table::new_builder(data, DebugRenderer)
-            .with_col_specs(&specs)
+            .with_column_descs(&specs)
             .finish();
 
         let mut out: Vec<u8> = Vec::new();
@@ -671,7 +671,7 @@ write_table_end()
         ];
 
         let mut table = Table::new_builder(data, DebugRenderer)
-            .with_columns(&[0, 2, 3])
+            .with_column_selection(&[0, 2, 3])
             .finish();
 
         let mut out: Vec<u8> = Vec::new();

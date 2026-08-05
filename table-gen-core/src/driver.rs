@@ -12,7 +12,7 @@ use crate::Collate;
 use crate::Aggregate;
 use crate::TextRow;
 use crate::SplitRow;
-use crate::ColSpec;
+use crate::ColumnDesc;
 use crate::ColOrd;
 
 
@@ -25,8 +25,8 @@ pub struct TableBuilder<'a, S, T> {
     inner: Collate<'a, S>,
     /// The table renderer.
     renderer: T,
-    /// The default ColSpec.
-    default_col_spec: ColSpec<'a>,
+    /// The default ColumnDesc.
+    default_col_desc: ColumnDesc<'a>,
 }
 
 impl<'a, R, S, T> TableBuilder<'a, S, T>
@@ -42,40 +42,41 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
         Self {
             inner: Collate::new(source.into_iter()),
             renderer,
-            default_col_spec: ColSpec::new(),
+            default_col_desc: ColumnDesc::new(),
         }
     }
 
     /// Prepares the table builder with the given columns selected for output in
     /// the given order.
-    pub fn with_columns(mut self, cols: &'a [usize]) -> Self {
-        self.inner = self.inner.with_columns(cols);
+    pub fn with_column_selection(mut self, col_select: &'a [usize]) -> Self {
+        self.inner = self.inner.with_column_selection(col_select);
         self
     }
 
     /// Prepares the table builder with the given column output specifications.
-    pub fn with_col_specs(mut self, col_specs: &'a [ColSpec<'a>]) -> Self {
-        self.inner = self.inner.with_col_specs(col_specs);
+    pub fn with_column_descs(mut self, col_descs: &'a [ColumnDesc<'a>]) -> Self
+    {
+        self.inner = self.inner.with_column_descs(col_descs);
         self
     }
 
     /// Prepares the table builder with the given default column output
     /// specification.
-    pub fn with_default_col_spec(mut self, default_col_spec: ColSpec<'a>) -> Self {
-        self.default_col_spec = default_col_spec;
+    pub fn with_default_col_desc(mut self, default_col_desc: ColumnDesc<'a>) -> Self {
+        self.default_col_desc = default_col_desc;
         self
     }
 
     /// Prepares the table builder with the given output column orderings.
-    pub fn with_col_ords(mut self, col_ords: &'a [ColOrd]) -> Self {
-        self.inner = self.inner.with_col_ords(col_ords);
+    pub fn with_column_order(mut self, col_order: &'a [ColOrd]) -> Self {
+        self.inner = self.inner.with_column_order(col_order);
         self
     }
 
     /// Finishes collation of the data source and returns a `Table` for
     /// rendering.
     pub fn finish(self) -> Table<'a, R, T> {
-        Table::new(self.inner, self.default_col_spec, self.renderer)
+        Table::new(self.inner, self.default_col_desc, self.renderer)
     }
 }
 
@@ -100,8 +101,8 @@ pub struct Table<'a, R, T> {
     inner: Aggregate<'a, R>,
     /// The table renderer.
     renderer: T,
-    /// The default ColSpec.
-    default_col_spec: ColSpec<'a>,
+    /// The default ColumnDesc.
+    default_col_desc: ColumnDesc<'a>,
 }
 
 impl<'a, R, T> Table<'a, R, T>
@@ -122,15 +123,15 @@ impl<'a, R, T> Table<'a, R, T>
     /// Constructs a new `Table` from a collated data source and renderer.
     pub fn new<S>(
         source: Collate<'a, S>,
-        default_col_spec: ColSpec<'a>,
+        default_col_desc: ColumnDesc<'a>,
         renderer: T) -> Self
         where S: Iterator<Item=R>
     {
-        let inner = Aggregate::new(source, &default_col_spec);
+        let inner = Aggregate::new(source, &default_col_desc);
         Self {
             inner,
             renderer,
-            default_col_spec,
+            default_col_desc,
         }
     }
 
@@ -139,7 +140,7 @@ impl<'a, R, T> Table<'a, R, T>
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        let col_specs = self.inner.col_specs();
+        let col_descs = self.inner.column_descs();
         let col_widths = self.inner.col_widths();
         let rows = self.inner.rows();
 
@@ -151,8 +152,8 @@ impl<'a, R, T> Table<'a, R, T>
             self.renderer.write_header_start(out)?;
             Self::render_header_row(
                 &mut self.renderer,
-                col_specs,
-                &self.default_col_spec,
+                col_descs,
+                &self.default_col_desc,
                 col_widths,
                 out,
                 row,
@@ -165,8 +166,8 @@ impl<'a, R, T> Table<'a, R, T>
         for (row_idx, row) in rows.iter().enumerate() {
             Self::render_data_row(
                 &mut self.renderer,
-                col_specs,
-                &self.default_col_spec,
+                col_descs,
+                &self.default_col_desc,
                 col_widths,
                 out,
                 row,
@@ -179,8 +180,8 @@ impl<'a, R, T> Table<'a, R, T>
             self.renderer.write_footer_start(out)?;
             Self::render_footer_row(
                 &mut self.renderer,
-                col_specs,
-                &self.default_col_spec,
+                col_descs,
+                &self.default_col_desc,
                 col_widths,
                 out,
                 row,
@@ -195,8 +196,8 @@ impl<'a, R, T> Table<'a, R, T>
     /// Renders a row of the header.
     fn render_header_row<W>(
         renderer: &mut T,
-        col_specs: &[ColSpec<'_>],
-        default_col_spec: &ColSpec<'_>,
+        col_descs: &[ColumnDesc<'_>],
+        default_col_desc: &ColumnDesc<'_>,
         col_widths: &[usize],
         out: &mut W,
         row: &TextRow<'_>,
@@ -206,20 +207,20 @@ impl<'a, R, T> Table<'a, R, T>
     {
         renderer.write_header_row_start(out, row_idx)?;
         
-        for line_idx in 0..row.height {
+        for line_idx in 0..row.height() {
             renderer.write_header_line_start(out, row_idx, line_idx)?;
             for col_idx in 0..row.len() {
                 if line_idx == 0 {
                     renderer.write_header_cell_start(out, row_idx, col_idx)?;
                 }
                 
-                let col_spec = col_specs
+                let col_desc = col_descs
                     .get(col_idx)
-                    .unwrap_or(&default_col_spec);
+                    .unwrap_or(&default_col_desc);
                 let text = row.line_vert_aligned(
                     col_idx,
                     line_idx,
-                    col_spec.vert_align);
+                    col_desc.vert_align);
                 renderer.write_header_cell_line_start(
                     out,
                     row_idx,
@@ -232,13 +233,13 @@ impl<'a, R, T> Table<'a, R, T>
                     line_idx,
                     text,
                     col_widths[col_idx],
-                    col_spec.horz_align)?;
+                    col_desc.horz_align)?;
                 renderer.write_header_cell_line_end(
                     out,
                     row_idx,
                     col_idx,
                     line_idx)?;
-                if line_idx == row.height - 1 {
+                if line_idx == row.height() - 1 {
                     renderer.write_header_cell_end(out, row_idx, col_idx)?;
                 }
             }
@@ -252,8 +253,8 @@ impl<'a, R, T> Table<'a, R, T>
     /// Renders row of table data.
     fn render_data_row<W>(
         renderer: &mut T,
-        col_specs: &[ColSpec<'_>],
-        default_col_spec: &ColSpec<'_>,
+        col_descs: &[ColumnDesc<'_>],
+        default_col_desc: &ColumnDesc<'_>,
         col_widths: &[usize],
         out: &mut W,
         row: &SplitRow<'_, R>,
@@ -262,20 +263,20 @@ impl<'a, R, T> Table<'a, R, T>
         where W: std::io::Write
     {
         renderer.write_data_row_start(out, row_idx)?;
-        for line_idx in 0..row.height {
+        for line_idx in 0..row.height() {
             renderer.write_data_line_start(out, row_idx, line_idx)?;
             for col_idx in 0..row.len() {
                 if line_idx == 0 {
                     renderer.write_data_cell_start(out, row_idx, col_idx)?;
                 }
 
-                let col_spec = col_specs
+                let col_desc = col_descs
                     .get(col_idx)
-                    .unwrap_or(&default_col_spec);
+                    .unwrap_or(&default_col_desc);
                 let text = row.line_vert_aligned(
                     col_idx,
                     line_idx,
-                    col_spec.vert_align);
+                    col_desc.vert_align);
                 renderer.write_data_cell_line_start(
                     out,
                     row_idx,
@@ -288,13 +289,13 @@ impl<'a, R, T> Table<'a, R, T>
                     line_idx,
                     text,
                     col_widths[col_idx],
-                    col_spec.horz_align)?;
+                    col_desc.horz_align)?;
                 renderer.write_data_cell_line_end(
                     out,
                     row_idx,
                     col_idx,
                     line_idx)?;
-                if line_idx == row.height - 1 {
+                if line_idx == row.height() - 1 {
                     renderer.write_data_cell_end(out, row_idx, col_idx)?;
                 }
             }
@@ -309,8 +310,8 @@ impl<'a, R, T> Table<'a, R, T>
     /// Renders a row of the footer.
     fn render_footer_row<W>(
         renderer: &mut T,
-        col_specs: &[ColSpec<'_>],
-        default_col_spec: &ColSpec<'_>,
+        col_descs: &[ColumnDesc<'_>],
+        default_col_desc: &ColumnDesc<'_>,
         col_widths: &[usize],
         out: &mut W,
         row: &TextRow<'_>,
@@ -319,20 +320,20 @@ impl<'a, R, T> Table<'a, R, T>
         where W: std::io::Write
     {
         renderer.write_footer_row_start(out, row_idx)?;
-        for line_idx in 0..row.height {
+        for line_idx in 0..row.height() {
             renderer.write_footer_line_start(out, row_idx, line_idx)?;
             for col_idx in 0..row.len() {
                 if line_idx == 0 {
                     renderer.write_footer_cell_start(out, row_idx, col_idx)?;
                 }
                 
-                let col_spec = col_specs
+                let col_desc = col_descs
                     .get(col_idx)
-                    .unwrap_or(&default_col_spec);
+                    .unwrap_or(&default_col_desc);
                 let text = row.line_vert_aligned(
                     col_idx,
                     line_idx,
-                    col_spec.vert_align);
+                    col_desc.vert_align);
                 renderer.write_footer_cell_line_start(
                     out,
                     row_idx,
@@ -345,13 +346,13 @@ impl<'a, R, T> Table<'a, R, T>
                     line_idx,
                     text,
                     col_widths[col_idx],
-                    col_spec.horz_align)?;
+                    col_desc.horz_align)?;
                 renderer.write_footer_cell_line_end(
                     out,
                     row_idx,
                     col_idx,
                     line_idx)?;
-                if line_idx == row.height - 1 {
+                if line_idx == row.height() - 1 {
                     renderer.write_footer_cell_end(out, row_idx, col_idx)?;
                 }
             }

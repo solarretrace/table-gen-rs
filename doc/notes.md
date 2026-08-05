@@ -1,6 +1,5 @@
 
 
-
 # Implementation tasks:
 
 + Implement Features
@@ -24,7 +23,6 @@
 
 # Documentation & API tasks:
 
-+ Rename cols, col_ords, col_specs
 + Make internals private
 + Write API documentation
 

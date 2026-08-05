@@ -25,33 +25,33 @@ The basic usage is as follows:
 
 You will usually want to extend this pattern by providing additional configuration for the table output. These can be specified before calling `finish` on the builder:
 
-    // We can provide metadata for each column. The `ColSpec`s are provided in
-    // order of the output index:
-    let col_specs = vec![
-        ColSpec::new()
+    // We can provide metadata for each column. The `ColumnDesc`s are provided
+    // in order of the output index:
+    let col_descs = vec![
+        ColumnDesc::new()
             .with_header("Header")               // Header text for the column
             .with_footer("Footer")               // Footer text for the column
-            .with_col_fmt(ColFmt::new()          // Formatting for cell values
+            .with_display_fmt(DisplayFmt::new()  // Formatting for cell values
                 .with_precision(Some(3))         // Precision for numerical cols
                 .with_sign(Sign::Plus))          // Sign for numerical cols
             .with_min_width(10)                  // Minimum column width
             .with_max_width(15)                  // Maximum column width
             .with_horz_align(HorzAlign::Right)   // Horizontal alignment in cell
             .with_vert_align(VertAlign::Center), // Vertical alignment in cell
-        // ... other rows will use default formatting (`ColSpec::new()`).
+        // ... other rows will use default formatting (`ColumnDesc::new()`).
     ];
         
     // Prepare the table. The renderer is provided up front to provide its own
     // output requirements to the table driver.
     let mut table = Table::new_builder(data, &mut renderer)
-        .with_col_specs(col_specs)
         // We can specify the default column metadata:
-        .with_default_col_spec(ColSpec::new()) 
+        .with_default_column_desc(ColumnDesc::new()) 
+        .with_column_descs(column_descs)
         // We can render only a subset of columns, choose the order, and even
         // render columns multiple times:
-        .with_columns(&[0, 2, 4, 2])
+        .with_column_selection(&[0, 2, 4, 2])
         // We can sort the rows by choosing a list of columns to order by:
-        .with_col_ords(&[2, 1])
+        .with_column_order(&[2, 1])
         // Finishing the builder will calculate column widths and materialize
         // the ordering.
         .finish();

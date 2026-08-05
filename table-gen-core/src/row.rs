@@ -51,7 +51,7 @@ pub trait Row {
     fn len(&self) -> usize;
     /// Returns the cell at the given column index. Returns `None` if the cell
     /// is not
-    fn cell(&self, col: usize) -> Option<&dyn Cell>;
+    fn cell(&self, col_idx: usize) -> Option<&dyn Cell>;
 }
 
 
@@ -60,9 +60,9 @@ impl<'a, C> Row for &'a [C]
     where C: Cell
 {
     fn len(&self) -> usize { <[C]>::len(self) }
-    fn cell(&self, col: usize) -> Option<&dyn Cell> {
-        debug_assert!(col < self.len());
-        Some(&self[col])
+    fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
+        debug_assert!(col_idx < self.len());
+        Some(&self[col_idx])
     }
 }
 
@@ -70,9 +70,9 @@ impl<C> Row for [C]
     where C: Cell
 {
     fn len(&self) -> usize { <[C]>::len(self) }
-    fn cell(&self, col: usize) -> Option<&dyn Cell> {
-        debug_assert!(col < self.len());
-        Some(&self[col])
+    fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
+        debug_assert!(col_idx < self.len());
+        Some(&self[col_idx])
     }
 }
 
@@ -80,9 +80,9 @@ impl<const N: usize, C> Row for [C; N]
     where C: Cell
 {
     fn len(&self) -> usize { N }
-    fn cell(&self, col: usize) -> Option<&dyn Cell> {
-        debug_assert!(col < self.len());
-        Some(&self[col])
+    fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
+        debug_assert!(col_idx < self.len());
+        Some(&self[col_idx])
     }
 }
 
@@ -94,8 +94,8 @@ macro_rules! tuple_row_impl {
                 where #(T~N: Cell,)*
             {
                 fn len(&self) -> usize { $idx }
-                fn cell(&self, col: usize) -> Option<&dyn Cell> {
-                    match col {
+                fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
+                    match col_idx {
                         #( N => Some(&self.N), )*
                         _ => panic!("invalid column index"),
                     }

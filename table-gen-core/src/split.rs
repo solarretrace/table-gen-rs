@@ -12,7 +12,7 @@ use crate::Cell;
 use crate::Collate;
 use crate::Format;
 use crate::Sort;
-use crate::ColSpec;
+use crate::ColumnDesc;
 use crate::ColOrd;
 use crate::FormattedRow;
 use crate::VertAlign;
@@ -86,13 +86,19 @@ impl<'a, R, S> Split<'a, R, S>
     }
 
     /// The table output columns, in output order.
-    pub fn cols(&self) -> &'a [usize] { self.inner.cols() }
+    pub fn column_selection(&self) -> &'a [usize] {
+        self.inner.column_selection()
+    }
 
     /// The column output specifications.
-    pub fn col_specs(&self) -> &'a [ColSpec<'a>] { self.inner.col_specs() }
+    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
+        self.inner.column_descs()
+    }
 
     /// The sort parameters for columns, in order of sort priority.
-    pub fn col_ords(&self) -> &'a [ColOrd] { self.inner.col_ords() }
+    pub fn column_order(&self) -> &'a [ColOrd] {
+        self.inner.column_order()
+    }
 
 }
 
@@ -118,7 +124,7 @@ pub struct SplitRow<'a, R> {
     /// The row to format.
     inner: FormattedRow<'a, R>,
     /// The maximum number of lines in the row.
-    pub height: usize,
+    height: usize,
 }
 
 impl<'a, R> Row for SplitRow<'a, R>
@@ -128,8 +134,8 @@ impl<'a, R> Row for SplitRow<'a, R>
         self.inner.len()
     }
 
-    fn cell(&self, col: usize) -> Option<&dyn Cell> {
-        self.inner.cell(col)
+    fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
+        self.inner.cell(col_idx)
     }
 }
 
@@ -147,12 +153,16 @@ impl<'a, R> SplitRow<'a, R>
         }
     }
 
-    pub fn text(&self, col: usize) -> &str {
-        self.inner.text(col)
+    pub fn height(&self) -> usize {
+        self.height
     }
 
-    pub fn lines(&self, col: usize) -> Lines<'_> {
-        self.inner.text(col).lines()
+    pub fn text(&self, col_idx: usize) -> &str {
+        self.inner.text(col_idx)
+    }
+
+    pub fn lines(&self, col_idx: usize) -> Lines<'_> {
+        self.inner.text(col_idx).lines()
     }
     
     pub fn line_vert_aligned(
@@ -180,7 +190,7 @@ impl<'a, R> SplitRow<'a, R>
 pub struct TextRow<'a> {
     inner: Vec<&'a str>,
     /// The maximum number of lines in the row.
-    pub height: usize,
+    height: usize,
     /// The maximum number of columns in the row.
     len: usize,
 }
@@ -203,6 +213,10 @@ impl<'a> TextRow<'a> {
         self.len = len;
         self
     }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
     
     pub fn len(&self) -> usize {
         self.len
@@ -214,8 +228,8 @@ impl<'a> TextRow<'a> {
             .map_or("", |t| t)
     }
 
-    pub fn lines(&self, col: usize) -> Lines<'_> {
-        self.text(col).lines()
+    pub fn lines(&self, col_idx: usize) -> Lines<'_> {
+        self.text(col_idx).lines()
     }
     
     pub fn line_vert_aligned(

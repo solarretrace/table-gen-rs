@@ -9,7 +9,7 @@
 // Internal library imports.
 use crate::Row;
 use crate::Cell;
-use crate::ColSpec;
+use crate::ColumnDesc;
 use crate::ColOrd;
 use crate::Collate;
 use crate::CollatedRow;
@@ -63,13 +63,13 @@ impl<'a, R, S> Format<'a, S>
     }
 
     /// The table output columns, in output order.
-    pub fn cols(&self) -> &'a [usize] { self.inner.cols() }
+    pub fn column_selection(&self) -> &'a [usize] { self.inner.column_selection() }
 
     /// The column output specifications.
-    pub fn col_specs(&self) -> &'a [ColSpec<'a>] { self.inner.col_specs() }
+    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] { self.inner.column_descs() }
 
     /// The sort parameters for columns, in order of sort priority.
-    pub fn col_ords(&self) -> &'a [ColOrd] { self.inner.col_ords() }
+    pub fn column_order(&self) -> &'a [ColOrd] { self.inner.column_order() }
 }
 
 impl<'a, R, S> Iterator for Format<'a, S>
@@ -81,7 +81,7 @@ impl<'a, R, S> Iterator for Format<'a, S>
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
             .next()
-            .map(|r| FormattedRow::new(r, self.inner.col_specs()))
+            .map(|r| FormattedRow::new(r, self.inner.column_descs()))
     }
 }
 
@@ -94,7 +94,7 @@ pub struct FormattedRow<'a, R> {
     /// The row to format.
     inner: CollatedRow<'a, R>,
     /// The column output specifications,
-    col_specs: &'a [ColSpec<'a>],
+    col_descs: &'a [ColumnDesc<'a>],
     /// The cached cell texts.
     cache: Vec<OnceCell<Box<str>>>,
 }
@@ -106,29 +106,29 @@ impl<'a, R> Row for FormattedRow<'a, R>
         self.inner.len()
     }
 
-    fn cell(&self, col: usize) -> Option<&dyn Cell> {
-        self.inner.cell(col)
+    fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
+        self.inner.cell(col_idx)
     }
 }
 
 impl<'a, R> FormattedRow<'a, R>
     where R: Row,
 {
-    pub fn new(inner: CollatedRow<'a, R>, col_specs: &'a [ColSpec]) -> Self {
+    pub fn new(inner: CollatedRow<'a, R>, col_descs: &'a [ColumnDesc]) -> Self {
         let cache = vec![OnceCell::new(); inner.len()];
         Self {
             inner,
-            col_specs,
+            col_descs,
             cache,
         }
     }
 
-    pub fn text(&self, col: usize) -> &str {
-        self.cache[col].get_or_init(|| match self.inner.cell(col) {
-            Some(cell) => self.col_specs
-                .get(col)
-                .map(|spec| spec.col_fmt)
-                .unwrap_or(ColFmt::default())
+    pub fn text(&self, col_idx: usize) -> &str {
+        self.cache[col_idx].get_or_init(|| match self.inner.cell(col_idx) {
+            Some(cell) => self.col_descs
+                .get(col_idx)
+                .map(|spec| spec.display_fmt)
+                .unwrap_or(DisplayFmt::default())
                 .apply(cell),
             None => String::new().into_boxed_str(),
         })
@@ -136,24 +136,24 @@ impl<'a, R> FormattedRow<'a, R>
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// ColFmt
+// DisplayFmt
 ////////////////////////////////////////////////////////////////////////////////
-/// A column format specification.
+/// Parameters for cell `Display` output formatting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ColFmt {
+pub struct DisplayFmt {
     /// Format precision specifier.
     precision: Option<usize>,
     /// Format sign specifier.
     sign: Option<Sign>,
 }
 
-impl Default for ColFmt {
+impl Default for DisplayFmt {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ColFmt {
+impl DisplayFmt {
     pub const fn new() -> Self {
         Self {
             precision: None,

@@ -55,7 +55,7 @@ impl Renderer for MinimalRenderer {
 mod test {
     use super::*;
     use table_gen_core::Table;
-    use table_gen_core::ColSpec;
+    use table_gen_core::ColumnDesc;
     use table_gen_core::VertAlign;
     use table_gen_core::HorzAlign;
 
@@ -82,7 +82,7 @@ mod test {
         ];
 
         let mut table = Table::new_builder(data, MinimalRenderer::new())
-            .with_columns(&[0, 2, 3])
+            .with_column_selection(&[0, 2, 3])
             .finish();
 
         let mut out: Vec<u8> = Vec::new();
@@ -95,19 +95,19 @@ mod test {
 
 
     #[test]
-    fn tuple_table_two_rows_short_col_specs() {
+    fn tuple_table_two_rows_short_column_descs() {
         let data: Vec<(i32, char)> = vec![
             (-17, 'b'),
             (170000, '&'),
         ];
 
         let specs = vec![
-            ColSpec::new()
+            ColumnDesc::new()
                 .with_header("H0")
                 .with_footer("F0"),
         ];
         let mut table = Table::new_builder(data, MinimalRenderer::new())
-            .with_col_specs(&specs)
+            .with_column_descs(&specs)
             .finish();
 
         let mut out: Vec<u8> = Vec::new();
@@ -130,26 +130,26 @@ F0
             ["1\n2\n3", "a\nb"],
         ];
         
-        let col_specs = vec![
-            ColSpec::new()
+        let col_descs = vec![
+            ColumnDesc::new()
                 .with_header("N"),
-            ColSpec::new()
+            ColumnDesc::new()
                 .with_header("<-1->")
                 .with_horz_align(HorzAlign::Left)
                 .with_vert_align(VertAlign::Top),
-            ColSpec::new()
+            ColumnDesc::new()
                 .with_header("<-2->")
                 .with_horz_align(HorzAlign::Center)
                 .with_vert_align(VertAlign::Center),
-            ColSpec::new()
+            ColumnDesc::new()
                 .with_header("<-3->")
                 .with_horz_align(HorzAlign::Right)
                 .with_vert_align(VertAlign::Bottom),
         ];
 
         let mut table = Table::new_builder(data, MinimalRenderer::new())
-            .with_columns(&[0, 1, 1, 1])
-            .with_col_specs(&col_specs)
+            .with_column_selection(&[0, 1, 1, 1])
+            .with_column_descs(&col_descs)
             .finish();
 
         let mut out: Vec<u8> = Vec::new();
@@ -171,26 +171,26 @@ N <-1-> <-2-> <-3->
             ["1\n2\n3\n4", "a\nb"],
         ];
         
-        let col_specs = vec![
-            ColSpec::new()
+        let col_descs = vec![
+            ColumnDesc::new()
                 .with_header("N"),
-            ColSpec::new()
+            ColumnDesc::new()
                 .with_header("<-1->")
                 .with_horz_align(HorzAlign::Right)
                 .with_vert_align(VertAlign::Top),
-            ColSpec::new()
+            ColumnDesc::new()
                 .with_header("<-2->")
                 .with_horz_align(HorzAlign::Center)
                 .with_vert_align(VertAlign::Center),
-            ColSpec::new()
+            ColumnDesc::new()
                 .with_header("<-3->")
                 .with_horz_align(HorzAlign::Left)
                 .with_vert_align(VertAlign::Bottom),
         ];
 
         let mut table = Table::new_builder(data, MinimalRenderer::new())
-            .with_columns(&[0, 1, 1, 1])
-            .with_col_specs(&col_specs)
+            .with_column_selection(&[0, 1, 1, 1])
+            .with_column_descs(&col_descs)
             .finish();
 
         let mut out: Vec<u8> = Vec::new();

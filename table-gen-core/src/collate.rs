@@ -9,7 +9,7 @@
 // Internal library imports.
 use crate::Row;
 use crate::Cell;
-use crate::ColFmt;
+use crate::DisplayFmt;
 use crate::ColOrd;
 
 
@@ -23,11 +23,11 @@ pub struct Collate<'a, S> {
     /// The table data source.
     inner: S,
     /// The table output columns, in output order.
-    cols: &'a [usize],
+    col_select: &'a [usize],
     /// The column output specifications.
-    col_specs: &'a [ColSpec<'a>],
+    col_descs: &'a [ColumnDesc<'a>],
     /// The sort parameters for columns, in order of sort priority.
-    col_ords: &'a [ColOrd],
+    col_order: &'a [ColOrd],
 
 }
 
@@ -51,39 +51,39 @@ impl<'a, R, S> Collate<'a, S>
     pub fn new(inner: S) -> Self {
         Self {
             inner,
-            cols: &[],
-            col_specs: &[],
-            col_ords: &[],
+            col_select: &[],
+            col_descs: &[],
+            col_order: &[],
         }
     }
 
     /// Returns the `Collate` with the given columns selected for output in the
     /// given order.
-    pub fn with_columns(mut self, cols: &'a [usize]) -> Self {
-        self.cols = cols;
+    pub fn with_column_selection(mut self, col_select: &'a [usize]) -> Self {
+        self.col_select = col_select;
         self
     }
 
     /// Returns the `Collate` with the given column output specifications.
-    pub fn with_col_specs(mut self, col_specs: &'a [ColSpec]) -> Self {
-        self.col_specs = col_specs;
+    pub fn with_column_descs(mut self, col_descs: &'a [ColumnDesc]) -> Self {
+        self.col_descs = col_descs;
         self
     }
 
     /// Returns the `Collate` with the given column orderings.
-    pub fn with_col_ords(mut self, col_ords: &'a [ColOrd]) -> Self {
-        self.col_ords = col_ords;
+    pub fn with_column_order(mut self, col_order: &'a [ColOrd]) -> Self {
+        self.col_order = col_order;
         self
     }
 
     /// The table output columns, in output order.
-    pub fn cols(&self) -> &'a [usize] { &self.cols[..] }
+    pub fn column_selection(&self) -> &'a [usize] { &self.col_select[..] }
 
     /// The column output specifications.
-    pub fn col_specs(&self) -> &'a [ColSpec<'a>] { &self.col_specs[..] }
+    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] { &self.col_descs[..] }
 
     /// The sort parameters for columns, in order of sort priority.
-    pub fn col_ords(&self) -> &'a [ColOrd] { &self.col_ords[..] }
+    pub fn column_order(&self) -> &'a [ColOrd] { &self.col_order[..] }
 }
 
 
@@ -96,7 +96,7 @@ impl<'a, R, S> Iterator for Collate<'a, S>
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
             .next()
-            .map(|r| CollatedRow { inner: r, cols: &self.cols[..], })
+            .map(|r| CollatedRow { inner: r, col_select: &self.col_select[..], })
     }
 }
 
@@ -109,25 +109,25 @@ pub struct CollatedRow<'a, R> {
     /// The row to collate.
     inner: R,
     /// The column selection and order.
-    cols: &'a [usize]
+    col_select: &'a [usize]
 }
 
 impl<'a, R> Row for CollatedRow<'a, R>
     where R: Row
 {
     fn len(&self) -> usize {
-        if self.cols.is_empty() {
+        if self.col_select.is_empty() {
             self.inner.len()
         } else {
-            self.cols.len()
+            self.col_select.len()
         }
     }
 
     fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
-        if self.cols.is_empty() {
+        if self.col_select.is_empty() {
             self.inner.cell(col_idx)
         } else {
-            self.inner.cell(self.cols[col_idx])
+            self.inner.cell(self.col_select[col_idx])
         }
     }
 }
@@ -135,32 +135,32 @@ impl<'a, R> Row for CollatedRow<'a, R>
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// ColSpec
+// ColumnDesc
 ////////////////////////////////////////////////////////////////////////////////
-/// A column ordering.
+/// Provides formatting and metadata for a table column.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ColSpec<'a> {
+pub struct ColumnDesc<'a> {
     pub header: &'a str,
     pub footer: &'a str,
-    pub col_fmt: ColFmt,
+    pub display_fmt: DisplayFmt,
     pub min_width: usize,
     pub max_width: usize,
     pub horz_align: HorzAlign,
     pub vert_align: VertAlign,
 }
 
-impl<'a> Default for ColSpec<'a> {
+impl<'a> Default for ColumnDesc<'a> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<'a> ColSpec<'a> {
+impl<'a> ColumnDesc<'a> {
     pub const fn new() -> Self {
         Self {
             header: "",
             footer: "",
-            col_fmt: ColFmt::new(),
+            display_fmt: DisplayFmt::new(),
             min_width: 0,
             max_width: usize::MAX,
             horz_align: HorzAlign::Left,
@@ -178,8 +178,8 @@ impl<'a> ColSpec<'a> {
         self
     }
     
-    pub const fn with_col_fmt(mut self, col_fmt: ColFmt) -> Self {
-        self.col_fmt = col_fmt;
+    pub const fn with_display_fmt(mut self, display_fmt: DisplayFmt) -> Self {
+        self.display_fmt = display_fmt;
         self
     }
     
@@ -208,7 +208,6 @@ impl<'a> ColSpec<'a> {
         self.vert_align = vert_align;
         self
     }
-
 }
 
 

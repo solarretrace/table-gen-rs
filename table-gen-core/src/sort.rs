@@ -10,7 +10,7 @@
 use crate::Row;
 use crate::Format;
 use crate::FormattedRow;
-use crate::ColSpec;
+use crate::ColumnDesc;
 use crate::Collate;
 
 // External library imports.
@@ -76,13 +76,13 @@ impl<'a, R, S> Sort<'a, R, S>
     }
 
     /// The table output columns, in output order.
-    pub fn cols(&self) -> &'a [usize] { self.inner.cols() }
+    pub fn column_selection(&self) -> &'a [usize] { self.inner.column_selection() }
 
     /// The column output specifications.
-    pub fn col_specs(&self) -> &'a [ColSpec<'a>] { self.inner.col_specs() }
+    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] { self.inner.column_descs() }
 
     /// The sort parameters for columns, in order of sort priority.
-    pub fn col_ords(&self) -> &'a [ColOrd] { self.inner.col_ords() }
+    pub fn column_order(&self) -> &'a [ColOrd] { self.inner.column_order() }
 
     /// Compares two `FormattedRow`s according to the ordering given by
     /// `[ColOrd]`.
@@ -130,10 +130,10 @@ impl<'a, R, S> Iterator for Sort<'a, R, S>
 {
     type Item = FormattedRow<'a, R>;
     fn next(&mut self) -> Option<Self::Item> {
-        let col_ords = self.col_ords();
+        let col_order = self.column_order();
         let iter = self.sorted.get_or_insert_with(|| {
             let mut rows: Vec<_> = (&mut self.inner).collect();
-            rows.sort_by(|a, b| Self::compare_rows(a, b, col_ords));
+            rows.sort_by(|a, b| Self::compare_rows(a, b, col_order));
             rows.into_iter()
         });
         iter.next()

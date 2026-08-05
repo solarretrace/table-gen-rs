@@ -11,7 +11,7 @@ use crate::Row;
 use crate::Split;
 use crate::SplitRow;
 use crate::TextRow;
-use crate::ColSpec;
+use crate::ColumnDesc;
 
 
 
@@ -23,7 +23,7 @@ pub struct Aggregate<'a, R> {
     /// The materialized rows of the table.
     rows: Vec<SplitRow<'a, R>>,
     /// The column output specifications.
-    col_specs: &'a [ColSpec<'a>],
+    col_descs: &'a [ColumnDesc<'a>],
     /// The column widths.
     col_widths: Vec<usize>,
     /// The table header row.
@@ -36,7 +36,7 @@ impl<'a, R> Aggregate<'a, R>
     where R: Row,
 {
     /// Constructs a new `Aggregate` for the given data source.
-    pub fn new<S, T>(inner: T, default_col_spec: &ColSpec<'_>) -> Self
+    pub fn new<S, T>(inner: T, default_col_desc: &ColumnDesc<'_>) -> Self
         where
             T: Into<Split<'a, R, S>>,
             S: Iterator<Item=R>,
@@ -44,12 +44,12 @@ impl<'a, R> Aggregate<'a, R>
     {
         let str_width = |l: &str| { l.len() };
         let inner = inner.into();
-        let col_specs = inner.col_specs();
+        let col_descs = inner.column_descs();
 
         // Build the header row.
         let mut header_used = false;
-        let header_cells: Vec<&str> = col_specs.iter()
-            .map(|col_spec| col_spec.header)
+        let header_cells: Vec<&str> = col_descs.iter()
+            .map(|col_desc| col_desc.header)
             .map(|c| { header_used |= !c.is_empty(); c })
             .collect();
         let mut header_row = header_used
@@ -57,8 +57,8 @@ impl<'a, R> Aggregate<'a, R>
             .map(TextRow::new);
         // Build the footer row.
         let mut footer_used = false;
-        let footer_cells: Vec<&str> = col_specs.iter()
-            .map(|col_spec| col_spec.footer)
+        let footer_cells: Vec<&str> = col_descs.iter()
+            .map(|col_desc| col_desc.footer)
             .map(|c| { footer_used |= !c.is_empty(); c })
             .collect();
         let mut footer_row = footer_used
@@ -70,29 +70,29 @@ impl<'a, R> Aggregate<'a, R>
             header_row.as_ref(),
             footer_row.as_ref())
         {
-            (Some(h), Some(f)) => (0..col_specs.len())
+            (Some(h), Some(f)) => (0..col_descs.len())
                 .map(|idx| std::cmp::max(
                     h.lines(idx)
                         .map(|l| (str_width)(l))
                         .max()
-                        .unwrap_or(col_specs[idx].min_width),
+                        .unwrap_or(col_descs[idx].min_width),
                     f.lines(idx)
                         .map(|l| (str_width)(l))
                         .max()
-                        .unwrap_or(col_specs[idx].min_width)))
+                        .unwrap_or(col_descs[idx].min_width)))
                 .collect(),
 
             (Some(r), None)    |
-            (None,    Some(r)) => (0..col_specs.len())
+            (None,    Some(r)) => (0..col_descs.len())
                 .map(|idx| r
                     .lines(idx)
                     .map(|l| (str_width)(l))
                     .max()
-                    .unwrap_or(col_specs[idx].min_width))
+                    .unwrap_or(col_descs[idx].min_width))
                 .collect(),
 
-            _ => (0..col_specs.len())
-                .map(|idx| col_specs[idx].min_width)
+            _ => (0..col_descs.len())
+                .map(|idx| col_descs[idx].min_width)
                 .collect(),
         };
 
@@ -106,12 +106,12 @@ impl<'a, R> Aggregate<'a, R>
                 // Expand widths array if past the end of the header/footer.
                 if idx >= col_widths.len() { col_widths.push(0); }
 
-                // Get the ColSpec for this index.
-                let col_spec = col_specs.get(idx).unwrap_or(&default_col_spec);
+                // Get the ColumnDesc for this index.
+                let col_desc = col_descs.get(idx).unwrap_or(&default_col_desc);
 
-                if col_spec.min_width == col_spec.max_width {
+                if col_desc.min_width == col_desc.max_width {
                     // The col width is fixed, so set it.
-                    col_widths[idx] = col_spec.max_width;
+                    col_widths[idx] = col_desc.max_width;
                 } else {
                     // The col width is dynamic. Get the width of the cell.
                     let cell_width = row.lines(idx)
@@ -122,7 +122,7 @@ impl<'a, R> Aggregate<'a, R>
                     // exceed the maximum allowed.
                     col_widths[idx] = std::cmp::min(
                         std::cmp::max(cell_width, col_widths[idx]),
-                        col_spec.max_width);
+                        col_desc.max_width);
                 }
             }
             rows.push(row);
@@ -133,7 +133,7 @@ impl<'a, R> Aggregate<'a, R>
 
         Self {
             rows,
-            col_specs,
+            col_descs,
             col_widths,
             header_row,
             footer_row,
@@ -143,8 +143,8 @@ impl<'a, R> Aggregate<'a, R>
     /// The column widths.
     pub fn rows(&self) -> &[SplitRow<'a, R>] { &self.rows[..] }
 
-    /// The column output specifications.
-    pub fn col_specs(&self) -> &'a [ColSpec<'a>] { &self.col_specs[..] }
+    /// The column output descriptors.
+    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] { &self.col_descs[..] }
 
     /// The column widths.
     pub fn col_widths(&self) -> &[usize] { &self.col_widths[..] }
