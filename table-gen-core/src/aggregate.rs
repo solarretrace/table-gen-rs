@@ -18,7 +18,7 @@ use crate::TextRow;
 // Aggregate
 ////////////////////////////////////////////////////////////////////////////////
 /// Table cell column aggregator.
-pub struct Aggregate<'a, R> {
+pub (in crate) struct Aggregate<'a, R> {
     /// The materialized rows of the table.
     rows: Vec<SplitRow<'a, R>>,
     /// The column output specifications.
@@ -35,7 +35,7 @@ impl<'a, R> Aggregate<'a, R>
     where R: Row,
 {
     /// Constructs a new `Aggregate` for the given data source.
-    pub fn new<S, T>(inner: T, default_col_desc: &ColumnDesc<'_>) -> Self
+    pub (in crate) fn new<S, T>(inner: T, default_col_desc: &ColumnDesc<'_>) -> Self
         where
             T: Into<Split<'a, R, S>>,
             S: Iterator<Item=R>,
@@ -140,21 +140,21 @@ impl<'a, R> Aggregate<'a, R>
     }
 
     /// The column widths.
-    pub fn rows(&self) -> &[SplitRow<'a, R>] { &self.rows[..] }
+    pub (in crate) fn rows(&self) -> &[SplitRow<'a, R>] { &self.rows[..] }
 
     /// The column output descriptors.
-    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] { &self.col_descs[..] }
+    pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] { &self.col_descs[..] }
 
     /// The column widths.
-    pub fn col_widths(&self) -> &[usize] { &self.col_widths[..] }
+    pub (in crate) fn col_widths(&self) -> &[usize] { &self.col_widths[..] }
 
     /// The header row.
-    pub fn header_row(&self) -> Option<&TextRow<'_>> {
+    pub (in crate) fn header_row(&self) -> Option<&TextRow<'_>> {
         self.header_row.as_ref()
     }
 
     /// The footer row.
-    pub fn footer_row(&self) -> Option<&TextRow<'_>> {
+    pub (in crate) fn footer_row(&self) -> Option<&TextRow<'_>> {
         self.footer_row.as_ref()
     }
 }

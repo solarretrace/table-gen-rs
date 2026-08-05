@@ -56,7 +56,7 @@ pub trait Row {
 
 
 // Fully homogeneous table rows provided via slices.
-impl<'a, C> Row for &'a [C]
+impl<C> Row for &'_ [C]
     where C: Cell
 {
     fn len(&self) -> usize { <[C]>::len(self) }

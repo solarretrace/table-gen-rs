@@ -23,12 +23,12 @@ use std::fmt::Display;
 ////////////////////////////////////////////////////////////////////////////////
 /// Table cell formatter. Responsible for generating text for cells.
 #[derive(Debug, Clone)]
-pub struct Format<'a, S> {
+pub (in crate) struct Format<'a, S> {
     /// The table data source.
     inner: Collate<'a, S>,
 }
 
-impl<'a, R, S, I> From<I> for Format<'a, S>
+impl<R, S, I> From<I> for Format<'_, S>
     where
         R: Row,
         S: Iterator<Item=R>,
@@ -55,19 +55,19 @@ impl<'a, R, S> Format<'a, S>
         R: Row,
 {
     /// Constructs a new `Format` for the given data source.
-    pub fn new(inner: Collate<'a, S>) -> Self {
+    pub (in crate) fn new(inner: Collate<'a, S>) -> Self {
         Self {
             inner,
         }
     }
 
     /// The column output specifications.
-    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
+    pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
         self.inner.column_descs()
     }
 
     /// The sort parameters for columns, in order of sort priority.
-    pub fn column_order(&self) -> &'a [ColumnOrd] {
+    pub (in crate) fn column_order(&self) -> &'a [ColumnOrd] {
         self.inner.column_order()
     }
 }
@@ -90,7 +90,7 @@ impl<'a, R, S> Iterator for Format<'a, S>
 // FormatRow
 ////////////////////////////////////////////////////////////////////////////////
 /// A single table row with collated column selection and ordering.
-pub struct FormatRow<'a, R> {
+pub (in crate) struct FormatRow<'a, R> {
     /// The row to format.
     inner: CollateRow<'a, R>,
     /// The column output specifications,
@@ -99,7 +99,7 @@ pub struct FormatRow<'a, R> {
     cache: Vec<OnceCell<Box<str>>>,
 }
 
-impl<'a, R> Row for FormatRow<'a, R>
+impl<R> Row for FormatRow<'_, R>
     where R: Row
 {
     fn len(&self) -> usize {
@@ -114,7 +114,11 @@ impl<'a, R> Row for FormatRow<'a, R>
 impl<'a, R> FormatRow<'a, R>
     where R: Row,
 {
-    pub fn new(inner: CollateRow<'a, R>, col_descs: &'a [ColumnDesc]) -> Self {
+    pub (in crate) fn new(
+        inner: CollateRow<'a, R>,
+        col_descs: &'a [ColumnDesc<'a>])
+        -> Self
+    {
         let cache = vec![OnceCell::new(); inner.len()];
         Self {
             inner,
@@ -123,7 +127,7 @@ impl<'a, R> FormatRow<'a, R>
         }
     }
 
-    pub fn text(&self, col_idx: usize) -> &str {
+    pub (in crate) fn text(&self, col_idx: usize) -> &str {
         self.cache[col_idx].get_or_init(|| match self.inner.cell(col_idx) {
             Some(cell) => self.col_descs
                 .get(col_idx)

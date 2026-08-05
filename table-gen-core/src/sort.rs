@@ -24,13 +24,13 @@ use std::vec::IntoIter;
 // Sort
 ////////////////////////////////////////////////////////////////////////////////
 /// Table cell column sorter.
-pub struct Sort<'a, R, S> {
+pub (in crate) struct Sort<'a, R, S> {
     /// The table data source.
     inner: Format<'a, S>,
     sorted: Option<IntoIter<FormatRow<'a, R>>>,
 }
 
-impl<'a, R, S, I> From<I> for Sort<'a, R, S>
+impl<R, S, I> From<I> for Sort<'_, R, S>
     where
         R: Row,
         S: Iterator<Item=R>,
@@ -67,7 +67,7 @@ impl<'a, R, S> Sort<'a, R, S>
         S: Iterator<Item=R>,
 {
     /// Constructs a new `Sort` for the given data source.
-    pub fn new(inner: Format<'a, S>) -> Self {
+    pub (in crate) fn new(inner: Format<'a, S>) -> Self {
         Self {
             inner,
             sorted: None,
@@ -75,12 +75,12 @@ impl<'a, R, S> Sort<'a, R, S>
     }
 
     /// The column output specifications.
-    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
+    pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
         self.inner.column_descs()
     }
 
     /// The sort parameters for columns, in order of sort priority.
-    pub fn column_order(&self) -> &'a [ColumnOrd] {
+    pub (in crate) fn column_order(&self) -> &'a [ColumnOrd] {
         self.inner.column_order()
     }
 

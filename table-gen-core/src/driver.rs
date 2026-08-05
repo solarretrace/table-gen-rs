@@ -135,7 +135,7 @@ impl<'a, R, T> Table<'a, R, T>
     }
 
     /// Constructs a new `Table` from a collated data source and renderer.
-    pub fn new<S>(
+    pub (in crate) fn new<S>(
         source: Collate<'a, S>,
         default_col_desc: ColumnDesc<'a>,
         renderer: T) -> Self

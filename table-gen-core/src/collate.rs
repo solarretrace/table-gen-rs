@@ -22,7 +22,7 @@ use std::ops::Bound;
 /// Table collater. Responsible for specifiying column ordering, headers,
 /// footers, and defaults.
 #[derive(Debug, Clone)]
-pub struct Collate<'a, S> {
+pub (in crate) struct Collate<'a, S> {
     /// The table data source.
     inner: S,
     /// The table output columns, in output order.
@@ -36,7 +36,7 @@ pub struct Collate<'a, S> {
 
 }
 
-impl<'a, R, S, I> From<I> for Collate<'a, S>
+impl<R, S, I> From<I> for Collate<'_, S>
     where
         R: Row,
         S: Iterator<Item=R>,
@@ -53,7 +53,7 @@ impl<'a, R, S> Collate<'a, S>
         S: Iterator<Item=R>,
 {
     /// Constructs a new `Collate` for the given data source.
-    pub fn new(inner: S) -> Self {
+    pub (in crate) fn new(inner: S) -> Self {
         Self {
             inner,
             col_select: &[],
@@ -65,14 +65,16 @@ impl<'a, R, S> Collate<'a, S>
 
     /// Returns the `Collate` with the given columns selected for output in the
     /// given order.
-    pub fn with_column_selection(mut self, col_select: &'a [usize]) -> Self {
+    pub (in crate) fn with_column_selection(mut self, col_select: &'a [usize])
+        -> Self
+    {
         self.col_select = col_select;
         self
     }
 
     /// Prepares the table builder such that only the given rows will be
     /// rendered.
-    pub fn with_row_selection<B>(mut self, row_select: B) -> Self 
+    pub (in crate) fn with_row_selection<B>(mut self, row_select: B) -> Self 
         where B: RangeBounds<usize>
     {
         self.row_select = (
@@ -82,25 +84,32 @@ impl<'a, R, S> Collate<'a, S>
     }
 
     /// Returns the `Collate` with the given column output specifications.
-    pub fn with_column_descs(mut self, col_descs: &'a [ColumnDesc]) -> Self {
+    pub (in crate) fn with_column_descs(
+        mut self,
+        col_descs: &'a [ColumnDesc<'a>])
+        -> Self
+    {
         self.col_descs = col_descs;
         self
     }
 
     /// Returns the `Collate` with the given column orderings.
-    pub fn with_column_order(mut self, col_order: &'a [ColumnOrd]) -> Self {
+    pub (in crate) fn with_column_order(mut self, col_order: &'a [ColumnOrd])
+        -> Self
+    {
         self.col_order = col_order;
         self
     }
 
-    /// The table output columns, in output order.
-    pub fn column_selection(&self) -> &'a [usize] { &self.col_select[..] }
-
     /// The column output specifications.
-    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] { &self.col_descs[..] }
+    pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
+        &self.col_descs[..]
+    }
 
     /// The sort parameters for columns, in order of sort priority.
-    pub fn column_order(&self) -> &'a [ColumnOrd] { &self.col_order[..] }
+    pub (in crate) fn column_order(&self) -> &'a [ColumnOrd] {
+        &self.col_order[..]
+    }
 }
 
 
@@ -122,14 +131,14 @@ impl<'a, R, S> Iterator for Collate<'a, S>
 // CollateRow
 ////////////////////////////////////////////////////////////////////////////////
 /// A single table row with collated column selection and ordering.
-pub struct CollateRow<'a, R> {
+pub (in crate) struct CollateRow<'a, R> {
     /// The row to collate.
     inner: R,
     /// The column selection and order.
     col_select: &'a [usize]
 }
 
-impl<'a, R> Row for CollateRow<'a, R>
+impl<R> Row for CollateRow<'_, R>
     where R: Row
 {
     fn len(&self) -> usize {
@@ -166,7 +175,7 @@ pub struct ColumnDesc<'a> {
     pub vert_align: VertAlign,
 }
 
-impl<'a> Default for ColumnDesc<'a> {
+impl Default for ColumnDesc<'_> {
     fn default() -> Self {
         Self::new()
     }

@@ -26,12 +26,12 @@ use std::str::Lines;
 // Split
 ////////////////////////////////////////////////////////////////////////////////
 /// Table cell line splitter.
-pub struct Split<'a, R, S> {
+pub (in crate) struct Split<'a, R, S> {
     /// The table data source.
     inner: Sort<'a, R, S>,
 }
 
-impl<'a, R, S, I> From<I> for Split<'a, R, S>
+impl<R, S, I> From<I> for Split<'_, R, S>
     where
         R: Row,
         S: Iterator<Item=R>,
@@ -78,14 +78,14 @@ impl<'a, R, S> Split<'a, R, S>
         S: Iterator<Item=R>,
 {
     /// Constructs a new `Split` for the given data source.
-    pub fn new(inner: Sort<'a, R, S>) -> Self {
+    pub (in crate) fn new(inner: Sort<'a, R, S>) -> Self {
         Self {
             inner,
         }
     }
 
     /// The column output specifications.
-    pub fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
+    pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
         self.inner.column_descs()
     }
 }
@@ -108,14 +108,14 @@ impl<'a, R, S> Iterator for Split<'a, R, S>
 // SplitRow
 ////////////////////////////////////////////////////////////////////////////////
 /// A single table row with line splitting.
-pub struct SplitRow<'a, R> {
+pub (in crate) struct SplitRow<'a, R> {
     /// The row to format.
     inner: FormatRow<'a, R>,
     /// The maximum number of lines in the row.
     height: usize,
 }
 
-impl<'a, R> Row for SplitRow<'a, R>
+impl<R> Row for SplitRow<'_, R>
     where R: Row
 {
     fn len(&self) -> usize {
@@ -130,7 +130,7 @@ impl<'a, R> Row for SplitRow<'a, R>
 impl<'a, R> SplitRow<'a, R>
     where R: Row,
 {
-    pub fn new(inner: FormatRow<'a, R>) -> Self {
+    pub (in crate) fn new(inner: FormatRow<'a, R>) -> Self {
         let height = (0..inner.len())
             .map(|c| inner.text(c).lines().count())
             .max()
@@ -141,19 +141,19 @@ impl<'a, R> SplitRow<'a, R>
         }
     }
 
-    pub fn height(&self) -> usize {
+    pub (in crate) fn height(&self) -> usize {
         self.height
     }
 
-    pub fn text(&self, col_idx: usize) -> &str {
+    pub (in crate) fn text(&self, col_idx: usize) -> &str {
         self.inner.text(col_idx)
     }
 
-    pub fn lines(&self, col_idx: usize) -> Lines<'_> {
+    pub (in crate) fn lines(&self, col_idx: usize) -> Lines<'_> {
         self.text(col_idx).lines()
     }
     
-    pub fn line_vert_aligned(
+    pub (in crate) fn line_vert_aligned(
         &self,
         col_idx: usize,
         line_idx: usize,
@@ -175,7 +175,7 @@ impl<'a, R> SplitRow<'a, R>
 ////////////////////////////////////////////////////////////////////////////////
 /// A single table row containing text cells with line splitting.
 #[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq)]
-pub struct TextRow<'a> {
+pub (in crate) struct TextRow<'a> {
     inner: Vec<&'a str>,
     /// The maximum number of lines in the row.
     height: usize,
@@ -184,7 +184,7 @@ pub struct TextRow<'a> {
 }
 
 impl<'a> TextRow<'a> {
-    pub fn new(inner: Vec<&'a str>) -> Self {
+    pub (in crate) fn new(inner: Vec<&'a str>) -> Self {
         let len = inner.len();
         let height = (0..len)
             .map(|c| inner[c].lines().count())
@@ -197,30 +197,30 @@ impl<'a> TextRow<'a> {
         }
     }
 
-    pub fn with_len(mut self, len: usize) -> Self {
+    pub (in crate) fn with_len(mut self, len: usize) -> Self {
         self.len = len;
         self
     }
 
-    pub fn height(&self) -> usize {
+    pub (in crate) fn height(&self) -> usize {
         self.height
     }
     
-    pub fn len(&self) -> usize {
+    pub (in crate) fn len(&self) -> usize {
         self.len
     }
     
-    pub fn text(&self, col_idx: usize) -> &str {
+    pub (in crate) fn text(&self, col_idx: usize) -> &str {
         self.inner
             .get(col_idx)
             .map_or("", |t| t)
     }
 
-    pub fn lines(&self, col_idx: usize) -> Lines<'_> {
+    pub (in crate) fn lines(&self, col_idx: usize) -> Lines<'_> {
         self.text(col_idx).lines()
     }
     
-    pub fn line_vert_aligned(
+    pub (in crate) fn line_vert_aligned(
         &self,
         col_idx: usize,
         line_idx: usize,

@@ -5,42 +5,55 @@
 //! Table generator core library.
 ////////////////////////////////////////////////////////////////////////////////
 #![forbid(non_ascii_idents)]
-#![deny(keyword_idents)]
-#![deny(macro_use_extern_crate)]
-#![deny(missing_abi)]
-#![deny(unsafe_op_in_unsafe_fn)]
 #![warn(absolute_paths_not_starting_with_crate)]
-#![warn(anonymous_parameters)]
-#![warn(bad_style)]
-#![warn(bare_trait_objects)]
-#![warn(dead_code)]
+#![warn(ambiguous_negative_literals)]
+#![warn(closure_returning_async_block)]
+#![warn(deprecated_in_future)]
+#![warn(deprecated_safe_2024)]
+#![warn(deref_into_dyn_supertrait)]
+#![warn(edition_2024_expr_fragment_specifier)]
 #![warn(elided_lifetimes_in_paths)]
-#![warn(improper_ctypes)]
+#![warn(explicit_outlives_requirements)]
+#![warn(ffi_unwind_calls)]
+#![warn(if_let_rescope)]
+#![warn(impl_trait_overcaptures)]
+#![warn(impl_trait_redundant_captures)]
+#![warn(keyword_idents_2018)]
+#![warn(keyword_idents_2024)]
+#![warn(let_underscore_drop)]
+#![warn(macro_use_extern_crate)]
+#![warn(meta_variable_misuse)]
 #![warn(missing_copy_implementations)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
-#![warn(no_mangle_generic_items)]
-#![warn(non_shorthand_field_patterns)]
-#![warn(nonstandard_style)]
-#![warn(noop_method_call)]
-#![warn(overflowing_literals)]
-#![warn(path_statements)]
-#![warn(patterns_in_fns_without_body)]
-#![warn(rust_2018_idioms)]
+#![warn(missing_unsafe_on_extern)]
+#![warn(redundant_imports)]
+#![warn(redundant_lifetimes)]
+#![warn(rust_2021_incompatible_closure_captures)]
+#![warn(rust_2021_incompatible_or_patterns)]
+#![warn(rust_2021_prefixes_incompatible_syntax)]
+#![warn(rust_2021_prelude_collisions)]
+#![warn(rust_2024_guarded_string_incompatible_syntax)]
+#![warn(rust_2024_incompatible_pat)]
+#![warn(rust_2024_prelude_collisions)]
+#![warn(single_use_lifetimes)]
+#![warn(tail_expr_drop_order)]
 #![warn(trivial_casts)]
 #![warn(trivial_numeric_casts)]
-#![warn(unconditional_recursion)]
+#![warn(unit_bindings)]
+#![warn(unnameable_types)]
 #![warn(unreachable_pub)]
-#![warn(unused)]
-#![warn(unused_allocation)]
-#![warn(unused_comparisons)]
+#![warn(unsafe_attr_outside_unsafe)]
+#![warn(unsafe_op_in_unsafe_fn)]
+#![warn(unstable_features)]
+#![warn(unused_crate_dependencies)]
 #![warn(unused_extern_crates)]
 #![warn(unused_import_braces)]
 #![warn(unused_lifetimes)]
-#![warn(unused_parens)]
+#![warn(unused_macro_rules)]
 #![warn(unused_qualifications)]
+#![warn(unused_results)]
 #![warn(variant_size_differences)]
-#![warn(while_true)]
 
 // Clippy groups.
 #![warn(clippy::cargo)]
@@ -107,7 +120,6 @@ pub (in crate) use collate::Collate;
 pub (in crate) use collate::CollateRow;
 pub (in crate) use format::Format;
 pub (in crate) use format::FormatRow;
-pub (in crate) use sort::ColumnOrd;
 pub (in crate) use sort::Sort;
 pub (in crate) use split::Split;
 pub (in crate) use split::SplitRow;
@@ -125,3 +137,4 @@ pub use render::Features;
 pub use render::Renderer;
 pub use row::Cell;
 pub use row::Row;
+pub use sort::ColumnOrd;

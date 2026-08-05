@@ -15,8 +15,6 @@ homepage.workspace = true
 name = "table_gen_core"
 
 [dependencies]
-indexmap = { version = "2.14" , features = ["std", "rayon"]}
-nohash-hasher = "0.2"
 bitflags = "2.13"
 seq-macro = "0.3"
 smallvec = "1.15"
