@@ -17,6 +17,7 @@ use bitflags::bitflags;
 
 // Standard library imports.
 use std::cmp::Ordering;
+use std::ops::Bound;
 use std::vec::IntoIter;
 
 
@@ -72,6 +73,11 @@ impl<'a, R, S> Sort<'a, R, S>
             inner,
             sorted: None,
         }
+    }
+
+    /// The row selection bounds.
+    pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
+        self.inner.row_selection()
     }
 
     /// The column output specifications.

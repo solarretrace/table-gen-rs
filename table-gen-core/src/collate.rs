@@ -101,6 +101,11 @@ impl<'a, R, S> Collate<'a, S>
         self
     }
 
+    /// The row selection bounds.
+    pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
+        &self.row_select
+    }
+
     /// The column output specifications.
     pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
         &self.col_descs[..]

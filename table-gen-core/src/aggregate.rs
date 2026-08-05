@@ -12,6 +12,8 @@ use crate::Split;
 use crate::SplitRow;
 use crate::TextRow;
 
+// Standard library imports.
+use std::ops::RangeBounds as _;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,6 +46,7 @@ impl<'a, R> Aggregate<'a, R>
     {
         let str_width = |l: &str| { l.len() };
         let inner = inner.into();
+        let row_select = inner.row_selection().clone();
         let col_descs = inner.column_descs();
 
         // Build the header row.
@@ -99,9 +102,7 @@ impl<'a, R> Aggregate<'a, R>
         let mut max_row_len = 0;
         let mut rows = Vec::new();
         // Do column aggregations.
-        for row in inner {
-            
-            max_row_len = std::cmp::max(max_row_len, row.len());
+        for (n, row) in inner.into_iter().enumerate() {
             for idx in 0..row.len() {
                 // Expand widths array if past the end of the header/footer.
                 if idx >= col_widths.len() { col_widths.push(0); }
@@ -125,7 +126,10 @@ impl<'a, R> Aggregate<'a, R>
                         col_desc.max_width);
                 }
             }
-            rows.push(row);
+            if row_select.contains(&n) {
+                max_row_len = std::cmp::max(max_row_len, row.len());
+                rows.push(row);
+            }
         }
         
         header_row = header_row.map(|r| r.with_len(max_row_len));

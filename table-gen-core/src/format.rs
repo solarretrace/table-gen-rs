@@ -16,6 +16,7 @@ use crate::Row;
 // Standard library imports.
 use std::cell::OnceCell;
 use std::fmt::Display;
+use std::ops::Bound;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,6 +60,11 @@ impl<'a, R, S> Format<'a, S>
         Self {
             inner,
         }
+    }
+
+    /// The row selection bounds.
+    pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
+        self.inner.row_selection()
     }
 
     /// The column output specifications.

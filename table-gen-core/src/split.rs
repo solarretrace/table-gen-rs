@@ -20,7 +20,9 @@ use crate::VertAlign;
 use smallvec::SmallVec;
 
 // Standard library imports.
+use std::ops::Bound;
 use std::str::Lines;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Split
@@ -82,6 +84,11 @@ impl<'a, R, S> Split<'a, R, S>
         Self {
             inner,
         }
+    }
+
+    /// The row selection bounds.
+    pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
+        self.inner.row_selection()
     }
 
     /// The column output specifications.
