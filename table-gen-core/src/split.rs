@@ -208,12 +208,10 @@ impl<'a> TextRow<'a> {
         self.len
     }
     
-    pub fn text(&self, col: usize) -> &str {
-        if col < self.len {
-            self.inner[col]
-        } else {
-            ""
-        }
+    pub fn text(&self, col_idx: usize) -> &str {
+        self.inner
+            .get(col_idx)
+            .map_or("", |t| t)
     }
 
     pub fn lines(&self, col: usize) -> Lines<'_> {

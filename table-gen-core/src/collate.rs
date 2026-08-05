@@ -116,11 +116,19 @@ impl<'a, R> Row for CollatedRow<'a, R>
     where R: Row
 {
     fn len(&self) -> usize {
-        self.cols.len()
+        if self.cols.is_empty() {
+            self.inner.len()
+        } else {
+            self.cols.len()
+        }
     }
 
-    fn cell(&self, col: usize) -> Option<&dyn Cell> {
-        self.inner.cell(self.cols[col])
+    fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
+        if self.cols.is_empty() {
+            self.inner.cell(col_idx)
+        } else {
+            self.inner.cell(self.cols[col_idx])
+        }
     }
 }
 

@@ -100,6 +100,7 @@ impl<'a, R> Aggregate<'a, R>
         let mut rows = Vec::new();
         // Do column aggregations.
         for row in inner {
+            
             max_row_len = std::cmp::max(max_row_len, row.len());
             for idx in 0..row.len() {
                 // Expand widths array if past the end of the header/footer.

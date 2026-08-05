@@ -205,6 +205,7 @@ impl<'a, R, T> Table<'a, R, T>
         where W: std::io::Write
     {
         renderer.write_header_row_start(out, row_idx)?;
+        
         for line_idx in 0..row.height {
             renderer.write_header_line_start(out, row_idx, line_idx)?;
             for col_idx in 0..row.len() {
