@@ -13,48 +13,85 @@ use table_gen_core::Renderer;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// MarkdownMultilineRenderer
+// MarkdownGridRenderer
 ////////////////////////////////////////////////////////////////////////////////
 /// A table renderer that renders tables in the pandoc-markdown 'simple' style.
 #[derive(Debug, Clone)]
-pub struct MarkdownMultilineRenderer {
+pub struct MarkdownGridRenderer {
+    /// The column widths. Used to render separators with the correct size.
     column_widths: Vec<usize>,
     headers_provided: bool,
     column_padding: u8,
     extra_width: u8,
 }
 
-impl Default for MarkdownMultilineRenderer {
+impl Default for MarkdownGridRenderer {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl MarkdownMultilineRenderer {
-    /// Constructs a new `MarkdownMultilineRenderer`.
+impl MarkdownGridRenderer {
+    /// Constructs a new `MarkdownGridRenderer`.
     pub const fn new() -> Self {
         Self {
             column_widths: Vec::new(),
             headers_provided: false,
             column_padding: 0,
-            extra_width: 2,
+            extra_width: 0,
         }
     }
 
-    /// Sets the column padding and returns the `MarkdownMultilineRenderer`.
+    /// Sets the column padding and returns the `MarkdownGridRenderer`.
     pub const fn with_column_padding(mut self, column_padding: u8) -> Self {
         self.column_padding = column_padding;
         self
     }
 
-    /// Sets the extra column width and returns the `MarkdownMultilineRenderer`.
+    /// Sets the extra column width and returns the `MarkdownGridRenderer`.
     pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
         self.extra_width = extra_width;
         self
     }
+
+    fn write_row_sep<W>(&self, out: &mut W, line: char)
+        -> std::io::Result<()>
+        where W: std::io::Write
+    {
+        self.write_column_sep(out, HorzAlign::Left, '+', line)?;
+        for (col, col_width) in self.column_widths.iter().copied().enumerate() {
+            for _ in 0..col_width { write!(out, "{}", line)?; }
+            for _ in 0..self.extra_width { write!(out, "{}", line)?; }
+            if col + 1 == self.column_widths.len() { break; }
+            self.write_column_sep(out, HorzAlign::Center, '+', line)?;
+        }
+        self.write_column_sep(out, HorzAlign::Right, '+', line)?;
+        Ok(())
+    }
+
+    fn write_column_sep<W>(
+        &self,
+        out: &mut W,
+        bias: HorzAlign,
+        center: char,
+        outer: char)
+        -> std::io::Result<()>
+        where W: std::io::Write
+    {
+        let pad = std::cmp::max(self.column_padding / 2, 2) / 2;
+
+        if bias != HorzAlign::Left {
+            for _ in 0..pad { write!(out, "{}", outer)?; }
+        }
+        write!(out, "{}", center)?;
+        if bias != HorzAlign::Right {
+            for _ in 0..pad { write!(out, "{}", outer)?; }
+        }
+        Ok(())
+    }
 }
 
-impl Renderer for MarkdownMultilineRenderer {
+impl Renderer for MarkdownGridRenderer {
     fn features(&self) -> Features {
         Features::empty()
     }
@@ -75,13 +112,7 @@ impl Renderer for MarkdownMultilineRenderer {
         where W: std::io::Write
     {
         if self.column_widths.is_empty() { return Ok(()) }
-        for (col, col_width) in self.column_widths.iter().copied().enumerate() {
-            for _ in 0..col_width { write!(out, "-")?; }
-            for _ in 0..self.extra_width { write!(out, "-")?; }
-            if col + 1 == self.column_widths.len() { break; }
-            for _ in 0..self.column_padding { write!(out, "-")?; }
-            write!(out, "-")?;
-        }
+        self.write_row_sep(out, '-')?;
         writeln!(out)
     }
 
@@ -111,7 +142,16 @@ impl Renderer for MarkdownMultilineRenderer {
         Ok(())
     }
 
-    fn write_header_cell_line_end<W>(
+    fn write_data_start<W>(&mut self, out: &mut W) -> std::io::Result<()>
+        where W: std::io::Write
+    {
+        if self.column_widths.is_empty() { return Ok(()) }
+        let c = if self.headers_provided { '=' } else {'-' };
+        self.write_row_sep(out, c)?;
+        writeln!(out)
+    }
+
+    fn write_data_cell_line_start<W>(
         &mut self,
         out: &mut W,
         _row: usize,
@@ -120,23 +160,10 @@ impl Renderer for MarkdownMultilineRenderer {
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        if col + 1 == self.column_widths.len() { return Ok(()); }
-        for _ in 0..self.column_padding { write!(out, " ")?; }
-        write!(out, " ")
-    }
-
-    fn write_data_start<W>(&mut self, out: &mut W) -> std::io::Result<()>
-        where W: std::io::Write
-    {
-        if self.column_widths.is_empty() { return Ok(()) }
-        for (col, col_width) in self.column_widths.iter().copied().enumerate() {
-            for _ in 0..col_width { write!(out, "-")?; }
-            for _ in 0..self.extra_width { write!(out, "-")?; }
-            if col + 1 == self.column_widths.len() { break; }
-            for _ in 0..self.column_padding { write!(out, " ")?; }
-            write!(out, " ")?;
+        if col == 0 {
+            self.write_column_sep(out, HorzAlign::Left, '|', ' ')?;
         }
-        writeln!(out)
+        Ok(())
     }
 
     fn write_data_cell_line_end<W>(
@@ -148,9 +175,11 @@ impl Renderer for MarkdownMultilineRenderer {
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        if col + 1 == self.column_widths.len() { return Ok(()); }
-        for _ in 0..self.column_padding { write!(out, " ")?; }
-        write!(out, " ")
+        if col + 1 == self.column_widths.len() {
+            self.write_column_sep(out, HorzAlign::Right, '|', ' ')
+        } else {
+            self.write_column_sep(out, HorzAlign::Center, '|', ' ')
+        }
     }
 
     fn write_data_row_start<W>(
@@ -160,7 +189,10 @@ impl Renderer for MarkdownMultilineRenderer {
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        if row != 0 { writeln!(out)?; }
+        if row != 0 {
+            self.write_row_sep(out, '-')?;
+            writeln!(out)?;
+        }
         Ok(())
     }
 
@@ -170,8 +202,7 @@ impl Renderer for MarkdownMultilineRenderer {
         if !self.headers_provided {
             self.write_data_start(out)
         } else {
-            self.write_header_start(out)?;
-            writeln!(out)
+            self.write_header_start(out)
         }
     }
 }
@@ -189,7 +220,7 @@ mod test {
     fn empty_table() {
         let data: Vec<(usize, )> = vec![];
 
-        let mut table = Table::new_builder(data, MarkdownMultilineRenderer::new())
+        let mut table = Table::new_builder(data, MarkdownGridRenderer::new())
             .finish();
 
         let mut out: Vec<u8> = Vec::new();
@@ -222,7 +253,7 @@ mod test {
                 .with_horz_align(HorzAlign::Center),
         ];
 
-        let mut table = Table::new_builder(data, MarkdownMultilineRenderer::new())
+        let mut table = Table::new_builder(data, MarkdownGridRenderer::new())
             .with_column_descs(&col_descs)
             .with_column_selection(&[0, 0, 0])
             .finish();
@@ -233,18 +264,17 @@ mod test {
         //println!("{}", out);
 
         assert_eq!(out, "\
-------------------------
-  Right Left     Center 
-------- ------- --------
-     12 12         12   
-
-    123 123       123   
-
-      1 1          1    
-
-  -8000 -8000    -8000  
-------------------------
-
++-------+-------+--------+
+| Right | Left  | Center |
++=======+=======+========+
+|    12 | 12    |   12   |
++-------+-------+--------+
+|   123 | 123   |  123   |
++-------+-------+--------+
+|     1 | 1     |   1    |
++-------+-------+--------+
+| -8000 | -8000 | -8000  |
++-------+-------+--------+
 ");
     }
 
@@ -266,7 +296,7 @@ mod test {
                 .with_horz_align(HorzAlign::Center),
         ];
 
-        let mut table = Table::new_builder(data, MarkdownMultilineRenderer::new())
+        let mut table = Table::new_builder(data, MarkdownGridRenderer::new())
             .with_column_descs(&col_descs)
             .with_column_selection(&[0, 0, 0])
             .finish();
@@ -277,15 +307,15 @@ mod test {
         //println!("{}", out);
 
         assert_eq!(out, "\
-------- ------- -------
-     12 12        12   
-
-    123 123       123  
-
-      1 1          1   
-
-  -8000 -8000    -8000 
-------- ------- -------
++-------+-------+-------+
+|    12 | 12    |  12   |
++-------+-------+-------+
+|   123 | 123   |  123  |
++-------+-------+-------+
+|     1 | 1     |   1   |
++-------+-------+-------+
+| -8000 | -8000 | -8000 |
++-------+-------+-------+
 ");
     }
 
@@ -313,7 +343,7 @@ mod test {
                 .with_horz_align(HorzAlign::Left),
         ];
 
-        let mut table = Table::new_builder(data, MarkdownMultilineRenderer::new())
+        let mut table = Table::new_builder(data, MarkdownGridRenderer::new())
             .with_column_descs(&col_descs)
             .finish();
 
@@ -323,18 +353,17 @@ mod test {
         //println!("{}", out);
 
         assert_eq!(out, "\
----------------------------------------------------------
- Centered  Left          Right Left                      
-  Header   Aligned     Aligned Aligned                   
----------- --------- --------- --------------------------
-  First    row              12 Example of a row that     
-                               spans multiple lines.     
-
-  Second   row               5 Here's another one. Note  
-                               the blank line between    
-                               rows                      
----------------------------------------------------------
-
++----------+---------+---------+--------------------------+
+| Centered | Left    |   Right | Left                     |
+|  Header  | Aligned | Aligned | Aligned                  |
++==========+=========+=========+==========================+
+|  First   | row     |      12 | Example of a row that    |
+|          |         |         | spans multiple lines.    |
++----------+---------+---------+--------------------------+
+|  Second  | row     |       5 | Here's another one. Note |
+|          |         |         | the blank line between   |
+|          |         |         | rows                     |
++----------+---------+---------+--------------------------+
 ");
     }
 }

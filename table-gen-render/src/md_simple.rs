@@ -19,7 +19,6 @@ use table_gen_core::Renderer;
 #[derive(Debug, Clone)]
 pub struct MarkdownSimpleRenderer {
     column_widths: Vec<usize>,
-    last_column: usize,
     headers_provided: bool,
     column_padding: u8,
     extra_width: u8,
@@ -36,7 +35,6 @@ impl MarkdownSimpleRenderer {
     pub const fn new() -> Self {
         Self {
             column_widths: Vec::new(),
-            last_column: 0,
             headers_provided: false,
             column_padding: 0,
             extra_width: 2,
@@ -68,7 +66,6 @@ impl Renderer for MarkdownSimpleRenderer {
         column_widths: &[usize])
     {
         self.column_widths = column_widths.iter().copied().collect();
-        self.last_column = column_widths.len().saturating_sub(1);
         self.headers_provided = column_descs.iter()
             .any(|column_desc| !column_desc.header.is_empty());
     }
@@ -108,7 +105,7 @@ impl Renderer for MarkdownSimpleRenderer {
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        if col == self.last_column { return Ok(()); }
+        if col + 1 == self.column_widths.len() { return Ok(()); }
         for _ in 0..self.column_padding { write!(out, " ")?; }
         write!(out, " ")
     }
@@ -120,7 +117,7 @@ impl Renderer for MarkdownSimpleRenderer {
         for (col, col_width) in self.column_widths.iter().copied().enumerate() {
             for _ in 0..col_width { write!(out, "-")?; }
             for _ in 0..self.extra_width { write!(out, "-")?; }
-            if col == self.last_column { break; }
+            if col + 1 == self.column_widths.len() { break; }
             for _ in 0..self.column_padding { write!(out, " ")?; }
             write!(out, " ")?;
         }
@@ -136,7 +133,7 @@ impl Renderer for MarkdownSimpleRenderer {
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        if col == self.last_column { return Ok(()); }
+        if col + 1 == self.column_widths.len() { return Ok(()); }
         for _ in 0..self.column_padding { write!(out, " ")?; }
         write!(out, " ")
     }
@@ -157,11 +154,8 @@ impl Renderer for MarkdownSimpleRenderer {
 mod test {
     use super::*;
     use table_gen_core::ColumnDesc;
-    use table_gen_core::DisplayFmt;
     use table_gen_core::HorzAlign;
-    use table_gen_core::Sign;
     use table_gen_core::Table;
-    use table_gen_core::VertAlign;
 
     #[test]
     fn empty_table() {
