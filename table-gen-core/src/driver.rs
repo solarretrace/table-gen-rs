@@ -160,7 +160,7 @@ impl<'a, R, T> Table<'a, R, T>
         let col_widths = self.inner.col_widths();
         let rows = self.inner.rows();
 
-        self.renderer.init(rows.len(), &col_widths);
+        self.renderer.init(col_descs, rows.len(), &col_widths);
 
         self.renderer.write_table_start(out)?;
         // Write the header.

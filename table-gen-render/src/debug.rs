@@ -20,7 +20,7 @@ pub struct DebugRenderer;
 
 impl Renderer for DebugRenderer {
     fn features(&self) -> Features {
-        Features::LINES_SUPPORTED
+        Features::MULTILINE
     }
 
     // Data writing hooks
@@ -427,7 +427,7 @@ mod test {
     use table_gen_core::Sign;
 
     #[test]
-    fn table_empty() {
+    fn empty_table() {
         let data: Vec<[usize; 0]> = vec![];
 
         let mut table = Table::new_builder(data, DebugRenderer)
@@ -447,7 +447,7 @@ write_table_end()
     }
 
     #[test]
-    fn table_empty_header_footer() {
+    fn empty_table_header_footer() {
         let data: Vec<[usize; 2]> = vec![];
 
         let specs = vec![

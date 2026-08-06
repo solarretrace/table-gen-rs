@@ -7,8 +7,10 @@
 
 // Internal modules.
 mod debug;
+mod md_simple;
 mod minimal;
 
 // Exports.
 pub use debug::*;
+pub use md_simple::*;
 pub use minimal::*;

@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Workspace library imports.
+use table_gen_core::ColumnDesc;
 use table_gen_core::Features;
 use table_gen_core::Renderer;
 
@@ -16,24 +17,29 @@ use table_gen_core::Renderer;
 /// A table renderer that renders tables with minimal decoration.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct MinimalRenderer {
-    col_final: usize,
+    last_column: usize,
 }
 
 impl MinimalRenderer {
     pub fn new() -> Self {
         Self {
-            col_final: 0,
+            last_column: 0,
         }
     }
 }
 
 impl Renderer for MinimalRenderer {
     fn features(&self) -> Features {
-        Features::LINES_SUPPORTED
+        Features::MULTILINE
     }
 
-    fn init(&mut self, _row_count: usize, col_widths: &[usize]) {
-        self.col_final = col_widths.len().saturating_sub(1);
+    fn init(
+        &mut self,
+        _column_descs: &[ColumnDesc<'_>],
+        _row_count: usize,
+        column_widths: &[usize])
+    {
+        self.last_column = column_widths.len().saturating_sub(1);
     }
 
     fn write_data_cell_line_end<W>(
@@ -45,7 +51,7 @@ impl Renderer for MinimalRenderer {
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        if col == self.col_final { return Ok(()); }
+        if col == self.last_column { return Ok(()); }
         write!(out, " ")
     }
 }
@@ -63,7 +69,7 @@ mod test {
     use table_gen_core::VertAlign;
 
     #[test]
-    fn table_empty() {
+    fn empty_table() {
         let data: Vec<[usize; 0]> = vec![];
 
         let mut table = Table::new_builder(data, MinimalRenderer::new())
@@ -74,7 +80,7 @@ mod test {
         let out = String::from_utf8(out).unwrap();
         //println!("{}", out);
 
-        assert_eq!("", out);
+        assert_eq!(out, "");
     }
 
 

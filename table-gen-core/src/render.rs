@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Internal library imports.
+use crate::ColumnDesc;
 use crate::HorzAlign;
 
 // External library imports.
@@ -19,8 +20,8 @@ bitflags! {
     /// Renderer feature flags.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct Features: u8 {
-        /// Indicates that line breaking is supported.
-        const LINES_SUPPORTED   = 0b_0000_0001;
+        /// Indicates that multi-line cells are supported.
+        const MULTILINE = 0b_0000_0001;
     }
 }
 
@@ -34,7 +35,12 @@ pub trait Renderer {
     fn features(&self) -> Features;
 
     /// Initializes the renderer. Will be called before any rendering begins.
-    fn init(&mut self, _row_count: usize, _col_widths: &[usize]) {}
+    fn init(
+        &mut self,
+        _column_descs: &[ColumnDesc<'_>],
+        _row_count: usize,
+        _column_widths: &[usize])
+    {}
 
     // Data writing hooks
     ////////////////////////////////////////////////////////////////////////////
@@ -73,11 +79,11 @@ pub trait Renderer {
         line: usize,
         text: &str,
         width: usize,
-        align: HorzAlign)
+        horz_align: HorzAlign)
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        self.write_data_cell_line(out, row, col, line, text, width, align)
+        self.write_data_cell_line(out, row, col, line, text, width, horz_align)
     }
 
     /// Hook for writing single cell's line in a footer row.
@@ -89,11 +95,11 @@ pub trait Renderer {
         line: usize,
         text: &str,
         width: usize,
-        align: HorzAlign)
+        horz_align: HorzAlign)
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        self.write_data_cell_line(out, row, col, line, text, width, align)
+        self.write_data_cell_line(out, row, col, line, text, width, horz_align)
     }
 
     // Section hooks
@@ -371,14 +377,14 @@ pub trait Renderer {
     /// Hook for writing at the start of a cell line.
     fn write_header_cell_line_start<W>(
         &mut self,
-        _out: &mut W,
-        _row: usize,
-        _col: usize,
-        _line: usize)
+        out: &mut W,
+        row: usize,
+        col: usize,
+        line: usize)
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        Ok(())
+        self.write_data_cell_line_start(out, row, col, line)
     }
 
     /// Hook for writing at the end of a cell line.
@@ -423,14 +429,14 @@ pub trait Renderer {
     /// Hook for writing at the start of a cell line.
     fn write_footer_cell_line_start<W>(
         &mut self,
-        _out: &mut W,
-        _row: usize,
-        _col: usize,
-        _line: usize)
+        out: &mut W,
+        row: usize,
+        col: usize,
+        line: usize)
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        Ok(())
+        self.write_data_cell_line_start(out, row, col, line)
     }
 
     /// Hook for writing at the end of a cell line.
