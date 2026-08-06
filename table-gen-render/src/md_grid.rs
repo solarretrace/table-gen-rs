@@ -15,13 +15,16 @@ use table_gen_core::Renderer;
 ////////////////////////////////////////////////////////////////////////////////
 // MarkdownGridRenderer
 ////////////////////////////////////////////////////////////////////////////////
-/// A table renderer that renders tables in the pandoc-markdown 'simple' style.
+/// A table renderer that renders tables in the pandoc-markdown 'grid' style.
 #[derive(Debug, Clone)]
 pub struct MarkdownGridRenderer {
     /// The column widths. Used to render separators with the correct size.
     column_widths: Vec<usize>,
+    /// Indicates that headers were provided for rendering.
     headers_provided: bool,
+    /// The amount of space to allocate between columns.
     column_padding: u8,
+    /// The amount of extra space to allocate within columns.
     extra_width: u8,
 }
 
@@ -54,6 +57,7 @@ impl MarkdownGridRenderer {
         self
     }
 
+    /// Renders a row seperating line.
     fn write_row_sep<W>(&self, out: &mut W, line: char)
         -> std::io::Result<()>
         where W: std::io::Write
@@ -69,6 +73,7 @@ impl MarkdownGridRenderer {
         Ok(())
     }
 
+    /// Renders a column separator.
     fn write_column_sep<W>(
         &self,
         out: &mut W,

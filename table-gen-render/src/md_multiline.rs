@@ -15,12 +15,17 @@ use table_gen_core::Renderer;
 ////////////////////////////////////////////////////////////////////////////////
 // MarkdownMultilineRenderer
 ////////////////////////////////////////////////////////////////////////////////
-/// A table renderer that renders tables in the pandoc-markdown 'simple' style.
+/// A table renderer that renders tables in the pandoc-markdown 'multiline'
+/// style.
 #[derive(Debug, Clone)]
 pub struct MarkdownMultilineRenderer {
+    /// The column widths. Used to render separators with the correct size.
     column_widths: Vec<usize>,
+    /// Indicates that headers were provided for rendering.
     headers_provided: bool,
+    /// The amount of space to allocate between columns.
     column_padding: u8,
+    /// The amount of extra space to allocate within columns.
     extra_width: u8,
 }
 

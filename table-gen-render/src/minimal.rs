@@ -17,6 +17,7 @@ use table_gen_core::Renderer;
 /// A table renderer that renders tables with minimal decoration.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct MinimalRenderer {
+    /// The index of the last column. 
     last_column: usize,
 }
 
