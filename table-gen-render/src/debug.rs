@@ -20,7 +20,7 @@ pub struct DebugRenderer;
 
 impl Renderer for DebugRenderer {
     fn features(&self) -> Features {
-        Features::MULTILINE
+        Features::all()
     }
 
     // Data writing hooks

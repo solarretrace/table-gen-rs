@@ -12,6 +12,7 @@ use crate::CollateRow;
 use crate::ColumnDesc;
 use crate::ColumnOrd;
 use crate::Row;
+use crate::Features;
 
 // Standard library imports.
 use std::cell::OnceCell;
@@ -87,7 +88,10 @@ impl<'a, R, S> Iterator for Format<'a, S>
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
             .next()
-            .map(|r| FormatRow::new(r, self.inner.column_descs()))
+            .map(|collate_row| FormatRow::new(
+                collate_row,
+                self.inner.column_descs(),
+                self.inner.features().contains(Features::MULTILINE)))
     }
 }
 
@@ -104,6 +108,8 @@ pub (in crate) struct FormatRow<'a, R> {
     col_descs: &'a [ColumnDesc<'a>],
     /// The cached cell texts.
     cache: Vec<OnceCell<Box<str>>>,
+    /// Multiline output supported.
+    multiline: bool,
 }
 
 impl<R> Row for FormatRow<'_, R>
@@ -125,7 +131,8 @@ impl<'a, R> FormatRow<'a, R>
     /// `ColumnDesc`s.
     pub (in crate) fn new(
         inner: CollateRow<'a, R>,
-        col_descs: &'a [ColumnDesc<'a>])
+        col_descs: &'a [ColumnDesc<'a>],
+        multiline: bool)
         -> Self
     {
         let cache = vec![OnceCell::new(); inner.len()];
@@ -133,17 +140,20 @@ impl<'a, R> FormatRow<'a, R>
             inner,
             col_descs,
             cache,
+            multiline,
         }
     }
 
     /// Returns the text of the cell at the given column index.
     pub (in crate) fn text(&self, col_idx: usize) -> &str {
         self.cache[col_idx].get_or_init(|| match self.inner.cell(col_idx) {
-            Some(cell) => self.col_descs
-                .get(col_idx)
-                .map(|spec| spec.display_fmt)
-                .unwrap_or(DisplayFmt::default())
-                .apply(cell),
+            Some(cell) => {
+                self.col_descs
+                    .get(col_idx)
+                    .map(|spec| spec.display_fmt)
+                    .unwrap_or(DisplayFmt::default())
+                    .apply(cell, self.multiline)
+            },
             None => String::new().into_boxed_str(),
         })
     }
@@ -216,11 +226,11 @@ impl DisplayFmt {
     
     /// Applies the `DisplayFmt` to the given cell, rendering it as a
     /// `Box<str>`.
-    pub fn apply<C>(&self, cell: C) -> Box<str>
+    pub fn apply<C>(&self, cell: C, multiline: bool) -> Box<str>
         where C: Display
     {
         use Sign::*;
-        match (self.precision, self.sign) {
+        let mut res = match (self.precision, self.sign) {
             (Some(p), Some(Plus))  => format!("{:+.p$}", cell, p=p),
             (Some(p), Some(Minus)) => format!("{:-.p$}", cell, p=p),
             (Some(p), Some(Zero))  => format!("{:0.p$}", cell, p=p),
@@ -229,8 +239,9 @@ impl DisplayFmt {
             (None,    Some(Minus)) => format!("{:-}", cell),
             (None,    Some(Zero))  => format!("{:0}", cell),
             (None,    None)        => format!("{}", cell),
-        }
-        .into_boxed_str()
+        };
+        if !multiline { res = res.replace("\n", " "); }
+        res.into_boxed_str()
     }
 }
 

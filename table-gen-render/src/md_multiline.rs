@@ -61,7 +61,7 @@ impl MarkdownMultilineRenderer {
 
 impl Renderer for MarkdownMultilineRenderer {
     fn features(&self) -> Features {
-        Features::empty()
+        Features::MULTILINE
     }
 
     fn init(

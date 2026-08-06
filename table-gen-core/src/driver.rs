@@ -44,7 +44,8 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
         where I: IntoIterator<Item=R, IntoIter=S>
     {
         Self {
-            inner: Collate::new(source.into_iter()),
+            inner: Collate::new(source.into_iter())
+                .with_features(renderer.features()),
             renderer,
             default_col_desc: ColumnDesc::new(),
         }

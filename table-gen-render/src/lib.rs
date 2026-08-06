@@ -9,6 +9,7 @@
 mod debug;
 mod md_grid;
 mod md_multiline;
+mod md_pipe;
 mod md_simple;
 mod minimal;
 
@@ -16,5 +17,6 @@ mod minimal;
 pub use debug::*;
 pub use md_grid::*;
 pub use md_multiline::*;
+pub use md_pipe::*;
 pub use md_simple::*;
 pub use minimal::*;

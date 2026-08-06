@@ -9,6 +9,7 @@
 use crate::Cell;
 use crate::ColumnOrd;
 use crate::DisplayFmt;
+use crate::Features;
 use crate::Row;
 
 // Standard library imports.
@@ -33,7 +34,8 @@ pub (in crate) struct Collate<'a, S> {
     col_descs: &'a [ColumnDesc<'a>],
     /// The sort parameters for columns, in order of sort priority.
     col_order: &'a [ColumnOrd],
-
+    /// The supported rendering features.
+    features: Features,
 }
 
 impl<R, S, I> From<I> for Collate<'_, S>
@@ -60,11 +62,19 @@ impl<'a, R, S> Collate<'a, S>
             row_select: (Bound::Included(0), Bound::Unbounded),
             col_descs: &[],
             col_order: &[],
+            features: Features::empty(),
         }
     }
 
-    /// Returns the `Collate` with the given columns selected for output in the
-    /// given order.
+    /// Sets the supported features and returns the `Collate`.
+    pub (in crate) fn with_features(mut self, features: Features)
+        -> Self
+    {
+        self.features = features;
+        self
+    }
+
+    /// Sets the column selection and returns the `Collate`.
     pub (in crate) fn with_column_selection(mut self, col_select: &'a [usize])
         -> Self
     {
@@ -72,8 +82,7 @@ impl<'a, R, S> Collate<'a, S>
         self
     }
 
-    /// Prepares the table builder such that only the given rows will be
-    /// rendered.
+    /// Sets the row selection and returns the `Collate`.
     pub (in crate) fn with_row_selection<B>(mut self, row_select: B) -> Self 
         where B: RangeBounds<usize>
     {
@@ -83,7 +92,7 @@ impl<'a, R, S> Collate<'a, S>
         self
     }
 
-    /// Returns the `Collate` with the given column output specifications.
+    /// Sets the column descriptors and returns the `Collate`.
     pub (in crate) fn with_column_descs(
         mut self,
         col_descs: &'a [ColumnDesc<'a>])
@@ -93,12 +102,17 @@ impl<'a, R, S> Collate<'a, S>
         self
     }
 
-    /// Returns the `Collate` with the given column orderings.
+    /// Sets the column order and returns the `Collate`.
     pub (in crate) fn with_column_order(mut self, col_order: &'a [ColumnOrd])
         -> Self
     {
         self.col_order = col_order;
         self
+    }
+
+    /// Returns the supported features for the renderer.
+    pub (in crate) fn features(&self) -> Features {
+        self.features
     }
 
     /// The row selection bounds.

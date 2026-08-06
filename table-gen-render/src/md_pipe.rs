@@ -13,13 +13,15 @@ use table_gen_core::Renderer;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// MarkdownGridRenderer
+// MarkdownPipeRenderer
 ////////////////////////////////////////////////////////////////////////////////
 /// A table renderer that renders tables in the pandoc-markdown 'grid' style.
 #[derive(Debug, Clone)]
-pub struct MarkdownGridRenderer {
+pub struct MarkdownPipeRenderer {
     /// The column widths. Used to render separators with the correct size.
     column_widths: Vec<usize>,
+    /// The column horizontal aligments. Used to render alignment symbols.
+    column_horz_aligns: Vec<HorzAlign>,
     /// Indicates that headers were provided for rendering.
     headers_provided: bool,
     /// The amount of space to allocate between columns.
@@ -28,48 +30,49 @@ pub struct MarkdownGridRenderer {
     extra_width: u8,
 }
 
-impl Default for MarkdownGridRenderer {
+impl Default for MarkdownPipeRenderer {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl MarkdownGridRenderer {
-    /// Constructs a new `MarkdownGridRenderer`.
+impl MarkdownPipeRenderer {
+    /// Constructs a new `MarkdownPipeRenderer`.
     pub const fn new() -> Self {
         Self {
             column_widths: Vec::new(),
+            column_horz_aligns: Vec::new(),
             headers_provided: false,
             column_padding: 0,
             extra_width: 0,
         }
     }
 
-    /// Sets the column padding and returns the `MarkdownGridRenderer`.
+    /// Sets the column padding and returns the `MarkdownPipeRenderer`.
     pub const fn with_column_padding(mut self, column_padding: u8) -> Self {
         self.column_padding = column_padding;
         self
     }
 
-    /// Sets the extra column width and returns the `MarkdownGridRenderer`.
+    /// Sets the extra column width and returns the `MarkdownPipeRenderer`.
     pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
         self.extra_width = extra_width;
         self
     }
 
-    /// Renders a row seperating line.
-    fn write_row_sep<W>(&self, out: &mut W, line: &str)
+    /// Renders an empty row.
+    fn write_empty_row<W>(&self, out: &mut W)
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        self.write_column_sep(out, HorzAlign::Left, "+", line)?;
+        self.write_column_sep(out, HorzAlign::Left, "|", " ", " ", " ")?;
         for (col, col_width) in self.column_widths.iter().copied().enumerate() {
-            for _ in 0..col_width { write!(out, "{}", line)?; }
-            for _ in 0..self.extra_width { write!(out, "{}", line)?; }
+            for _ in 0..col_width { write!(out, " ")?; }
+            for _ in 0..self.extra_width { write!(out, " ")?; }
             if col + 1 == self.column_widths.len() { break; }
-            self.write_column_sep(out, HorzAlign::Center, "+", line)?;
+            self.write_column_sep(out, HorzAlign::Center, "|", " ", " ", " ")?;
         }
-        self.write_column_sep(out, HorzAlign::Right, "+", line)?;
+        self.write_column_sep(out, HorzAlign::Right, "|", " ", " ", " ")?;
         Ok(())
     }
 
@@ -79,26 +82,34 @@ impl MarkdownGridRenderer {
         out: &mut W,
         bias: HorzAlign,
         center: &str,
-        outer: &str)
+        outer: &str,
+        inner_left: &str,
+        inner_right: &str)
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        let pad = std::cmp::max(self.column_padding / 2, 2) / 2;
+        debug_assert!(inner_left.len() < 2);
+        debug_assert_eq!(inner_left.len(), inner_right.len());
+        let inner_pad = inner_left.len() as u8;
+        let mut pad = std::cmp::max(self.column_padding / 2, inner_pad * 2) / 2;
+        pad -= inner_pad;
 
         if bias != HorzAlign::Left {
             for _ in 0..pad { write!(out, "{}", outer)?; }
+            write!(out, "{}", inner_left)?;
         }
         write!(out, "{}", center)?;
         if bias != HorzAlign::Right {
+            write!(out, "{}", inner_right)?;
             for _ in 0..pad { write!(out, "{}", outer)?; }
         }
         Ok(())
     }
 }
 
-impl Renderer for MarkdownGridRenderer {
+impl Renderer for MarkdownPipeRenderer {
     fn features(&self) -> Features {
-        Features::MULTILINE
+        Features::empty()
     }
 
     fn init(
@@ -108,17 +119,12 @@ impl Renderer for MarkdownGridRenderer {
         column_widths: &[usize])
     {
         self.column_widths = column_widths.iter().copied().collect();
-        self.headers_provided = column_descs.iter()
-            .any(|column_desc| !column_desc.header.is_empty());
-    }
-
-    fn write_header_start<W>(&mut self, out: &mut W)
-        -> std::io::Result<()>
-        where W: std::io::Write
-    {
-        if self.column_widths.is_empty() { return Ok(()) }
-        self.write_row_sep(out, "-")?;
-        writeln!(out)
+        self.column_horz_aligns = Vec::with_capacity(column_descs.len());
+        self.headers_provided = false;
+        for column_desc in column_descs.iter() {
+            self.column_horz_aligns.push(column_desc.horz_align);
+            self.headers_provided |= !column_desc.header.is_empty();
+        }
     }
 
     fn write_data_cell_line<W>(
@@ -151,8 +157,33 @@ impl Renderer for MarkdownGridRenderer {
         where W: std::io::Write
     {
         if self.column_widths.is_empty() { return Ok(()) }
-        let c = if self.headers_provided { "=" } else {"-" };
-        self.write_row_sep(out, c)?;
+        if !self.headers_provided {
+            self.write_empty_row(out)?;
+            writeln!(out)?;
+        }
+        use HorzAlign::*;
+        for (col, col_width) in self.column_widths.iter().copied().enumerate() {
+            let cur_align = self.column_horz_aligns.get(col).copied();
+            if col == 0 {
+                let r = if matches!(cur_align, Some(Right|Center)) { ":" } else { "-" };
+                self.write_column_sep(out, Left, "|", "-", " ", r)?;
+            }
+            for _ in 0..col_width { write!(out, "-")?; }
+            for _ in 0..self.extra_width { write!(out, "-")?; }
+
+            let (l, r) = match (cur_align, self.column_horz_aligns.get(col + 1))
+            {
+                (Some(Right|Center), Some(Left|Center)) => (":", ":"),
+                (Some(Right|Center), _)                 => (":", "-"),
+                (_,                  Some(Left|Center)) => ("-", ":"),
+                _                                       => ("-", "-"),
+            };
+            if col + 1 == self.column_widths.len() { 
+                self.write_column_sep(out, Right, "|", "-", l, " ")?;
+                break;
+            }
+            self.write_column_sep(out, Center, "|", "-", l, r)?;
+        }
         writeln!(out)
     }
 
@@ -166,7 +197,7 @@ impl Renderer for MarkdownGridRenderer {
         where W: std::io::Write
     {
         if col == 0 {
-            self.write_column_sep(out, HorzAlign::Left, "|", " ")?;
+            self.write_column_sep(out, HorzAlign::Left, "|", " ", " ", " ")?;
         }
         Ok(())
     }
@@ -181,33 +212,9 @@ impl Renderer for MarkdownGridRenderer {
         where W: std::io::Write
     {
         if col + 1 == self.column_widths.len() {
-            self.write_column_sep(out, HorzAlign::Right, "|", " ")
+            self.write_column_sep(out, HorzAlign::Right, "|", " ", " ", " ")
         } else {
-            self.write_column_sep(out, HorzAlign::Center, "|", " ")
-        }
-    }
-
-    fn write_data_row_start<W>(
-        &mut self,
-        out: &mut W,
-        row: usize)
-        -> std::io::Result<()>
-        where W: std::io::Write
-    {
-        if row != 0 {
-            self.write_row_sep(out, "-")?;
-            writeln!(out)?;
-        }
-        Ok(())
-    }
-
-    fn write_data_end<W>(&mut self, out: &mut W) -> std::io::Result<()>
-        where W: std::io::Write
-    {
-        if !self.headers_provided {
-            self.write_data_start(out)
-        } else {
-            self.write_header_start(out)
+            self.write_column_sep(out, HorzAlign::Center, "|", " ", " ", " ")
         }
     }
 }
@@ -225,7 +232,7 @@ mod test {
     fn empty_table() {
         let data: Vec<(usize, )> = vec![];
 
-        let mut table = Table::new_builder(data, MarkdownGridRenderer::new())
+        let mut table = Table::new_builder(data, MarkdownPipeRenderer::new())
             .finish();
 
         let mut out: Vec<u8> = Vec::new();
@@ -258,7 +265,7 @@ mod test {
                 .with_horz_align(HorzAlign::Center),
         ];
 
-        let mut table = Table::new_builder(data, MarkdownGridRenderer::new())
+        let mut table = Table::new_builder(data, MarkdownPipeRenderer::new())
             .with_column_descs(&col_descs)
             .with_column_selection(&[0, 0, 0])
             .finish();
@@ -269,17 +276,12 @@ mod test {
         //println!("{}", out);
 
         assert_eq!(out, "\
-+-------+-------+--------+
 | Right | Left  | Center |
-+=======+=======+========+
+|:-----:|:------|:------:|
 |    12 | 12    |   12   |
-+-------+-------+--------+
 |   123 | 123   |  123   |
-+-------+-------+--------+
 |     1 | 1     |   1    |
-+-------+-------+--------+
 | -8000 | -8000 | -8000  |
-+-------+-------+--------+
 ");
     }
 
@@ -301,7 +303,7 @@ mod test {
                 .with_horz_align(HorzAlign::Center),
         ];
 
-        let mut table = Table::new_builder(data, MarkdownGridRenderer::new())
+        let mut table = Table::new_builder(data, MarkdownPipeRenderer::new())
             .with_column_descs(&col_descs)
             .with_column_selection(&[0, 0, 0])
             .finish();
@@ -312,15 +314,12 @@ mod test {
         //println!("{}", out);
 
         assert_eq!(out, "\
-+-------+-------+-------+
+|       |       |       |
+|:-----:|:------|:-----:|
 |    12 | 12    |  12   |
-+-------+-------+-------+
 |   123 | 123   |  123  |
-+-------+-------+-------+
 |     1 | 1     |   1   |
-+-------+-------+-------+
 | -8000 | -8000 | -8000 |
-+-------+-------+-------+
 ");
     }
 
@@ -348,27 +347,21 @@ mod test {
                 .with_horz_align(HorzAlign::Left),
         ];
 
-        let mut table = Table::new_builder(data, MarkdownGridRenderer::new())
+        let mut table = Table::new_builder(data, MarkdownPipeRenderer::new())
             .with_column_descs(&col_descs)
             .finish();
 
         let mut out: Vec<u8> = Vec::new();
         assert!(table.render(&mut out).is_ok());
         let out = String::from_utf8(out).unwrap();
-        //println!("{}", out);
+        println!("{}", out);
 
         assert_eq!(out, "\
-+----------+---------+---------+--------------------------+
-| Centered | Left    |   Right | Left                     |
-|  Header  | Aligned | Aligned | Aligned                  |
-+==========+=========+=========+==========================+
-|  First   | row     |      12 | Example of a row that    |
-|          |         |         | spans multiple lines.    |
-+----------+---------+---------+--------------------------+
-|  Second  | row     |       5 | Here's another one. Note |
-|          |         |         | the blank line between   |
-|          |         |         | rows                     |
-+----------+---------+---------+--------------------------+
+| Centered | Left    |   Right | Left                                                 |
+|  Header  | Aligned | Aligned | Aligned                                              |
+|:--------:|:--------|--------:|:-----------------------------------------------------|
+|  First   | row     |      12 | Example of a row that spans multiple lines.          |
+|  Second  | row     |       5 | Here's another one. Note the blank line between rows |
 ");
     }
 }
