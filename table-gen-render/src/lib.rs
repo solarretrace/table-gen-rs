@@ -7,10 +7,12 @@
 
 // Internal modules.
 mod debug;
+mod md_multiline;
 mod md_simple;
 mod minimal;
 
 // Exports.
 pub use debug::*;
+pub use md_multiline::*;
 pub use md_simple::*;
 pub use minimal::*;
