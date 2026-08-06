@@ -58,18 +58,18 @@ impl MarkdownGridRenderer {
     }
 
     /// Renders a row seperating line.
-    fn write_row_sep<W>(&self, out: &mut W, line: char)
+    fn write_row_sep<W>(&self, out: &mut W, line: &str)
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        self.write_column_sep(out, HorzAlign::Left, '+', line)?;
+        self.write_column_sep(out, HorzAlign::Left, "+", line)?;
         for (col, col_width) in self.column_widths.iter().copied().enumerate() {
             for _ in 0..col_width { write!(out, "{}", line)?; }
             for _ in 0..self.extra_width { write!(out, "{}", line)?; }
             if col + 1 == self.column_widths.len() { break; }
-            self.write_column_sep(out, HorzAlign::Center, '+', line)?;
+            self.write_column_sep(out, HorzAlign::Center, "+", line)?;
         }
-        self.write_column_sep(out, HorzAlign::Right, '+', line)?;
+        self.write_column_sep(out, HorzAlign::Right, "+", line)?;
         Ok(())
     }
 
@@ -78,8 +78,8 @@ impl MarkdownGridRenderer {
         &self,
         out: &mut W,
         bias: HorzAlign,
-        center: char,
-        outer: char)
+        center: &str,
+        outer: &str)
         -> std::io::Result<()>
         where W: std::io::Write
     {
@@ -117,7 +117,7 @@ impl Renderer for MarkdownGridRenderer {
         where W: std::io::Write
     {
         if self.column_widths.is_empty() { return Ok(()) }
-        self.write_row_sep(out, '-')?;
+        self.write_row_sep(out, "-")?;
         writeln!(out)
     }
 
@@ -151,7 +151,7 @@ impl Renderer for MarkdownGridRenderer {
         where W: std::io::Write
     {
         if self.column_widths.is_empty() { return Ok(()) }
-        let c = if self.headers_provided { '=' } else {'-' };
+        let c = if self.headers_provided { "=" } else {"-" };
         self.write_row_sep(out, c)?;
         writeln!(out)
     }
@@ -166,7 +166,7 @@ impl Renderer for MarkdownGridRenderer {
         where W: std::io::Write
     {
         if col == 0 {
-            self.write_column_sep(out, HorzAlign::Left, '|', ' ')?;
+            self.write_column_sep(out, HorzAlign::Left, "|", " ")?;
         }
         Ok(())
     }
@@ -181,9 +181,9 @@ impl Renderer for MarkdownGridRenderer {
         where W: std::io::Write
     {
         if col + 1 == self.column_widths.len() {
-            self.write_column_sep(out, HorzAlign::Right, '|', ' ')
+            self.write_column_sep(out, HorzAlign::Right, "|", " ")
         } else {
-            self.write_column_sep(out, HorzAlign::Center, '|', ' ')
+            self.write_column_sep(out, HorzAlign::Center, "|", " ")
         }
     }
 
@@ -195,7 +195,7 @@ impl Renderer for MarkdownGridRenderer {
         where W: std::io::Write
     {
         if row != 0 {
-            self.write_row_sep(out, '-')?;
+            self.write_row_sep(out, "-")?;
             writeln!(out)?;
         }
         Ok(())
