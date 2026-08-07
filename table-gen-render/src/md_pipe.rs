@@ -2,7 +2,7 @@
 // This code is dual licenced using the MIT or Apache 2 license.
 // See licence-mit.md and licence-apache.md for details.
 ////////////////////////////////////////////////////////////////////////////////
-//! A table renderer that renders tables with minimal decoration.
+//! A table renderer that renders tables in the pandoc-markdown 'grid' style.
 ////////////////////////////////////////////////////////////////////////////////
 
 // Workspace library imports.
@@ -127,9 +127,8 @@ impl MarkdownPipeRenderer {
             {
                 for _ in 0..col_width { write!(out, " ")?; }
                 for _ in 0..self.extra_width { write!(out, " ")?; }
-            } else { 
-                break;
-            }
+            } 
+            if col + 1 == self.column_widths.len() { break; }
             self.write_column_sep(out, HorzAlign::Center, "|", " ", " ", " ")?;
         }
         self.write_column_sep(out, HorzAlign::Right, "|", " ", " ", " ")?;
@@ -178,7 +177,6 @@ impl Renderer for MarkdownPipeRenderer {
         _row_count: usize,
         column_widths: &[usize])
     {
-        println!("{:?}", self.flags);
         self.column_widths = column_widths.iter().copied().collect();
         self.column_horz_aligns = Vec::with_capacity(column_descs.len());
         let mut headers_provided = false;
@@ -187,7 +185,6 @@ impl Renderer for MarkdownPipeRenderer {
             headers_provided |= !column_desc.header.is_empty();
         }
         self.flags.set(Flags::HEADERS_PROVIDED, headers_provided);
-        println!("{:?}", self.flags);
     }
 
     fn write_data_cell_line<W>(
@@ -354,7 +351,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         assert!(table.render(&mut out).is_ok());
         let out = String::from_utf8(out).unwrap();
-        println!("{}", out);
+        //println!("{}", out);
 
         assert_eq!(out, "\
 | Right | Left  | Center |
@@ -478,7 +475,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         assert!(table.render(&mut out).is_ok());
         let out = String::from_utf8(out).unwrap();
-        println!("{}", out);
+        //println!("{}", out);
 
         assert_eq!(out, "\
 | Centered | Left    |   Right | Left                                                 |
@@ -604,7 +601,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         assert!(table.render(&mut out).is_ok());
         let out = String::from_utf8(out).unwrap();
-        println!("{}", out);
+        //println!("{}", out);
 
         assert_eq!(out, "\
 | Centered | Left    |   Right | Left |

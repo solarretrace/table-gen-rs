@@ -2,6 +2,7 @@
 
 # Implementation tasks:
 
++ Support extra width in aggregator.
 + Deduplicate sort indices
 + Deduplicate column references
 + Implement Transpose operation

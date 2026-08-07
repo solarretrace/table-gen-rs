@@ -2,7 +2,7 @@
 // This code is dual licenced using the MIT or Apache 2 license.
 // See licence-mit.md and licence-apache.md for details.
 ////////////////////////////////////////////////////////////////////////////////
-//! A table renderer that renders tables with minimal decoration.
+//! A table renderer that renders tables in the pandoc-markdown 'grid' style.
 ////////////////////////////////////////////////////////////////////////////////
 
 // Workspace library imports.
