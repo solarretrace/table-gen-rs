@@ -28,6 +28,10 @@ pub struct MarkdownPipeRenderer {
     column_padding: u8,
     /// The amount of extra space to allocate within columns.
     extra_width: u8,
+    /// Whether alignment markers should be omitted.
+    align_markers: bool,
+    /// Whether pipes should used in the header divider separator.
+    header_pipes: bool,
 }
 
 impl Default for MarkdownPipeRenderer {
@@ -45,6 +49,8 @@ impl MarkdownPipeRenderer {
             headers_provided: false,
             column_padding: 0,
             extra_width: 0,
+            align_markers: true,
+            header_pipes: true,
         }
     }
 
@@ -57,6 +63,22 @@ impl MarkdownPipeRenderer {
     /// Sets the extra column width and returns the `MarkdownPipeRenderer`.
     pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
         self.extra_width = extra_width;
+        self
+    }
+
+    /// Sets the alignment markers usage flag and returns the
+    /// `MarkdownPipeRenderer`.
+    pub const fn with_alignment_markers(mut self, align_markers: bool) -> Self {
+        self.align_markers = align_markers;
+        self
+    }
+
+    /// Sets the flag to use pipe symbols in the header divider separator and
+    /// returns the `MarkdownPipeRenderer`.
+    pub const fn with_header_div_pipes(mut self, header_pipes: bool)
+        -> Self
+    {
+        self.header_pipes = header_pipes;
         self
     }
 
@@ -161,28 +183,39 @@ impl Renderer for MarkdownPipeRenderer {
             self.write_empty_row(out)?;
             writeln!(out)?;
         }
+
+        // Define style markers.
+        let dm = "-"; // divider marker
+        let am = if self.align_markers { ":" } else { dm }; // align marker
+        let pm = "|"; // pipe marker
+        let im = if self.header_pipes { pm } else { "+" }; // internal div marker
+
         use HorzAlign::*;
         for (col, col_width) in self.column_widths.iter().copied().enumerate() {
             let cur_align = self.column_horz_aligns.get(col).copied();
             if col == 0 {
-                let r = if matches!(cur_align, Some(Right|Center)) { ":" } else { "-" };
-                self.write_column_sep(out, Left, "|", "-", " ", r)?;
+                let r = if matches!(cur_align, Some(Right|Center)) {
+                    am
+                } else {
+                    dm
+                };
+                self.write_column_sep(out, Left, pm, dm, " ", r)?;
             }
-            for _ in 0..col_width { write!(out, "-")?; }
-            for _ in 0..self.extra_width { write!(out, "-")?; }
+            for _ in 0..col_width { write!(out, "{}", dm)?; }
+            for _ in 0..self.extra_width { write!(out, "{}", dm)?; }
 
             let (l, r) = match (cur_align, self.column_horz_aligns.get(col + 1))
             {
-                (Some(Right|Center), Some(Left|Center)) => (":", ":"),
-                (Some(Right|Center), _)                 => (":", "-"),
-                (_,                  Some(Left|Center)) => ("-", ":"),
-                _                                       => ("-", "-"),
+                (Some(Right|Center), Some(Left|Center)) => (am, am),
+                (Some(Right|Center), _)                 => (am, dm),
+                (_,                  Some(Left|Center)) => (dm, am),
+                _                                       => (dm, dm),
             };
             if col + 1 == self.column_widths.len() { 
-                self.write_column_sep(out, Right, "|", "-", l, " ")?;
+                self.write_column_sep(out, Right, pm, dm, l, " ")?;
                 break;
             }
-            self.write_column_sep(out, Center, "|", "-", l, r)?;
+            self.write_column_sep(out, Center, im, dm, l, r)?;
         }
         writeln!(out)
     }
@@ -196,8 +229,9 @@ impl Renderer for MarkdownPipeRenderer {
         -> std::io::Result<()>
         where W: std::io::Write
     {
+        let pm = "|"; // pipe marker
         if col == 0 {
-            self.write_column_sep(out, HorzAlign::Left, "|", " ", " ", " ")?;
+            self.write_column_sep(out, HorzAlign::Left, pm, " ", " ", " ")?;
         }
         Ok(())
     }
@@ -211,10 +245,11 @@ impl Renderer for MarkdownPipeRenderer {
         -> std::io::Result<()>
         where W: std::io::Write
     {
+        let pm = "|"; // pipe marker
         if col + 1 == self.column_widths.len() {
-            self.write_column_sep(out, HorzAlign::Right, "|", " ", " ", " ")
+            self.write_column_sep(out, HorzAlign::Right, pm, " ", " ", " ")
         } else {
-            self.write_column_sep(out, HorzAlign::Center, "|", " ", " ", " ")
+            self.write_column_sep(out, HorzAlign::Center, pm, " ", " ", " ")
         }
     }
 }
@@ -242,7 +277,6 @@ mod test {
 
         assert_eq!(out, "");
     }
-
 
     #[test]
     fn simple_table() {
@@ -278,6 +312,49 @@ mod test {
         assert_eq!(out, "\
 | Right | Left  | Center |
 |:-----:|:------|:------:|
+|    12 | 12    |   12   |
+|   123 | 123   |  123   |
+|     1 | 1     |   1    |
+| -8000 | -8000 | -8000  |
+");
+    }
+
+    #[test]
+    fn simple_table_alt() {
+        let data: Vec<(i64, )> = vec![
+            (12,),
+            (123,),
+            (1,),
+            (-8000,),
+        ];
+
+        let col_descs = vec![
+            ColumnDesc::new()
+                .with_header("Right")
+                .with_horz_align(HorzAlign::Right),
+            ColumnDesc::new()
+                .with_header("Left")
+                .with_horz_align(HorzAlign::Left),
+            ColumnDesc::new()
+                .with_header("Center")
+                .with_horz_align(HorzAlign::Center),
+        ];
+
+        let mut table = Table::new_builder(data, MarkdownPipeRenderer::new()
+                .with_alignment_markers(false)
+                .with_header_div_pipes(false))
+            .with_column_descs(&col_descs)
+            .with_column_selection(&[0, 0, 0])
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        //println!("{}", out);
+
+        assert_eq!(out, "\
+| Right | Left  | Center |
+|-------+-------+--------|
 |    12 | 12    |   12   |
 |   123 | 123   |  123   |
 |     1 | 1     |   1    |

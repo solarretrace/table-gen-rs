@@ -2,6 +2,10 @@
 
 # Implementation tasks:
 
++ Unpad rightmost
++ Deduplicate sort indices
++ Deduplicate column references
++ Implement Transpose operation
 + Support independent header/footer alignment
 + Support custom line breaker
 + Support unicode string widths
@@ -14,12 +18,6 @@
 
 
 # Renderer tasks:
-+ Markdown renderer: simple tables
-+ Markdown renderer: simple tables w/ omitted headers
-+ Markdown renderer: mulitline tables
-+ Markdown renderer: grid tables
-+ Markdown renderer: pipe tables
-+ Markdown renderer: pipe tables w/ + 
 
 + Markdown renderer: more tests
 + Minimal renderer: more tests
