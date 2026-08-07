@@ -12,6 +12,34 @@ use table_gen_core::HorzAlign;
 use table_gen_core::Renderer;
 
 
+// External library imports.
+use bitflags::bitflags;
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Flags
+////////////////////////////////////////////////////////////////////////////////
+bitflags! {
+    /// Renderer feature flags.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    struct Flags: u8 {
+        /// Indicates that headers were provided for rendering.
+        const HEADERS_PROVIDED    = 0b_0000_0001;
+        /// Whether alignment markers should be omitted.
+        const ALIGN_MARKERS       = 0b_0000_0010;
+        /// Whether pipes should used in the header divider separator.
+        const HEADER_PIPES        = 0b_0000_0100;
+        /// Indicates that the last column should be padded on the right.
+        const PAD_TRAILING_COLUMN = 0b_0000_1000;
+
+        /// All default flags set.
+        const DEFAULT = Self::ALIGN_MARKERS.bits()
+            | Self::HEADER_PIPES.bits()
+            | Self::PAD_TRAILING_COLUMN.bits();
+    }
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // MarkdownPipeRenderer
 ////////////////////////////////////////////////////////////////////////////////
@@ -22,16 +50,12 @@ pub struct MarkdownPipeRenderer {
     column_widths: Vec<usize>,
     /// The column horizontal aligments. Used to render alignment symbols.
     column_horz_aligns: Vec<HorzAlign>,
-    /// Indicates that headers were provided for rendering.
-    headers_provided: bool,
     /// The amount of space to allocate between columns.
     column_padding: u8,
     /// The amount of extra space to allocate within columns.
     extra_width: u8,
-    /// Whether alignment markers should be omitted.
-    align_markers: bool,
-    /// Whether pipes should used in the header divider separator.
-    header_pipes: bool,
+    /// Style flags.
+    flags: Flags,
 }
 
 impl Default for MarkdownPipeRenderer {
@@ -46,11 +70,9 @@ impl MarkdownPipeRenderer {
         Self {
             column_widths: Vec::new(),
             column_horz_aligns: Vec::new(),
-            headers_provided: false,
             column_padding: 0,
             extra_width: 0,
-            align_markers: true,
-            header_pipes: true,
+            flags: Flags::DEFAULT,
         }
     }
 
@@ -68,17 +90,28 @@ impl MarkdownPipeRenderer {
 
     /// Sets the alignment markers usage flag and returns the
     /// `MarkdownPipeRenderer`.
-    pub const fn with_alignment_markers(mut self, align_markers: bool) -> Self {
-        self.align_markers = align_markers;
+    pub fn with_alignment_markers(mut self, align_markers: bool) -> Self {
+        self.flags.set(Flags::ALIGN_MARKERS, align_markers);
         self
     }
 
     /// Sets the flag to use pipe symbols in the header divider separator and
     /// returns the `MarkdownPipeRenderer`.
-    pub const fn with_header_div_pipes(mut self, header_pipes: bool)
+    pub fn with_header_div_pipes(mut self, header_pipes: bool)
         -> Self
     {
-        self.header_pipes = header_pipes;
+        self.flags.set(Flags::HEADER_PIPES, header_pipes);
+        self
+    }
+
+    /// Sets the flag for adding trailing column padding and returns the
+    /// `MarkdownSimpleRenderer`.
+    pub fn with_padded_trailing_column(
+        mut self,
+        pad_trailing_column: bool)
+        -> Self
+    {
+        self.flags.set(Flags::PAD_TRAILING_COLUMN, pad_trailing_column);
         self
     }
 
@@ -89,9 +122,14 @@ impl MarkdownPipeRenderer {
     {
         self.write_column_sep(out, HorzAlign::Left, "|", " ", " ", " ")?;
         for (col, col_width) in self.column_widths.iter().copied().enumerate() {
-            for _ in 0..col_width { write!(out, " ")?; }
-            for _ in 0..self.extra_width { write!(out, " ")?; }
-            if col + 1 == self.column_widths.len() { break; }
+            if self.flags.contains(Flags::PAD_TRAILING_COLUMN) 
+                || col + 1 < self.column_widths.len()
+            {
+                for _ in 0..col_width { write!(out, " ")?; }
+                for _ in 0..self.extra_width { write!(out, " ")?; }
+            } else { 
+                break;
+            }
             self.write_column_sep(out, HorzAlign::Center, "|", " ", " ", " ")?;
         }
         self.write_column_sep(out, HorzAlign::Right, "|", " ", " ", " ")?;
@@ -140,20 +178,23 @@ impl Renderer for MarkdownPipeRenderer {
         _row_count: usize,
         column_widths: &[usize])
     {
+        println!("{:?}", self.flags);
         self.column_widths = column_widths.iter().copied().collect();
         self.column_horz_aligns = Vec::with_capacity(column_descs.len());
-        self.headers_provided = false;
+        let mut headers_provided = false;
         for column_desc in column_descs.iter() {
             self.column_horz_aligns.push(column_desc.horz_align);
-            self.headers_provided |= !column_desc.header.is_empty();
+            headers_provided |= !column_desc.header.is_empty();
         }
+        self.flags.set(Flags::HEADERS_PROVIDED, headers_provided);
+        println!("{:?}", self.flags);
     }
 
     fn write_data_cell_line<W>(
         &mut self,
         out: &mut W,
         _row: usize,
-        _col: usize,
+        col: usize,
         _line: usize,
         text: &str,
         width: usize,
@@ -171,7 +212,11 @@ impl Renderer for MarkdownPipeRenderer {
         
         for _ in 0..l_pad { write!(out, " ")?; }
         write!(out, "{}", text)?;
-        for _ in 0..r_pad { write!(out, " ")?; }
+        if self.flags.contains(Flags::PAD_TRAILING_COLUMN) 
+            || col + 1 < self.column_widths.len()
+        {
+            for _ in 0..r_pad { write!(out, " ")?; }
+        }
         Ok(())
     }
 
@@ -179,16 +224,18 @@ impl Renderer for MarkdownPipeRenderer {
         where W: std::io::Write
     {
         if self.column_widths.is_empty() { return Ok(()) }
-        if !self.headers_provided {
+        if !self.flags.contains(Flags::HEADERS_PROVIDED) {
             self.write_empty_row(out)?;
             writeln!(out)?;
         }
 
         // Define style markers.
+        let align_markers = self.flags.contains(Flags::ALIGN_MARKERS);
+        let header_pipes = self.flags.contains(Flags::HEADER_PIPES);
         let dm = "-"; // divider marker
-        let am = if self.align_markers { ":" } else { dm }; // align marker
+        let am = if align_markers { ":" } else { dm }; // align marker
         let pm = "|"; // pipe marker
-        let im = if self.header_pipes { pm } else { "+" }; // internal div marker
+        let im = if header_pipes { pm } else { "+" }; // internal div marker
 
         use HorzAlign::*;
         for (col, col_width) in self.column_widths.iter().copied().enumerate() {
@@ -307,7 +354,7 @@ mod test {
         let mut out: Vec<u8> = Vec::new();
         assert!(table.render(&mut out).is_ok());
         let out = String::from_utf8(out).unwrap();
-        //println!("{}", out);
+        println!("{}", out);
 
         assert_eq!(out, "\
 | Right | Left  | Center |
@@ -438,6 +485,132 @@ mod test {
 |  Header  | Aligned | Aligned | Aligned                                              |
 |:--------:|:--------|--------:|:-----------------------------------------------------|
 |  First   | row     |      12 | Example of a row that spans multiple lines.          |
+|  Second  | row     |       5 | Here's another one. Note the blank line between rows |
+");
+    }
+
+    #[test]
+    fn simple_table_alt_unpad_trailing() {
+        let data: Vec<(i64, )> = vec![
+            (12,),
+            (123,),
+            (1,),
+            (-8000,),
+        ];
+
+        let col_descs = vec![
+            ColumnDesc::new()
+                .with_header("Right")
+                .with_horz_align(HorzAlign::Right),
+            ColumnDesc::new()
+                .with_header("Left")
+                .with_horz_align(HorzAlign::Left),
+            ColumnDesc::new()
+                .with_header("Center")
+                .with_horz_align(HorzAlign::Center),
+        ];
+
+        let mut table = Table::new_builder(data, MarkdownPipeRenderer::new()
+                .with_padded_trailing_column(false)
+                .with_alignment_markers(false)
+                .with_header_div_pipes(false))
+            .with_column_descs(&col_descs)
+            .with_column_selection(&[0, 0, 0])
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        //println!("{}", out);
+
+        assert_eq!(out, "\
+| Right | Left  | Center |
+|-------+-------+--------|
+|    12 | 12    |   12 |
+|   123 | 123   |  123 |
+|     1 | 1     |   1 |
+| -8000 | -8000 | -8000 |
+");
+    }
+
+    #[test]
+    fn simple_table_no_headers_unpad_trailing() {
+        let data: Vec<(i64, )> = vec![
+            (12,),
+            (123,),
+            (1,),
+            (-8000,),
+        ];
+
+        let col_descs = vec![
+            ColumnDesc::new()
+                .with_horz_align(HorzAlign::Right),
+            ColumnDesc::new()
+                .with_horz_align(HorzAlign::Left),
+            ColumnDesc::new()
+                .with_horz_align(HorzAlign::Center),
+        ];
+
+        let mut table = Table::new_builder(data, MarkdownPipeRenderer::new()
+                .with_padded_trailing_column(false))
+            .with_column_descs(&col_descs)
+            .with_column_selection(&[0, 0, 0])
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        //println!("{}", out);
+
+        assert_eq!(out, "\
+|       |       |  |
+|:-----:|:------|:-----:|
+|    12 | 12    |  12 |
+|   123 | 123   |  123 |
+|     1 | 1     |   1 |
+| -8000 | -8000 | -8000 |
+");
+    }
+
+    #[test]
+    fn multiline_table_unpad_trailing() {
+        let data: Vec<(&str, &str, f64, &str)> = vec![
+            ("First", "row",
+                12.0, "Example of a row that\nspans multiple lines."),
+            ("Second", "row",
+                5.0, "Here's another one. Note\nthe blank line between\nrows"),
+        ];
+
+        let col_descs = vec![
+            ColumnDesc::new()
+                .with_header("Centered\nHeader")
+                .with_horz_align(HorzAlign::Center),
+            ColumnDesc::new()
+                .with_header("Left\nAligned")
+                .with_horz_align(HorzAlign::Left),
+            ColumnDesc::new()
+                .with_header("Right\nAligned")
+                .with_horz_align(HorzAlign::Right),
+            ColumnDesc::new()
+                .with_header("Left\nAligned")
+                .with_horz_align(HorzAlign::Left),
+        ];
+
+        let mut table = Table::new_builder(data, MarkdownPipeRenderer::new()
+                .with_padded_trailing_column(false))
+            .with_column_descs(&col_descs)
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        println!("{}", out);
+
+        assert_eq!(out, "\
+| Centered | Left    |   Right | Left |
+|  Header  | Aligned | Aligned | Aligned |
+|:--------:|:--------|--------:|:-----------------------------------------------------|
+|  First   | row     |      12 | Example of a row that spans multiple lines. |
 |  Second  | row     |       5 | Here's another one. Note the blank line between rows |
 ");
     }

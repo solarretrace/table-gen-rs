@@ -2,7 +2,6 @@
 
 # Implementation tasks:
 
-+ Unpad rightmost
 + Deduplicate sort indices
 + Deduplicate column references
 + Implement Transpose operation

@@ -15,6 +15,6 @@ homepage.workspace = true
 name = "table_gen_core"
 
 [dependencies]
-bitflags = "2.13"
+bitflags.workspace = true
 seq-macro = "0.3"
 smallvec = "1.15"

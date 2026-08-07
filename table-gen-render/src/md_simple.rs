@@ -26,6 +26,8 @@ pub struct MarkdownSimpleRenderer {
     column_padding: u8,
     /// The amount of extra space to allocate within columns.
     extra_width: u8,
+    /// Indicates that the last column should be padded on the right.
+    pad_trailing_column: bool,
 }
 
 impl Default for MarkdownSimpleRenderer {
@@ -42,6 +44,7 @@ impl MarkdownSimpleRenderer {
             headers_provided: false,
             column_padding: 0,
             extra_width: 2,
+            pad_trailing_column: true,
         }
     }
 
@@ -54,6 +57,17 @@ impl MarkdownSimpleRenderer {
     /// Sets the extra column width and returns the `MarkdownSimpleRenderer`.
     pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
         self.extra_width = extra_width;
+        self
+    }
+
+    /// Sets the flag for adding trailing column padding and returns the
+    /// `MarkdownSimpleRenderer`.
+    pub const fn with_padded_trailing_column(
+        mut self,
+        pad_trailing_column: bool)
+        -> Self
+    {
+        self.pad_trailing_column = pad_trailing_column;
         self
     }
 }
@@ -78,7 +92,7 @@ impl Renderer for MarkdownSimpleRenderer {
         &mut self,
         out: &mut W,
         _row: usize,
-        _col: usize,
+        col: usize,
         _line: usize,
         text: &str,
         width: usize,
@@ -96,7 +110,9 @@ impl Renderer for MarkdownSimpleRenderer {
         
         for _ in 0..l_pad { write!(out, " ")?; }
         write!(out, "{}", text)?;
-        for _ in 0..r_pad { write!(out, " ")?; }
+        if self.pad_trailing_column || col + 1 < self.column_widths.len() {
+            for _ in 0..r_pad { write!(out, " ")?; }
+        }
         Ok(())
     }
 
@@ -175,7 +191,6 @@ mod test {
 
         assert_eq!(out, "");
     }
-
 
     #[test]
     fn simple_table() {
@@ -256,4 +271,45 @@ mod test {
 ");
     }
 
+    #[test]
+    fn simple_table_unpad_trailing() {
+        let data: Vec<(i64, )> = vec![
+            (12,),
+            (123,),
+            (1,),
+            (-8000,),
+        ];
+
+        let col_descs = vec![
+            ColumnDesc::new()
+                .with_header("Right")
+                .with_horz_align(HorzAlign::Right),
+            ColumnDesc::new()
+                .with_header("Left")
+                .with_horz_align(HorzAlign::Left),
+            ColumnDesc::new()
+                .with_header("Center")
+                .with_horz_align(HorzAlign::Center),
+        ];
+
+        let mut table = Table::new_builder(data, MarkdownSimpleRenderer::new()
+                .with_padded_trailing_column(false))
+            .with_column_descs(&col_descs)
+            .with_column_selection(&[0, 0, 0])
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        //println!("{}", out);
+
+        assert_eq!(out, "  \
+  Right Left     Center
+------- ------- --------
+     12 12         12
+    123 123       123
+      1 1          1
+  -8000 -8000    -8000
+");
+    }
 }

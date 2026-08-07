@@ -25,6 +25,7 @@ exclude = [
 [workspace.dependencies]
 table-gen-render = { version = "*", path = "./table-gen-render" }
 table-gen-core = { version = "*", path = "./table-gen-core" }
+bitflags = "2.13"
 
 
 # The development profile, used for `cargo build`

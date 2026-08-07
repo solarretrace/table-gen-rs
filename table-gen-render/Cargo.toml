@@ -15,4 +15,5 @@ homepage.workspace = true
 name = "table_gen_render"
 
 [dependencies]
+bitflags.workspace = true
 table-gen-core.workspace = true

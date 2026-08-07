@@ -27,6 +27,8 @@ pub struct MarkdownMultilineRenderer {
     column_padding: u8,
     /// The amount of extra space to allocate within columns.
     extra_width: u8,
+    /// Indicates that the last column should be padded on the right.
+    pad_trailing_column: bool,
 }
 
 impl Default for MarkdownMultilineRenderer {
@@ -43,6 +45,7 @@ impl MarkdownMultilineRenderer {
             headers_provided: false,
             column_padding: 0,
             extra_width: 2,
+            pad_trailing_column: true,
         }
     }
 
@@ -55,6 +58,17 @@ impl MarkdownMultilineRenderer {
     /// Sets the extra column width and returns the `MarkdownMultilineRenderer`.
     pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
         self.extra_width = extra_width;
+        self
+    }
+
+    /// Sets the flag for adding trailing column padding and returns the
+    /// `MarkdownSimpleRenderer`.
+    pub const fn with_padded_trailing_column(
+        mut self,
+        pad_trailing_column: bool)
+        -> Self
+    {
+        self.pad_trailing_column = pad_trailing_column;
         self
     }
 }
@@ -94,7 +108,7 @@ impl Renderer for MarkdownMultilineRenderer {
         &mut self,
         out: &mut W,
         _row: usize,
-        _col: usize,
+        col: usize,
         _line: usize,
         text: &str,
         width: usize,
@@ -112,7 +126,9 @@ impl Renderer for MarkdownMultilineRenderer {
         
         for _ in 0..l_pad { write!(out, " ")?; }
         write!(out, "{}", text)?;
-        for _ in 0..r_pad { write!(out, " ")?; }
+        if self.pad_trailing_column || col + 1 < self.column_widths.len() {
+            for _ in 0..r_pad { write!(out, " ")?; }
+        }
         Ok(())
     }
 
@@ -338,6 +354,98 @@ mod test {
   Second   row               5 Here's another one. Note  
                                the blank line between    
                                rows                      
+---------------------------------------------------------
+
+");
+    }
+
+    #[test]
+    fn simple_table_no_headers_unpad_trailing() {
+        let data: Vec<(i64, )> = vec![
+            (12,),
+            (123,),
+            (1,),
+            (-8000,),
+        ];
+
+        let col_descs = vec![
+            ColumnDesc::new()
+                .with_horz_align(HorzAlign::Right),
+            ColumnDesc::new()
+                .with_horz_align(HorzAlign::Left),
+            ColumnDesc::new()
+                .with_horz_align(HorzAlign::Center),
+        ];
+
+        let mut table = Table::new_builder(data, MarkdownMultilineRenderer::new()
+                .with_padded_trailing_column(false))
+            .with_column_descs(&col_descs)
+            .with_column_selection(&[0, 0, 0])
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        //println!("{}", out);
+
+        assert_eq!(out, "\
+------- ------- -------
+     12 12        12
+
+    123 123       123
+
+      1 1          1
+
+  -8000 -8000    -8000
+------- ------- -------
+");
+    }
+
+    #[test]
+    fn multiline_table_unpad_trailing() {
+        let data: Vec<(&str, &str, f64, &str)> = vec![
+            ("First", "row",
+                12.0, "Example of a row that\nspans multiple lines."),
+            ("Second", "row",
+                5.0, "Here's another one. Note\nthe blank line between\nrows"),
+        ];
+
+        let col_descs = vec![
+            ColumnDesc::new()
+                .with_header("Centered\nHeader")
+                .with_horz_align(HorzAlign::Center),
+            ColumnDesc::new()
+                .with_header("Left\nAligned")
+                .with_horz_align(HorzAlign::Left),
+            ColumnDesc::new()
+                .with_header("Right\nAligned")
+                .with_horz_align(HorzAlign::Right),
+            ColumnDesc::new()
+                .with_header("Left\nAligned")
+                .with_horz_align(HorzAlign::Left),
+        ];
+
+        let mut table = Table::new_builder(data, MarkdownMultilineRenderer::new()
+                .with_padded_trailing_column(false))
+            .with_column_descs(&col_descs)
+            .finish();
+
+        let mut out: Vec<u8> = Vec::new();
+        assert!(table.render(&mut out).is_ok());
+        let out = String::from_utf8(out).unwrap();
+        //println!("{}", out);
+
+        assert_eq!(out, "\
+---------------------------------------------------------
+ Centered  Left          Right Left
+  Header   Aligned     Aligned Aligned
+---------- --------- --------- --------------------------
+  First    row              12 Example of a row that
+                               spans multiple lines.
+
+  Second   row               5 Here's another one. Note
+                               the blank line between
+                               rows
 ---------------------------------------------------------
 
 ");
