@@ -159,12 +159,12 @@ impl LineStyle {
 
     /// Returns the `char` to use for drawing top-left corner line
     /// intersections.
-    pub fn corner_top_left(self, vert: Self) -> char {
+    pub fn corner_top_left(self, vert: Self, round: bool) -> char {
         pub use LineStyle::*;
         match (self.fallback(), vert.fallback()) {
             (Empty,  _)      => vert.bottom(),
             (_    ,  Empty)  => vert.right(),
-            (Light,  Light)  => '┌',
+            (Light,  Light)  => if round { '╭' } else { '┌' },
             (Light,  Heavy)  => '┎',
             (Light,  Double) => '╓',
             (Heavy,  Light)  => '┍',
@@ -179,12 +179,12 @@ impl LineStyle {
 
     /// Returns the `char` to use for drawing top-right corner line
     /// intersections.
-    pub fn corner_top_right(self, vert: Self) -> char {
+    pub fn corner_top_right(self, vert: Self, round: bool) -> char {
         pub use LineStyle::*;
         match (self.fallback(), vert.fallback()) {
             (Empty,  _)      => vert.bottom(),
             (_    ,  Empty)  => vert.left(),
-            (Light,  Light)  => '┐',
+            (Light,  Light)  => if round { '╮' } else { '┐' },
             (Light,  Heavy)  => '┒',
             (Light,  Double) => '╖',
             (Heavy,  Light)  => '┑',
@@ -199,12 +199,12 @@ impl LineStyle {
 
     /// Returns the `char` to use for drawing bottom-left corner line
     /// intersections.
-    pub fn corner_bottom_left(self, vert: Self) -> char {
+    pub fn corner_bottom_left(self, vert: Self, round: bool) -> char {
         pub use LineStyle::*;
         match (self.fallback(), vert.fallback()) {
             (Empty,  _)      => vert.top(),
             (_    ,  Empty)  => vert.right(),
-            (Light,  Light)  => '└',
+            (Light,  Light)  => if round { '╰' } else { '└' },
             (Light,  Heavy)  => '┖',
             (Light,  Double) => '╙',
             (Heavy,  Light)  => '┕',
@@ -219,12 +219,12 @@ impl LineStyle {
 
     /// Returns the `char` to use for drawing bottom-right corner line
     /// intersections.
-    pub fn corner_bottom_right(self, vert: Self) -> char {
+    pub fn corner_bottom_right(self, vert: Self, round: bool) -> char {
         pub use LineStyle::*;
         match (self.fallback(), vert.fallback()) {
             (Empty,  _)      => vert.top(),
             (_    ,  Empty)  => vert.left(),
-            (Light,  Light)  => '┘',
+            (Light,  Light)  => if round { '╯' } else { '┘' },
             (Light,  Heavy)  => '┚',
             (Light,  Double) => '╜',
             (Heavy,  Light)  => '┙',
