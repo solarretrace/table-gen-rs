@@ -6,7 +6,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Internal modules.
+mod box_draw;
 mod debug;
+mod line_style;
 mod md_grid;
 mod md_multiline;
 mod md_pipe;
@@ -14,7 +16,9 @@ mod md_simple;
 mod minimal;
 
 // Exports.
+pub use box_draw::*;
 pub use debug::*;
+pub use line_style::*;
 pub use md_grid::*;
 pub use md_multiline::*;
 pub use md_pipe::*;
