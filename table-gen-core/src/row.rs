@@ -20,25 +20,25 @@ use seq_macro::seq;
 /// A partially orderable, displayable, object safe interface to a single table
 /// cell.
 pub trait Cell: Display {
-    /// Convert a cell to `Any` to enable downcasting to the base type.
-    fn as_any(&self) -> &dyn Any;
+	/// Convert a cell to `Any` to enable downcasting to the base type.
+	fn as_any(&self) -> &dyn Any;
 
-    /// Perform a partial compare to another cell. This will return `None` if
-    /// we are comparing cells from different columns, but this should never be
-    /// done anyway.
-    fn dyn_partial_cmp(&self, other: &dyn Cell) -> Option<Ordering>;
+	/// Perform a partial compare to another cell. This will return `None` if
+	/// we are comparing cells from different columns, but this should never be
+	/// done anyway.
+	fn dyn_partial_cmp(&self, other: &dyn Cell) -> Option<Ordering>;
 }
 
 
 // Blanket impl for all PartialOrd + Display + 'static.
 impl<T: PartialOrd + Display + 'static> Cell for T {
-    fn as_any(&self) -> &dyn Any { self }
+	fn as_any(&self) -> &dyn Any { self }
 
-    fn dyn_partial_cmp(&self, other: &dyn Cell) -> Option<Ordering> {
-        other.as_any()
-            .downcast_ref::<T>()
-            .and_then(|o| self.partial_cmp(o))
-    }
+	fn dyn_partial_cmp(&self, other: &dyn Cell) -> Option<Ordering> {
+		other.as_any()
+			.downcast_ref::<T>()
+			.and_then(|o| self.partial_cmp(o))
+	}
 }
 
 
@@ -47,62 +47,62 @@ impl<T: PartialOrd + Display + 'static> Cell for T {
 ////////////////////////////////////////////////////////////////////////////////
 /// Provides methods required for processing a single table row.
 pub trait Row {
-    /// Returns the number of columns in the row.
-    fn len(&self) -> usize;
-    /// Returns the cell at the given column index. Returns `None` if the cell
-    /// is not
-    fn cell(&self, col_idx: usize) -> Option<&dyn Cell>;
+	/// Returns the number of columns in the row.
+	fn len(&self) -> usize;
+	/// Returns the cell at the given column index. Returns `None` if the cell
+	/// is not
+	fn cell(&self, col_idx: usize) -> Option<&dyn Cell>;
 }
 
 
 // Fully homogeneous table rows provided via slices.
 impl<C> Row for &'_ [C]
-    where C: Cell
+	where C: Cell
 {
-    fn len(&self) -> usize { <[C]>::len(self) }
-    fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
-        debug_assert!(col_idx < self.len());
-        Some(&self[col_idx])
-    }
+	fn len(&self) -> usize { <[C]>::len(self) }
+	fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
+		debug_assert!(col_idx < self.len());
+		Some(&self[col_idx])
+	}
 }
 
 impl<C> Row for [C]
-    where C: Cell
+	where C: Cell
 {
-    fn len(&self) -> usize { <[C]>::len(self) }
-    fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
-        debug_assert!(col_idx < self.len());
-        Some(&self[col_idx])
-    }
+	fn len(&self) -> usize { <[C]>::len(self) }
+	fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
+		debug_assert!(col_idx < self.len());
+		Some(&self[col_idx])
+	}
 }
 
 impl<const N: usize, C> Row for [C; N]
-    where C: Cell
+	where C: Cell
 {
-    fn len(&self) -> usize { N }
-    fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
-        debug_assert!(col_idx < self.len());
-        Some(&self[col_idx])
-    }
+	fn len(&self) -> usize { N }
+	fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
+		debug_assert!(col_idx < self.len());
+		Some(&self[col_idx])
+	}
 }
 
 // Heterogeneous tables rows provided via tuples.
 macro_rules! tuple_row_impl {
-    ($idx:literal) => {
-        seq!(N in 0..$idx {
-            impl<#(T~N,)*> Row for (#(T~N,)*)
-                where #(T~N: Cell,)*
-            {
-                fn len(&self) -> usize { $idx }
-                fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
-                    match col_idx {
-                        #( N => Some(&self.N), )*
-                        _ => panic!("invalid column index"),
-                    }
-                }
-            }
-        });
-    };
+	($idx:literal) => {
+		seq!(N in 0..$idx {
+			impl<#(T~N,)*> Row for (#(T~N,)*)
+				where #(T~N: Cell,)*
+			{
+				fn len(&self) -> usize { $idx }
+				fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
+					match col_idx {
+						#( N => Some(&self.N), )*
+						_ => panic!("invalid column index"),
+					}
+				}
+			}
+		});
+	};
 }
 
 tuple_row_impl!(1);

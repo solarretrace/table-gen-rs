@@ -26,73 +26,73 @@ use std::ops::Bound;
 /// Table cell formatter. Responsible for generating text for cells.
 #[derive(Debug, Clone)]
 pub (in crate) struct Format<'a, S> {
-    /// The table data source.
-    inner: Collate<'a, S>,
+	/// The table data source.
+	inner: Collate<'a, S>,
 }
 
 impl<R, S, I> From<I> for Format<'_, S>
-    where
-        R: Row,
-        S: Iterator<Item=R>,
-        I: IntoIterator<Item=R, IntoIter=S>,
+	where
+		R: Row,
+		S: Iterator<Item=R>,
+		I: IntoIterator<Item=R, IntoIter=S>,
 {
-    fn from(inner: I) -> Self {
-        Format::new(inner.into())
-    }
+	fn from(inner: I) -> Self {
+		Format::new(inner.into())
+	}
 }
 
 impl<'a, R, S> From<Collate<'a, S>> for Format<'a, S>
-    where
-        R: Row,
-        S: Iterator<Item=R>,
+	where
+		R: Row,
+		S: Iterator<Item=R>,
 {
-    fn from(inner: Collate<'a, S>) -> Self {
-        Format::new(inner)
-    }
+	fn from(inner: Collate<'a, S>) -> Self {
+		Format::new(inner)
+	}
 }
 
 impl<'a, R, S> Format<'a, S>
-    where
-        S: Iterator<Item=R>,
-        R: Row,
+	where
+		S: Iterator<Item=R>,
+		R: Row,
 {
-    /// Constructs a new `Format` for the given data source.
-    pub (in crate) fn new(inner: Collate<'a, S>) -> Self {
-        Self {
-            inner,
-        }
-    }
+	/// Constructs a new `Format` for the given data source.
+	pub (in crate) fn new(inner: Collate<'a, S>) -> Self {
+		Self {
+			inner,
+		}
+	}
 
-    /// The row selection bounds.
-    pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
-        self.inner.row_selection()
-    }
+	/// The row selection bounds.
+	pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
+		self.inner.row_selection()
+	}
 
-    /// The column output specifications.
-    pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
-        self.inner.column_descs()
-    }
+	/// The column output specifications.
+	pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
+		self.inner.column_descs()
+	}
 
-    /// The sort parameters for columns, in order of sort priority.
-    pub (in crate) fn column_order(&self) -> &'a [ColumnOrd] {
-        self.inner.column_order()
-    }
+	/// The sort parameters for columns, in order of sort priority.
+	pub (in crate) fn column_order(&self) -> &'a [ColumnOrd] {
+		self.inner.column_order()
+	}
 }
 
 impl<'a, R, S> Iterator for Format<'a, S>
-    where
-        S: Iterator<Item=R>,
-        R: Row,
+	where
+		S: Iterator<Item=R>,
+		R: Row,
 {
-    type Item = FormatRow<'a, R>;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner
-            .next()
-            .map(|collate_row| FormatRow::new(
-                collate_row,
-                self.inner.column_descs(),
-                self.inner.features().contains(Features::MULTILINE)))
-    }
+	type Item = FormatRow<'a, R>;
+	fn next(&mut self) -> Option<Self::Item> {
+		self.inner
+			.next()
+			.map(|collate_row| FormatRow::new(
+				collate_row,
+				self.inner.column_descs(),
+				self.inner.features().contains(Features::MULTILINE)))
+	}
 }
 
 
@@ -102,61 +102,61 @@ impl<'a, R, S> Iterator for Format<'a, S>
 /// A single table row with collated column selection and ordering.
 #[derive(Debug, Clone)]
 pub (in crate) struct FormatRow<'a, R> {
-    /// The row to format.
-    inner: CollateRow<'a, R>,
-    /// The column output specifications,
-    col_descs: &'a [ColumnDesc<'a>],
-    /// The cached cell texts.
-    cache: Vec<OnceCell<Box<str>>>,
-    /// Multiline output supported.
-    multiline: bool,
+	/// The row to format.
+	inner: CollateRow<'a, R>,
+	/// The column output specifications,
+	col_descs: &'a [ColumnDesc<'a>],
+	/// The cached cell texts.
+	cache: Vec<OnceCell<Box<str>>>,
+	/// Multiline output supported.
+	multiline: bool,
 }
 
 impl<R> Row for FormatRow<'_, R>
-    where R: Row
+	where R: Row
 {
-    fn len(&self) -> usize {
-        self.inner.len()
-    }
+	fn len(&self) -> usize {
+		self.inner.len()
+	}
 
-    fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
-        self.inner.cell(col_idx)
-    }
+	fn cell(&self, col_idx: usize) -> Option<&dyn Cell> {
+		self.inner.cell(col_idx)
+	}
 }
 
 impl<'a, R> FormatRow<'a, R>
-    where R: Row,
+	where R: Row,
 {
-    /// Constructs a new `FormatRow` over the given `CollateRow` and
-    /// `ColumnDesc`s.
-    pub (in crate) fn new(
-        inner: CollateRow<'a, R>,
-        col_descs: &'a [ColumnDesc<'a>],
-        multiline: bool)
-        -> Self
-    {
-        let cache = vec![OnceCell::new(); inner.len()];
-        Self {
-            inner,
-            col_descs,
-            cache,
-            multiline,
-        }
-    }
+	/// Constructs a new `FormatRow` over the given `CollateRow` and
+	/// `ColumnDesc`s.
+	pub (in crate) fn new(
+		inner: CollateRow<'a, R>,
+		col_descs: &'a [ColumnDesc<'a>],
+		multiline: bool)
+		-> Self
+	{
+		let cache = vec![OnceCell::new(); inner.len()];
+		Self {
+			inner,
+			col_descs,
+			cache,
+			multiline,
+		}
+	}
 
-    /// Returns the text of the cell at the given column index.
-    pub (in crate) fn text(&self, col_idx: usize) -> &str {
-        self.cache[col_idx].get_or_init(|| match self.inner.cell(col_idx) {
-            Some(cell) => {
-                self.col_descs
-                    .get(col_idx)
-                    .map(|spec| spec.display_fmt)
-                    .unwrap_or(DisplayFmt::default())
-                    .apply(cell, self.multiline)
-            },
-            None => String::new().into_boxed_str(),
-        })
-    }
+	/// Returns the text of the cell at the given column index.
+	pub (in crate) fn text(&self, col_idx: usize) -> &str {
+		self.cache[col_idx].get_or_init(|| match self.inner.cell(col_idx) {
+			Some(cell) => {
+				self.col_descs
+					.get(col_idx)
+					.map(|spec| spec.display_fmt)
+					.unwrap_or(DisplayFmt::default())
+					.apply(cell, self.multiline)
+			},
+			None => String::new().into_boxed_str(),
+		})
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -165,95 +165,95 @@ impl<'a, R> FormatRow<'a, R>
 /// Parameters for cell `Display` output formatting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DisplayFmt {
-    /// Format precision specifier.
-    precision: Option<usize>,
-    /// Format sign specifier.
-    sign: Option<Sign>,
+	/// Format precision specifier.
+	precision: Option<usize>,
+	/// Format sign specifier.
+	sign: Option<Sign>,
 }
 
 impl Default for DisplayFmt {
-    fn default() -> Self {
-        Self::new()
-    }
+	fn default() -> Self {
+		Self::new()
+	}
 }
 
 impl DisplayFmt {
-    /// Constructs a new `DisplayFmt` with the default settings.
-    pub const fn new() -> Self {
-        Self {
-            precision: None,
-            sign: None,
-        }
-    }
+	/// Constructs a new `DisplayFmt` with the default settings.
+	pub const fn new() -> Self {
+		Self {
+			precision: None,
+			sign: None,
+		}
+	}
 
-    /// Sets the precision and returns the `DisplayFmt`.
-    ///
-    /// See https://doc.rust-lang.org/std/fmt/index.html for details.
-    pub const fn with_precision_option(mut self, precision: Option<usize>)
-        -> Self 
-    {
-        self.precision = precision;
-        self
-    }
+	/// Sets the precision and returns the `DisplayFmt`.
+	///
+	/// See https://doc.rust-lang.org/std/fmt/index.html for details.
+	pub const fn with_precision_option(mut self, precision: Option<usize>)
+		-> Self 
+	{
+		self.precision = precision;
+		self
+	}
 
-    /// Sets the sign and returns the `DisplayFmt`.
-    ///
-    /// See https://doc.rust-lang.org/std/fmt/index.html for details.
-    pub const fn with_sign_option(mut self, sign: Option<Sign>) -> Self {
-        self.sign = sign;
-        self
-    }
+	/// Sets the sign and returns the `DisplayFmt`.
+	///
+	/// See https://doc.rust-lang.org/std/fmt/index.html for details.
+	pub const fn with_sign_option(mut self, sign: Option<Sign>) -> Self {
+		self.sign = sign;
+		self
+	}
 
-    /// Sets the precision and returns the `DisplayFmt`.
-    ///
-    /// See https://doc.rust-lang.org/std/fmt/index.html for details.
-    pub fn with_precision<T>(mut self, precision: T) -> Self 
-        where T: Into<Option<usize>>
-    {
-        self.precision = precision.into();
-        self
-    }
+	/// Sets the precision and returns the `DisplayFmt`.
+	///
+	/// See https://doc.rust-lang.org/std/fmt/index.html for details.
+	pub fn with_precision<T>(mut self, precision: T) -> Self 
+		where T: Into<Option<usize>>
+	{
+		self.precision = precision.into();
+		self
+	}
 
-    /// Sets the sign and returns the `DisplayFmt`.
-    ///
-    /// See https://doc.rust-lang.org/std/fmt/index.html for details.
-    pub fn with_sign<T>(mut self, sign: T) -> Self 
-        where T: Into<Option<Sign>>
-    {
-        self.sign = sign.into();
-        self
-    }
-    
-    /// Applies the `DisplayFmt` to the given cell, rendering it as a
-    /// `Box<str>`.
-    pub fn apply<C>(&self, cell: C, multiline: bool) -> Box<str>
-        where C: Display
-    {
-        use Sign::*;
-        let mut res = match (self.precision, self.sign) {
-            (Some(p), Some(Plus))  => format!("{:+.p$}", cell, p=p),
-            (Some(p), Some(Minus)) => format!("{:-.p$}", cell, p=p),
-            (Some(p), Some(Zero))  => format!("{:0.p$}", cell, p=p),
-            (Some(p), None)        => format!("{:.p$}", cell, p=p),
-            (None,    Some(Plus))  => format!("{:+}", cell),
-            (None,    Some(Minus)) => format!("{:-}", cell),
-            (None,    Some(Zero))  => format!("{:0}", cell),
-            (None,    None)        => format!("{}", cell),
-        };
-        if !multiline { res = res.replace("\n", " "); }
-        res.into_boxed_str()
-    }
+	/// Sets the sign and returns the `DisplayFmt`.
+	///
+	/// See https://doc.rust-lang.org/std/fmt/index.html for details.
+	pub fn with_sign<T>(mut self, sign: T) -> Self 
+		where T: Into<Option<Sign>>
+	{
+		self.sign = sign.into();
+		self
+	}
+	
+	/// Applies the `DisplayFmt` to the given cell, rendering it as a
+	/// `Box<str>`.
+	pub fn apply<C>(&self, cell: C, multiline: bool) -> Box<str>
+		where C: Display
+	{
+		use Sign::*;
+		let mut res = match (self.precision, self.sign) {
+			(Some(p), Some(Plus))  => format!("{:+.p$}", cell, p=p),
+			(Some(p), Some(Minus)) => format!("{:-.p$}", cell, p=p),
+			(Some(p), Some(Zero))  => format!("{:0.p$}", cell, p=p),
+			(Some(p), None)        => format!("{:.p$}", cell, p=p),
+			(None,    Some(Plus))  => format!("{:+}", cell),
+			(None,    Some(Minus)) => format!("{:-}", cell),
+			(None,    Some(Zero))  => format!("{:0}", cell),
+			(None,    None)        => format!("{}", cell),
+		};
+		if !multiline { res = res.replace("\n", " "); }
+		res.into_boxed_str()
+	}
 }
 
 /// Format sign specifier.
-    ///
-    /// See https://doc.rust-lang.org/std/fmt/index.html for details.
+	///
+	/// See https://doc.rust-lang.org/std/fmt/index.html for details.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Sign {
-    /// Format numerical values with the '+' format option.
-    Plus,
-    /// Format numerical values with the '-' format option.
-    Minus,
-    /// Format numerical values with the '0' format option.
-    Zero,
+	/// Format numerical values with the '+' format option.
+	Plus,
+	/// Format numerical values with the '-' format option.
+	Minus,
+	/// Format numerical values with the '0' format option.
+	Zero,
 }
