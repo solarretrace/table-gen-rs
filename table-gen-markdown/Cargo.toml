@@ -1,0 +1,19 @@
+[package]
+name = "table-gen-markdown"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "table-gen markdown implementations"
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+homepage.workspace = true
+
+[lib]
+name = "table_gen_markdown"
+
+[dependencies]
+bitflags.workspace = true
+table-gen-core.workspace = true

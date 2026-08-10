@@ -5,7 +5,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Skylor R Schermer <skyschermer@gmail.com>"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
@@ -23,8 +23,9 @@ exclude = [
 
 # Required dependencies
 [workspace.dependencies]
-table-gen-render = { version = "*", path = "./table-gen-render" }
 table-gen-core = { version = "*", path = "./table-gen-core" }
+table-gen-markdown = { version = "*", path = "./table-gen-markdown" }
+table-gen-terminal = { version = "*", path = "./table-gen-terminal" }
 bitflags = "2.13"
 
 

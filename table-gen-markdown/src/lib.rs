@@ -2,25 +2,17 @@
 // This code is dual licenced using the MIT or Apache 2 license.
 // See licence-mit.md and licence-apache.md for details.
 ////////////////////////////////////////////////////////////////////////////////
-//! Table generator default table format, data source, ad cell implementations.
+//! Table generator markdown renderer implementations.
 ////////////////////////////////////////////////////////////////////////////////
 
 // Internal modules.
-mod box_draw;
-mod debug;
-mod line_style;
-mod md_grid;
-mod md_multiline;
-mod md_pipe;
-mod md_simple;
-mod minimal;
+mod grid;
+mod multiline;
+mod pipe;
+mod simple;
 
 // Exports.
-pub use box_draw::*;
-pub use debug::*;
-pub use line_style::*;
-pub use md_grid::*;
-pub use md_multiline::*;
-pub use md_pipe::*;
-pub use md_simple::*;
-pub use minimal::*;
+pub use grid::*;
+pub use multiline::*;
+pub use pipe::*;
+pub use simple::*;
