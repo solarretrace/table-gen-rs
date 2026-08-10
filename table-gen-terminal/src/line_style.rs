@@ -75,7 +75,7 @@ impl LineStyle {
 			Empty      => ' ', 
 			Light      => '│',
 			LightDash2 => '╎',
-			LightDash3 => '┆s',
+			LightDash3 => '┆',
 			LightDash4 => '┊',
 			Heavy      => '┃',
 			HeavyDash2 => '╏',

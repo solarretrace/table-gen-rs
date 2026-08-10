@@ -19,10 +19,6 @@
 
 # Renderer tasks:
 
-+ Markdown renderer: more tests
-+ Minimal renderer: more tests
-+ Debug renderer: more tests
-+ Implement term renderer
 + Implement html renderer
 + Implement csv renderer
 

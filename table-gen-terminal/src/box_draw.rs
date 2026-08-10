@@ -35,6 +35,8 @@ pub struct BoxStyle {
 	pub col_sep: LineStyle,
 	/// The style to use for the section divide separators.
 	pub div_sep: LineStyle,
+	/// Whether to use rounded corner variants.
+	pub round_corners: bool,
 }
 
 impl Default for BoxStyle {
@@ -51,9 +53,10 @@ impl BoxStyle {
 			border_right: LineStyle::Light,
 			border_top: LineStyle::Light,
 			border_bottom: LineStyle::Light,
-			row_sep: LineStyle::LightDash3,
-			col_sep: LineStyle::Light,
+			row_sep: LineStyle::Light,
+			col_sep: LineStyle::LightDash3,
 			div_sep: LineStyle::Double,
+			round_corners: false,
 		}
 	}
 }
@@ -66,8 +69,6 @@ impl BoxStyle {
 pub struct BoxDrawingRenderer {
 	/// The column widths. Used to render separators with the correct size.
 	column_widths: Vec<usize>,
-	/// Indicates that headers were provided for rendering.
-	headers_provided: bool,
 	/// The amount of space to allocate between columns.
 	column_padding: u8,
 	/// The amount of extra space to allocate within columns.
@@ -87,14 +88,13 @@ impl BoxDrawingRenderer {
 	pub const fn new() -> Self {
 		Self {
 			column_widths: Vec::new(),
-			headers_provided: false,
 			column_padding: 0,
 			extra_width: 0,
 			style: BoxStyle::new(),
 		}
 	}
 
-	/// Sets the column padding and returns the `BoxDrawingRenderer`.
+	/// Sets the column padding and returns the `MarkdownGridRenderer`.
 	pub const fn with_column_padding(mut self, column_padding: u8) -> Self {
 		self.column_padding = column_padding;
 		self
@@ -112,42 +112,120 @@ impl BoxDrawingRenderer {
 		self
 	}
 
-	/// Renders a row seperating line.
-	fn write_row_sep<W>(&self, out: &mut W, line: &str)
+	fn write_div<W>(
+		&self, 
+		out: &mut W,
+		left: char,
+		horz: char,
+		cross: char,
+		right: char)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		self.write_column_sep(out, HorzAlign::Left, "+", line)?;
+		let pad = std::cmp::max(self.column_padding / 2, 2);
+
+		write!(out, "{}", left)?;
 		for (col, col_width) in self.column_widths.iter().copied().enumerate() {
-			for _ in 0..col_width { write!(out, "{}", line)?; }
-			for _ in 0..self.extra_width { write!(out, "{}", line)?; }
+			for _ in 0..col_width { write!(out, "{}", horz)?; }
+			for _ in 0..pad { write!(out, "{}", horz)?; }
+			for _ in 0..self.extra_width { write!(out, "{}", horz)?; }
 			if col + 1 == self.column_widths.len() { break; }
-			self.write_column_sep(out, HorzAlign::Center, "+", line)?;
+			write!(out, "{}", cross)?;
 		}
-		self.write_column_sep(out, HorzAlign::Right, "+", line)?;
+		write!(out, "{}", right)?;
 		Ok(())
 	}
 
+	fn write_border_top<W>(&self, out: &mut W) -> std::io::Result<()>
+		where W: std::io::Write
+	{
+		self.write_div(
+			out,
+			self.style.border_top.corner_top_left(
+				self.style.border_left,
+				self.style.round_corners),
+			self.style.border_top.horz(),
+			self.style.border_top.horz_with_bottom(
+				self.style.col_sep),
+			self.style.border_top.corner_top_right(
+				self.style.border_right,
+				self.style.round_corners))
+	}
+
+	fn write_section_sep<W>(&self, out: &mut W) -> std::io::Result<()>
+		where W: std::io::Write
+	{
+		self.write_div(
+			out,
+			self.style.border_left.vert_with_right(
+				self.style.div_sep),
+			self.style.div_sep.horz(),
+			self.style.div_sep.cross(
+				self.style.col_sep),
+			self.style.border_right.vert_with_left(
+				self.style.div_sep))
+	}
+
+	fn write_row_sep<W>(&self, out: &mut W) -> std::io::Result<()>
+		where W: std::io::Write
+	{
+		self.write_div(
+			out,
+			self.style.border_left.vert_with_right(
+				self.style.row_sep),
+			self.style.row_sep.horz(),
+			self.style.row_sep.cross(
+				self.style.col_sep),
+			self.style.border_right.vert_with_left(
+				self.style.row_sep))
+	}
+
 	/// Renders a column separator.
-	fn write_column_sep<W>(
-		&self,
-		out: &mut W,
-		bias: HorzAlign,
-		center: &str,
-		outer: &str)
-		-> std::io::Result<()>
+	fn write_column_sep<W>(&self, out: &mut W) -> std::io::Result<()>
 		where W: std::io::Write
 	{
 		let pad = std::cmp::max(self.column_padding / 2, 2) / 2;
 
-		if bias != HorzAlign::Left {
-			for _ in 0..pad { write!(out, "{}", outer)?; }
-		}
-		write!(out, "{}", center)?;
-		if bias != HorzAlign::Right {
-			for _ in 0..pad { write!(out, "{}", outer)?; }
-		}
+		for _ in 0..pad { write!(out, " ")?; }
+		write!(out, "{}", self.style.col_sep.vert())?;
+		for _ in 0..pad { write!(out, " ")?; }
 		Ok(())
+	}
+
+	fn write_border_left<W>(&self, out: &mut W) -> std::io::Result<()>
+		where W: std::io::Write
+	{
+		let pad = std::cmp::max(self.column_padding / 2, 2) / 2;
+		
+		write!(out, "{}", self.style.border_left.vert())?;
+		for _ in 0..pad { write!(out, " ")?; }
+		Ok(())
+	}
+
+	fn write_border_right<W>(&self, out: &mut W) -> std::io::Result<()>
+		where W: std::io::Write
+	{
+		let pad = std::cmp::max(self.column_padding / 2, 2) / 2;
+
+		for _ in 0..pad { write!(out, " ")?; }
+		write!(out, "{}", self.style.border_right.vert())?;
+		Ok(())
+	}
+
+	fn write_border_bottom<W>(&self, out: &mut W) -> std::io::Result<()>
+		where W: std::io::Write
+	{
+		self.write_div(
+			out,
+			self.style.border_bottom.corner_bottom_left(
+				self.style.border_left,
+				self.style.round_corners),
+			self.style.border_bottom.horz(),
+			self.style.border_bottom.horz_with_top(
+				self.style.col_sep),
+			self.style.border_bottom.corner_bottom_right(
+				self.style.border_right,
+				self.style.round_corners))
 	}
 }
 
@@ -163,16 +241,23 @@ impl Renderer for BoxDrawingRenderer {
 		column_widths: &[usize])
 	{
 		self.column_widths = column_widths.iter().copied().collect();
-		self.headers_provided = column_descs.iter()
-			.any(|column_desc| !column_desc.header.is_empty());
 	}
 
-	fn write_header_start<W>(&mut self, out: &mut W)
+	fn write_table_start<W>(&mut self, out: &mut W)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
 		if self.column_widths.is_empty() { return Ok(()) }
-		self.write_row_sep(out, "-")?;
+		self.write_border_top(out)?;
+		writeln!(out)
+	}
+
+	fn write_header_end<W>(&mut self, out: &mut W)
+		-> std::io::Result<()>
+		where W: std::io::Write
+	{
+		if self.column_widths.is_empty() { return Ok(()) }
+		self.write_section_sep(out)?;
 		writeln!(out)
 	}
 
@@ -202,15 +287,6 @@ impl Renderer for BoxDrawingRenderer {
 		Ok(())
 	}
 
-	fn write_data_start<W>(&mut self, out: &mut W) -> std::io::Result<()>
-		where W: std::io::Write
-	{
-		if self.column_widths.is_empty() { return Ok(()) }
-		let c = if self.headers_provided { "=" } else {"-" };
-		self.write_row_sep(out, c)?;
-		writeln!(out)
-	}
-
 	fn write_data_cell_line_start<W>(
 		&mut self,
 		out: &mut W,
@@ -221,7 +297,7 @@ impl Renderer for BoxDrawingRenderer {
 		where W: std::io::Write
 	{
 		if col == 0 {
-			self.write_column_sep(out, HorzAlign::Left, "|", " ")?;
+			self.write_border_left(out)?;
 		}
 		Ok(())
 	}
@@ -236,9 +312,9 @@ impl Renderer for BoxDrawingRenderer {
 		where W: std::io::Write
 	{
 		if col + 1 == self.column_widths.len() {
-			self.write_column_sep(out, HorzAlign::Right, "|", " ")
+			self.write_border_right(out)
 		} else {
-			self.write_column_sep(out, HorzAlign::Center, "|", " ")
+			self.write_column_sep(out)
 		}
 	}
 
@@ -249,21 +325,24 @@ impl Renderer for BoxDrawingRenderer {
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		if row != 0 {
-			self.write_row_sep(out, "-")?;
-			writeln!(out)?;
-		}
-		Ok(())
+		if self.column_widths.is_empty() || row == 0 { return Ok(()) }
+		self.write_row_sep(out)?;
+		writeln!(out)
 	}
 
-	fn write_data_end<W>(&mut self, out: &mut W) -> std::io::Result<()>
+	fn write_footer_start<W>(&mut self, out: &mut W)
+		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		if !self.headers_provided {
-			self.write_data_start(out)
-		} else {
-			self.write_header_start(out)
-		}
+		self.write_header_end(out)
+	}
+
+	fn write_table_end<W>(&mut self, out: &mut W) -> std::io::Result<()>
+		where W: std::io::Write
+	{
+		if self.column_widths.is_empty() { return Ok(()) }
+		self.write_border_bottom(out)?;
+		writeln!(out)
 	}
 }
 
@@ -321,20 +400,20 @@ mod test {
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		//println!("{}", out);
+		println!("{}", out);
 
 		assert_eq!(out, "\
-+-------+-------+--------+
-| Right | Left  | Center |
-+=======+=======+========+
-|    12 | 12    |   12   |
-+-------+-------+--------+
-|   123 | 123   |  123   |
-+-------+-------+--------+
-|     1 | 1     |   1    |
-+-------+-------+--------+
-| -8000 | -8000 | -8000  |
-+-------+-------+--------+
+┌───────┬───────┬────────┐
+│ Right ┆ Left  ┆ Center │
+╞═══════╪═══════╪════════╡
+│    12 ┆ 12    ┆   12   │
+├───────┼───────┼────────┤
+│   123 ┆ 123   ┆  123   │
+├───────┼───────┼────────┤
+│     1 ┆ 1     ┆   1    │
+├───────┼───────┼────────┤
+│ -8000 ┆ -8000 ┆ -8000  │
+└───────┴───────┴────────┘
 ");
 	}
 
@@ -364,18 +443,18 @@ mod test {
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		//println!("{}", out);
+		println!("{}", out);
 
 		assert_eq!(out, "\
-+-------+-------+-------+
-|    12 | 12    |  12   |
-+-------+-------+-------+
-|   123 | 123   |  123  |
-+-------+-------+-------+
-|     1 | 1     |   1   |
-+-------+-------+-------+
-| -8000 | -8000 | -8000 |
-+-------+-------+-------+
+┌───────┬───────┬───────┐
+│    12 ┆ 12    ┆  12   │
+├───────┼───────┼───────┤
+│   123 ┆ 123   ┆  123  │
+├───────┼───────┼───────┤
+│     1 ┆ 1     ┆   1   │
+├───────┼───────┼───────┤
+│ -8000 ┆ -8000 ┆ -8000 │
+└───────┴───────┴───────┘
 ");
 	}
 
@@ -410,20 +489,20 @@ mod test {
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		//println!("{}", out);
+		println!("{}", out);
 
 		assert_eq!(out, "\
-+----------+---------+---------+--------------------------+
-| Centered | Left    |   Right | Left                     |
-|  Header  | Aligned | Aligned | Aligned                  |
-+==========+=========+=========+==========================+
-|  First   | row     |      12 | Example of a row that    |
-|          |         |         | spans multiple lines.    |
-+----------+---------+---------+--------------------------+
-|  Second  | row     |       5 | Here's another one. Note |
-|          |         |         | the blank line between   |
-|          |         |         | rows                     |
-+----------+---------+---------+--------------------------+
+┌──────────┬─────────┬─────────┬──────────────────────────┐
+│ Centered ┆ Left    ┆   Right ┆ Left                     │
+│  Header  ┆ Aligned ┆ Aligned ┆ Aligned                  │
+╞══════════╪═════════╪═════════╪══════════════════════════╡
+│  First   ┆ row     ┆      12 ┆ Example of a row that    │
+│          ┆         ┆         ┆ spans multiple lines.    │
+├──────────┼─────────┼─────────┼──────────────────────────┤
+│  Second  ┆ row     ┆       5 ┆ Here's another one. Note │
+│          ┆         ┆         ┆ the blank line between   │
+│          ┆         ┆         ┆ rows                     │
+└──────────┴─────────┴─────────┴──────────────────────────┘
 ");
 	}
 }
