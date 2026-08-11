@@ -2,7 +2,8 @@
 // This code is dual licenced using the MIT or Apache 2 license.
 // See licence-mit.md and licence-apache.md for details.
 ////////////////////////////////////////////////////////////////////////////////
-//! A table renderer that renders tables using box-drawing unicode style.
+//! A table renderer that renders tables using box-drawing unicode style with
+//! distinct 'tiles' for each cell.
 ////////////////////////////////////////////////////////////////////////////////
 
 // Internal library imports.
@@ -40,6 +41,7 @@ impl Default for BoxTileStyle {
 
 impl BoxTileStyle {
     /// Constructs a new `BoxTileStyle` with the default styling.
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             header: LineStyle::Double,
@@ -54,6 +56,7 @@ impl BoxTileStyle {
 // BoxTileRenderer
 ////////////////////////////////////////////////////////////////////////////////
 /// A table renderer that renders tables using box-drawing unicode style.
+#[allow(missing_copy_implementations)]
 #[derive(Debug, Clone)]
 pub struct BoxTileRenderer {
     /// The amount of space to allocate between columns.
@@ -72,6 +75,7 @@ impl Default for BoxTileRenderer {
 
 impl BoxTileRenderer {
     /// Constructs a new `BoxTileRenderer`.
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             column_padding: 0,
@@ -81,23 +85,27 @@ impl BoxTileRenderer {
     }
 
     /// Sets the column padding and returns the `MarkdownGridRenderer`.
+    #[must_use]
     pub const fn with_column_padding(mut self, column_padding: u8) -> Self {
         self.column_padding = column_padding;
         self
     }
 
     /// Sets the extra column width and returns the `BoxTileRenderer`.
+    #[must_use]
     pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
         self.extra_width = extra_width;
         self
     }
 
     /// Sets the style and returns the `BoxTileRenderer`.
+    #[must_use]
     pub const fn with_style(mut self, style: BoxTileStyle) -> Self {
         self.style = style;
         self
     }
 
+    /// Writes a row divider line.
     fn write_div<W>(
         &self, 
         out: &mut W,
@@ -122,6 +130,7 @@ impl BoxTileRenderer {
         Ok(())
     }
 
+    /// Writes the left border of a line.
     fn write_border_left<W>(&self, out: &mut W, style: LineStyle)
         -> std::io::Result<()>
         where W: std::io::Write
@@ -133,6 +142,7 @@ impl BoxTileRenderer {
         Ok(())
     }
 
+    /// Writes the right border of a line.
     fn write_border_right<W>(&self, out: &mut W, style: LineStyle)
         -> std::io::Result<()>
         where W: std::io::Write

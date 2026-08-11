@@ -15,11 +15,13 @@ use table_gen::Renderer;
 // MinimalRenderer
 ////////////////////////////////////////////////////////////////////////////////
 /// A table renderer that renders tables with minimal decoration.
-#[derive(Debug, Clone, Copy, Default)]
+#[allow(missing_copy_implementations)]
+#[derive(Debug, Clone, Default)]
 pub struct MinimalRenderer;
 
 impl MinimalRenderer {
 	/// Constructs a new `MinimalRenderer`.
+	#[must_use]
 	pub fn new() -> Self {
 		Self
 	}
@@ -335,7 +337,7 @@ N <-1-> <-2-> <-3->
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		println!("{}", out);
+		//println!("{}", out);
 
 		assert_eq!(out, "\
 i64                    f64         bool left-aligned             bool ht-aligned

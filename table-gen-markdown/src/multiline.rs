@@ -19,6 +19,7 @@ use table_gen::Renderer;
 ////////////////////////////////////////////////////////////////////////////////
 /// A table renderer that renders tables in the pandoc-markdown 'multiline'
 /// style.
+#[allow(missing_copy_implementations)]
 #[derive(Debug, Clone)]
 pub struct MarkdownMultilineRenderer {
 	/// The amount of space to allocate between columns.
@@ -37,6 +38,7 @@ impl Default for MarkdownMultilineRenderer {
 
 impl MarkdownMultilineRenderer {
 	/// Constructs a new `MarkdownMultilineRenderer`.
+	#[must_use]
 	pub const fn new() -> Self {
 		Self {
 			column_padding: 0,
@@ -46,12 +48,14 @@ impl MarkdownMultilineRenderer {
 	}
 
 	/// Sets the column padding and returns the `MarkdownMultilineRenderer`.
+	#[must_use]
 	pub const fn with_column_padding(mut self, column_padding: u8) -> Self {
 		self.column_padding = column_padding;
 		self
 	}
 
 	/// Sets the extra column width and returns the `MarkdownMultilineRenderer`.
+	#[must_use]
 	pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
 		self.extra_width = extra_width;
 		self
@@ -59,6 +63,7 @@ impl MarkdownMultilineRenderer {
 
 	/// Sets the flag for adding trailing column padding and returns the
 	/// `MarkdownSimpleRenderer`.
+	#[must_use]
 	pub const fn with_padded_trailing_column(
 		mut self,
 		pad_trailing_column: bool)

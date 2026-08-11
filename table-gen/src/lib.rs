@@ -2,7 +2,7 @@
 // This code is dual licenced using the MIT or Apache 2 license.
 // See licence-mit.md and licence-apache.md for details.
 ////////////////////////////////////////////////////////////////////////////////
-//! Table generator core library.
+//! Table generator library.
 ////////////////////////////////////////////////////////////////////////////////
 #![forbid(non_ascii_idents)]
 #![warn(absolute_paths_not_starting_with_crate)]

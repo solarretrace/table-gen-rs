@@ -43,6 +43,7 @@ bitflags! {
 // MarkdownPipeRenderer
 ////////////////////////////////////////////////////////////////////////////////
 /// A table renderer that renders tables in the pandoc-markdown 'grid' style.
+#[allow(missing_copy_implementations)]
 #[derive(Debug, Clone)]
 pub struct MarkdownPipeRenderer {
 	/// The amount of space to allocate between columns.
@@ -61,6 +62,7 @@ impl Default for MarkdownPipeRenderer {
 
 impl MarkdownPipeRenderer {
 	/// Constructs a new `MarkdownPipeRenderer`.
+	#[must_use]
 	pub const fn new() -> Self {
 		Self {
 			column_padding: 0,
@@ -70,12 +72,14 @@ impl MarkdownPipeRenderer {
 	}
 
 	/// Sets the column padding and returns the `MarkdownPipeRenderer`.
+	#[must_use]
 	pub const fn with_column_padding(mut self, column_padding: u8) -> Self {
 		self.column_padding = column_padding;
 		self
 	}
 
 	/// Sets the extra column width and returns the `MarkdownPipeRenderer`.
+	#[must_use]
 	pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
 		self.extra_width = extra_width;
 		self
@@ -83,6 +87,7 @@ impl MarkdownPipeRenderer {
 
 	/// Sets the alignment markers usage flag and returns the
 	/// `MarkdownPipeRenderer`.
+	#[must_use]
 	pub fn with_alignment_markers(mut self, align_markers: bool) -> Self {
 		self.flags.set(Flags::ALIGN_MARKERS, align_markers);
 		self
@@ -90,6 +95,7 @@ impl MarkdownPipeRenderer {
 
 	/// Sets the flag to use pipe symbols in the header divider separator and
 	/// returns the `MarkdownPipeRenderer`.
+	#[must_use]
 	pub fn with_header_div_pipes(mut self, header_pipes: bool)
 		-> Self
 	{
@@ -99,6 +105,7 @@ impl MarkdownPipeRenderer {
 
 	/// Sets the flag for adding trailing column padding and returns the
 	/// `MarkdownSimpleRenderer`.
+	#[must_use]
 	pub fn with_padded_trailing_column(
 		mut self,
 		pad_trailing_column: bool)
@@ -142,7 +149,7 @@ impl MarkdownPipeRenderer {
 	{
 		debug_assert!(inner_left.len() < 2);
 		debug_assert_eq!(inner_left.len(), inner_right.len());
-		let inner_pad = inner_left.len() as u8;
+		let inner_pad = u8::try_from(inner_left.len()).unwrap();
 		let mut pad = std::cmp::max(self.column_padding / 2, inner_pad * 2) / 2;
 		pad -= inner_pad;
 
@@ -194,6 +201,8 @@ impl Renderer for MarkdownPipeRenderer {
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
+		use HorzAlign::*;
+
 		if ctx.is_empty() { return Ok(()) }
 		if ctx.is_headerless() {
 			self.write_empty_row(out, ctx)?;
@@ -207,8 +216,7 @@ impl Renderer for MarkdownPipeRenderer {
 		let am = if align_markers { ":" } else { dm }; // align marker
 		let pm = "|"; // pipe marker
 		let im = if header_pipes { pm } else { "+" }; // internal div marker
-
-		use HorzAlign::*;
+		
 		for (col, col_width) in ctx.col_widths.iter().copied().enumerate() {
 			let cur_align = ctx.col_descs.get(col).map(|d| d.horz_align);
 			if col == 0 {

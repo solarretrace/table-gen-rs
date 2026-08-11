@@ -32,28 +32,31 @@ pub enum LineStyle {
 
 impl LineStyle {
 	/// Returns `true` if the `LineStyle` is `Empty`.
+	#[must_use]
 	pub fn is_empty(self) -> bool {
 		matches!(self, Self::Empty)
 	}
 
 	/// Returns a fallback `LineStyle` to use when a requested component is not
 	/// available in the given style.
+	#[must_use]
 	pub fn fallback(self) -> Self {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match self {
-			LightDash2 => Light,
-			LightDash3 => Light,
+			LightDash2 |
+			LightDash3 |
 			LightDash4 => Light,
-			HeavyDash2 => Heavy,
-			HeavyDash3 => Heavy,
+			HeavyDash2 |
+			HeavyDash3 |
 			HeavyDash4 => Heavy,
 			other      => other,
 		}
 	}
 
 	/// Returns the `char` to use for drawing horizontal lines.
+	#[must_use]
 	pub fn horz(self) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match self {
 			Empty      => ' ',
 			Light      => '─',
@@ -69,8 +72,9 @@ impl LineStyle {
 	}
 
 	/// Returns the `char` to use for drawing vertical lines.
+	#[must_use]
 	pub fn vert(self) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match self {
 			Empty      => ' ', 
 			Light      => '│',
@@ -87,8 +91,10 @@ impl LineStyle {
 
 	/// Returns the `char` to use for drawing horizontal and vertical line
 	/// crossings.
+	#[allow(clippy::match_same_arms)]
+	#[must_use]
 	pub fn cross(self, vert: Self) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match (self.fallback(), vert.fallback()) {
 			(Empty,  _)      => vert.vert(),
 			(_,      Empty)  => self.horz(),
@@ -107,8 +113,10 @@ impl LineStyle {
 
 	/// Returns the `char` to use for drawing the left part of horizontal line
 	/// segments.
+	#[allow(clippy::match_same_arms)]
+	#[must_use]
 	pub fn left(self) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match self.fallback() {
 			Empty  => ' ',
 			Light  => '╴',
@@ -120,8 +128,10 @@ impl LineStyle {
 
 	/// Returns the `char` to use for drawing the right part of horizontal line
 	/// segments.
+	#[allow(clippy::match_same_arms)]
+	#[must_use]
 	pub fn right(self) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match self.fallback() {
 			Empty  => ' ',
 			Light  => '╶',
@@ -133,8 +143,10 @@ impl LineStyle {
 
 	/// Returns the `char` to use for drawing the top part of vertical line
 	/// segments.
+	#[allow(clippy::match_same_arms)]
+	#[must_use]
 	pub fn top(self) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match self.fallback() {
 			Empty  => ' ',
 			Light  => '╵',
@@ -146,8 +158,10 @@ impl LineStyle {
 
 	/// Returns the `char` to use for drawing the bottom part of vertical line
 	/// segments.
+	#[allow(clippy::match_same_arms)]
+	#[must_use]
 	pub fn bottom(self) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match self.fallback() {
 			Empty  => ' ',
 			Light  => '╷',
@@ -159,8 +173,10 @@ impl LineStyle {
 
 	/// Returns the `char` to use for drawing top-left corner line
 	/// intersections.
+	#[allow(clippy::match_same_arms)]
+	#[must_use]
 	pub fn corner_top_left(self, vert: Self, round: bool) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match (self.fallback(), vert.fallback()) {
 			(Empty,  _)      => vert.bottom(),
 			(_    ,  Empty)  => vert.right(),
@@ -179,8 +195,10 @@ impl LineStyle {
 
 	/// Returns the `char` to use for drawing top-right corner line
 	/// intersections.
+	#[allow(clippy::match_same_arms)]
+	#[must_use]
 	pub fn corner_top_right(self, vert: Self, round: bool) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match (self.fallback(), vert.fallback()) {
 			(Empty,  _)      => vert.bottom(),
 			(_    ,  Empty)  => vert.left(),
@@ -199,8 +217,10 @@ impl LineStyle {
 
 	/// Returns the `char` to use for drawing bottom-left corner line
 	/// intersections.
+	#[allow(clippy::match_same_arms)]
+	#[must_use]
 	pub fn corner_bottom_left(self, vert: Self, round: bool) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match (self.fallback(), vert.fallback()) {
 			(Empty,  _)      => vert.top(),
 			(_    ,  Empty)  => vert.right(),
@@ -219,8 +239,10 @@ impl LineStyle {
 
 	/// Returns the `char` to use for drawing bottom-right corner line
 	/// intersections.
+	#[allow(clippy::match_same_arms)]
+	#[must_use]
 	pub fn corner_bottom_right(self, vert: Self, round: bool) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match (self.fallback(), vert.fallback()) {
 			(Empty,  _)      => vert.top(),
 			(_    ,  Empty)  => vert.left(),
@@ -239,8 +261,10 @@ impl LineStyle {
 
 	/// Returns the `char` to use for drawing vertical lines with left segment
 	/// intersections.
+	#[allow(clippy::match_same_arms)]
+	#[must_use]
 	pub fn vert_with_left(self, left: Self) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match (self.fallback(), left.fallback()) {
 			(Empty,  _)      => left.left(),
 			(_,      Empty)  => self.vert(),
@@ -259,8 +283,10 @@ impl LineStyle {
 
 	/// Returns the `char` to use for drawing vertical lines with right segment
 	/// intersections.
+	#[allow(clippy::match_same_arms)]
+	#[must_use]
 	pub fn vert_with_right(self, right: Self) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match (self.fallback(), right.fallback()) {
 			(Empty,  _)      => right.right(),
 			(_,      Empty)  => self.vert(),
@@ -279,8 +305,10 @@ impl LineStyle {
 
 	/// Returns the `char` to use for drawing horizontal lines with top segment
 	/// intersections.
+	#[allow(clippy::match_same_arms)]
+	#[must_use]
 	pub fn horz_with_top(self, top: Self) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match (self.fallback(), top.fallback()) {
 			(Empty,  _)      => top.top(),
 			(_,      Empty)  => self.horz(),
@@ -299,8 +327,10 @@ impl LineStyle {
 
 	/// Returns the `char` to use for drawing horizontal lines with bottom
 	/// segment intersections.
+	#[allow(clippy::match_same_arms)]
+	#[must_use]
 	pub fn horz_with_bottom(self, bottom: Self) -> char {
-		pub use LineStyle::*;
+		use LineStyle::*;
 		match (self.fallback(), bottom.fallback()) {
 			(Empty,  _)      => bottom.bottom(),
 			(_,      Empty)  => self.horz(),

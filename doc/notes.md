@@ -63,12 +63,13 @@
 	- Support custom formatting
 + Support full table width constraints
 + Implement colors for terminal renderers
-+ Deduplicate column references
 + Support independent header/footer alignment
 + Implement parallelism
 + Implement custom aggregation
 + Support subcolumns
-+ Support multiple header/footer rows
+	- Splice adapter
+	- Support multiple header/footer rows
+	- Support joined column rendering
 + Implement more robust formatting options
 
 # Deferred tasks:
@@ -79,3 +80,5 @@
 + Implement Transpose operation
 	- Can no longer expose ColumnDesc array to renderers.
 	- Need a way to request column descriptors dynamically.
++ Deduplicate column references
+	- Unnecessary. Duplicate columns can have different formatting once features are implemented.
