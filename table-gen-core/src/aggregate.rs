@@ -116,7 +116,8 @@ impl<'a, R> Aggregate<'a, R>
 					if idx >= col_widths.len() { col_widths.push(0); }
 
 					// Get the ColumnDesc for this index.
-					let col_desc = col_descs.get(idx)
+					let col_desc = col_descs
+						.get(idx)
 						.unwrap_or(default_col_desc);
 
 					if col_desc.min_width == col_desc.max_width {
@@ -128,6 +129,10 @@ impl<'a, R> Aggregate<'a, R>
 							.map(|l| (str_width)(l))
 							.max()
 							.unwrap_or(0);
+						// The cell width is at least as wide as the min_width.
+						let cell_width = std::cmp::max(
+							col_desc.min_width,
+							cell_width);
 						// If the cell widens the current width, do so, but do
 						// not exceed the maximum allowed.
 						col_widths[idx] = std::cmp::min(

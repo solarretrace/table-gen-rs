@@ -19,6 +19,7 @@ use table_gen_core::Renderer;
 pub struct MinimalRenderer;
 
 impl MinimalRenderer {
+	/// Constructs a new `MinimalRenderer`.
 	pub fn new() -> Self {
 		Self
 	}
@@ -42,7 +43,9 @@ impl Renderer for MinimalRenderer {
 }
 
 
-
+////////////////////////////////////////////////////////////////////////////////
+// Test module
+////////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod test {
 	use super::*;
@@ -275,6 +278,76 @@ N <-1-> <-2-> <-3->
 +4.60   e  
 -5.50   f  
 +6.40   g  
+");
+	}
+
+	#[test]
+	fn demo_table() {
+		let data: Vec<(i64, f64, bool, &str)> = vec![
+			(15,  0.0,     false, "A single line column"),
+			(-15, 18.0001, true,  "A two-\nline column"),
+			(0,   18e4,    true,  "A\nmulti-\nline\ncolumn"),
+		];
+
+		let col_descs = vec![
+			ColumnDesc::new()
+				.with_header("i64\nvalues (wide)")
+				.with_footer("COLUMN 0")
+				.with_min_width(18),
+			ColumnDesc::new()
+				.with_header("f64\nvalues")
+				.with_footer("COLUMN 1")
+				.with_display_fmt(DisplayFmt::new()
+					.with_precision(3)
+					.with_sign(Sign::Plus))
+				.with_horz_align(HorzAlign::Center)
+				.with_vert_align(VertAlign::Top),
+			ColumnDesc::new()
+				.with_header("bool\nvalues")
+				.with_footer("COLUMN 2")
+				.with_horz_align(HorzAlign::Right)
+				.with_vert_align(VertAlign::Center),
+			ColumnDesc::new()
+				.with_header("left-aligned\nstrings")
+				.with_footer("COLUMN 3")
+				.with_horz_align(HorzAlign::Left)
+				.with_vert_align(VertAlign::Top),
+			ColumnDesc::new()
+				.with_header("bool\nagain")
+				.with_footer("COLUMN 4")
+				.with_horz_align(HorzAlign::Right)
+				.with_vert_align(VertAlign::Bottom),
+			ColumnDesc::new()
+				.with_header("right-aligned\nstrings")
+				.with_footer("COLUMN 5")
+				.with_horz_align(HorzAlign::Right)
+				.with_vert_align(VertAlign::Bottom)
+				.with_max_width(10),
+		];
+		let order = [ColumnOrd::new(1).reverse(), ColumnOrd::new(2)];
+			
+		let mut table = Table::new_builder(data, MinimalRenderer::new())
+			.with_column_descs(&col_descs)
+			.with_column_selection(&[0, 1, 2, 3, 2, 3])
+			.with_sort_columns(&order)
+			.finish();
+
+		let mut out: Vec<u8> = Vec::new();
+		assert!(table.render(&mut out).is_ok());
+		let out = String::from_utf8(out).unwrap();
+		println!("{}", out);
+
+		assert_eq!(out, "\
+i64                    f64         bool left-aligned             bool ht-aligned
+values (wide)        values      values strings                 again    strings
+0                  +180000.000          A                                      A
+                                   true multi-                            multi-
+                                        line                                line
+                                        column                   true     column
+-15                  +18.000       true A two-                            A two-
+                                        line column              true ine column
+15                   +0.000       false A single line column    false ine column
+COLUMN 0            COLUMN 1   COLUMN 2 COLUMN 3             COLUMN 4   COLUMN 5
 ");
 	}
 }

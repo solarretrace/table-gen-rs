@@ -27,7 +27,7 @@ You will usually want to extend this pattern by providing additional configurati
 
     // We can provide metadata for each column. The `ColumnDesc`s are provided
     // in order of the output index:
-    let col_descs = vec![
+    let column_descs = vec![
         ColumnDesc::new()
             .with_header("Header")               // Header text for the column
             .with_footer("Footer")               // Footer text for the column
