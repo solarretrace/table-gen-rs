@@ -6,11 +6,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Workspace library imports.
-use table_gen_core::CellContext;
-use table_gen_core::Features;
-use table_gen_core::HorzAlign;
-use table_gen_core::RenderContext;
-use table_gen_core::Renderer;
+use table_gen::CellContext;
+use table_gen::Features;
+use table_gen::HorzAlign;
+use table_gen::RenderContext;
+use table_gen::Renderer;
 
 
 // External library imports.
@@ -277,10 +277,10 @@ impl Renderer for MarkdownPipeRenderer {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use table_gen_core::ColumnDesc;
-	use table_gen_core::ColumnOrd;
-	use table_gen_core::HorzAlign;
-	use table_gen_core::Table;
+	use table_gen::ColumnDesc;
+	use table_gen::ColumnOrd;
+	use table_gen::HorzAlign;
+	use table_gen::Table;
 
 	#[test]
 	fn empty_table() {

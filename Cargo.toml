@@ -1,11 +1,12 @@
 [workspace]
 resolver = "3"
 members = [
-	"table-gen-*"
+	"table-gen",
+	"table-gen-*",
 ]
 
 [workspace.package]
-version = "0.6.0"
+version = "0.6.1"
 authors = ["Skylor R Schermer <skyschermer@gmail.com>"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
@@ -23,7 +24,7 @@ exclude = [
 
 # Required dependencies
 [workspace.dependencies]
-table-gen-core = { version = "*", path = "./table-gen-core" }
+table-gen = { version = "*", path = "./table-gen" }
 table-gen-markdown = { version = "*", path = "./table-gen-markdown" }
 table-gen-terminal = { version = "*", path = "./table-gen-terminal" }
 bitflags = "2.13"

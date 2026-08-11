@@ -16,4 +16,4 @@ name = "table_gen_terminal"
 
 [dependencies]
 bitflags.workspace = true
-table-gen-core.workspace = true
+table-gen.workspace = true

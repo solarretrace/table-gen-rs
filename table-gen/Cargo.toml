@@ -1,18 +1,18 @@
 [package]
-name = "table-gen-core"
+name = "table-gen"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "table-gen core crate"
+description = "table generator API crate"
 readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
 homepage.workspace = true
 
 [lib]
-name = "table_gen_core"
+name = "table_gen"
 
 [dependencies]
 bitflags.workspace = true

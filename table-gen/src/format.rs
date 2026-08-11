@@ -196,7 +196,7 @@ impl DisplayFmt {
 	///
 	/// Indicates that the cell value should be formatted with the given
 	/// precision. See the 
-	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html)
+	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html#precision)
 	/// for details.
 	#[must_use]
 	pub const fn with_precision_option(mut self, precision: Option<usize>)
@@ -210,7 +210,7 @@ impl DisplayFmt {
 	///
 	/// Indicates that the cell value should be formatted with the given sign.
 	/// See the 
-	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html)
+	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.htmlsign0)
 	/// for details.
 	#[must_use]
 	pub const fn with_sign_option(mut self, sign: Option<Sign>) -> Self {
@@ -222,7 +222,7 @@ impl DisplayFmt {
 	///
 	/// Indicates that the cell value should be formatted with the given
 	/// precision. See the 
-	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html)
+	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html#precision)
 	/// for details.
 	#[must_use]
 	pub fn with_precision<T>(mut self, precision: T) -> Self 
@@ -236,7 +236,7 @@ impl DisplayFmt {
 	///
 	/// Indicates that the cell value should be formatted with the given sign.
 	/// See the 
-	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html)
+	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html#sign0)
 	/// for details.
 	#[must_use]
 	pub fn with_sign<T>(mut self, sign: T) -> Self 
@@ -272,7 +272,7 @@ impl DisplayFmt {
 ///
 /// Indicates that the cell value should be formatted with the given sign. See
 /// the 
-/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html)
+/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html#sign0)
 /// for details.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Sign {
