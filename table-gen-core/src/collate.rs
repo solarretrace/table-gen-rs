@@ -103,7 +103,7 @@ impl<'a, R, S> Collate<'a, S>
 	}
 
 	/// Sets the column order and returns the `Collate`.
-	pub (in crate) fn with_column_order(mut self, col_order: &'a [ColumnOrd])
+	pub (in crate) fn with_sort_columns(mut self, col_order: &'a [ColumnOrd])
 		-> Self
 	{
 		self.col_order = col_order;

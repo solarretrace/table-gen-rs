@@ -289,7 +289,7 @@ mod test {
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		println!("{}", out);
+		//println!("{}", out);
 
 		assert_eq!(out, "\
 +-------+-------+-------+
@@ -335,7 +335,7 @@ mod test {
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		println!("{}", out);
+		//println!("{}", out);
 
 		assert_eq!(out, "\
 +----------+---------+---------+--------------------------+

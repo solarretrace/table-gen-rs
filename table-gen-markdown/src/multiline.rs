@@ -182,6 +182,7 @@ impl Renderer for MarkdownMultilineRenderer {
 mod test {
 	use super::*;
 	use table_gen_core::ColumnDesc;
+	use table_gen_core::ColumnOrd;
 	use table_gen_core::HorzAlign;
 	use table_gen_core::Table;
 
@@ -200,6 +201,40 @@ mod test {
 		assert_eq!(out, "");
 	}
 
+	#[test]
+	fn array_table_single_column() {
+		let data: Vec<[usize; 1]> = vec![
+			[1],
+			[2000],
+			[10],
+			[30000],
+			[100],
+		];
+
+		let order = [ColumnOrd::new(0).reverse()];
+		let mut table = Table::new_builder(data, MarkdownMultilineRenderer::new())
+			.with_sort_columns(&order)
+			.finish();
+
+		let mut out: Vec<u8> = Vec::new();
+		assert!(table.render(&mut out).is_ok());
+		let out = String::from_utf8(out).unwrap();
+		//println!("{}", out);
+
+		assert_eq!(out, "\
+-------
+30000  
+
+2000   
+
+100    
+
+10     
+
+1      
+-------
+");
+	}
 
 	#[test]
 	fn simple_table() {

@@ -158,7 +158,36 @@ pub struct ColumnOrd {
 	pub idx: usize,
 	/// The column ordering flags.
 	pub flags: ColumnOrdFlags,
+}
 
+impl ColumnOrd {
+	/// Constructs a new `ColumnOrd` ordering on the given column index.
+	pub fn new(idx: usize) -> Self {
+		ColumnOrd {
+			idx,
+			flags: ColumnOrdFlags::default(),
+		}
+	}
+
+	/// Toggles the sort order and returns the `ColumnOrd`.
+	pub fn reverse(mut self) -> Self {
+		self.flags.toggle(ColumnOrdFlags::REVERSE);
+		self
+	}
+
+	/// Sets a flag indicating to order by the formatted column text and returns
+	/// the `ColumnOrd`.
+	pub fn formatted(mut self) -> Self {
+		self.flags.set(ColumnOrdFlags::FORMATTED, true);
+		self
+	}
+
+	/// Sets a flag indicating to order `None` values before all other values
+	/// and returns the `ColumnOrd`.
+	pub fn none_less(mut self) -> Self {
+		self.flags.set(ColumnOrdFlags::NONE_LESS, true);
+		self
+	}
 }
 
 
@@ -174,5 +203,11 @@ bitflags! {
 		/// Indicates that empty cells in the column should sort before other
 		/// values.
 		const NONE_LESS = 0b_0000_0100;
+	}
+}
+
+impl Default for ColumnOrdFlags {
+	fn default() -> Self {
+		ColumnOrdFlags::empty()
 	}
 }

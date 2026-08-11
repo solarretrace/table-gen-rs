@@ -1,7 +1,6 @@
 
 # Documentation & API tasks:
 
-+ Write tests for single-column tables.
 + Write API documentation
 
 

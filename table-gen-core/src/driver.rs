@@ -86,8 +86,8 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 	}
 
 	/// Prepares the table builder with the given output column orderings.
-	pub fn with_column_order(mut self, col_order: &'a [ColumnOrd]) -> Self {
-		self.inner = self.inner.with_column_order(col_order);
+	pub fn with_sort_columns(mut self, col_order: &'a [ColumnOrd]) -> Self {
+		self.inner = self.inner.with_sort_columns(col_order);
 		self
 	}
 
