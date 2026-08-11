@@ -9,9 +9,10 @@
 use crate::LineStyle;
 
 // Workspace library imports.
-use table_gen_core::ColumnDesc;
+use table_gen_core::CellContext;
 use table_gen_core::Features;
 use table_gen_core::HorzAlign;
+use table_gen_core::RenderContext;
 use table_gen_core::Renderer;
 
 
@@ -67,8 +68,6 @@ impl BoxStyle {
 /// A table renderer that renders tables using box-drawing unicode style.
 #[derive(Debug, Clone)]
 pub struct BoxDrawingRenderer {
-	/// The column widths. Used to render separators with the correct size.
-	column_widths: Vec<usize>,
 	/// The amount of space to allocate between columns.
 	column_padding: u8,
 	/// The amount of extra space to allocate within columns.
@@ -87,7 +86,6 @@ impl BoxDrawingRenderer {
 	/// Constructs a new `BoxDrawingRenderer`.
 	pub const fn new() -> Self {
 		Self {
-			column_widths: Vec::new(),
 			column_padding: 0,
 			extra_width: 0,
 			style: BoxStyle::new(),
@@ -115,6 +113,7 @@ impl BoxDrawingRenderer {
 	fn write_div<W>(
 		&self, 
 		out: &mut W,
+		ctx: &RenderContext<'_>,
 		left: char,
 		horz: char,
 		cross: char,
@@ -125,22 +124,24 @@ impl BoxDrawingRenderer {
 		let pad = std::cmp::max(self.column_padding / 2, 2);
 
 		write!(out, "{}", left)?;
-		for (col, col_width) in self.column_widths.iter().copied().enumerate() {
+		for (col, col_width) in ctx.col_widths.iter().copied().enumerate() {
 			for _ in 0..col_width { write!(out, "{}", horz)?; }
 			for _ in 0..pad { write!(out, "{}", horz)?; }
 			for _ in 0..self.extra_width { write!(out, "{}", horz)?; }
-			if col + 1 == self.column_widths.len() { break; }
+			if col + 1 == ctx.column_count() { break; }
 			write!(out, "{}", cross)?;
 		}
 		write!(out, "{}", right)?;
 		Ok(())
 	}
 
-	fn write_border_top<W>(&self, out: &mut W) -> std::io::Result<()>
+	fn write_border_top<W>(&self, out: &mut W, ctx: &RenderContext<'_>)
+		-> std::io::Result<()>
 		where W: std::io::Write
 	{
 		self.write_div(
 			out,
+			ctx,
 			self.style.border_top.corner_top_left(
 				self.style.border_left,
 				self.style.round_corners),
@@ -152,11 +153,13 @@ impl BoxDrawingRenderer {
 				self.style.round_corners))
 	}
 
-	fn write_section_sep<W>(&self, out: &mut W) -> std::io::Result<()>
+	fn write_section_sep<W>(&self, out: &mut W, ctx: &RenderContext<'_>)
+		-> std::io::Result<()>
 		where W: std::io::Write
 	{
 		self.write_div(
 			out,
+			ctx,
 			self.style.border_left.vert_with_right(
 				self.style.div_sep),
 			self.style.div_sep.horz(),
@@ -166,11 +169,13 @@ impl BoxDrawingRenderer {
 				self.style.div_sep))
 	}
 
-	fn write_row_sep<W>(&self, out: &mut W) -> std::io::Result<()>
+	fn write_row_sep<W>(&self, out: &mut W,ctx: &RenderContext<'_>)
+		-> std::io::Result<()>
 		where W: std::io::Write
 	{
 		self.write_div(
 			out,
+			ctx,
 			self.style.border_left.vert_with_right(
 				self.style.row_sep),
 			self.style.row_sep.horz(),
@@ -212,11 +217,13 @@ impl BoxDrawingRenderer {
 		Ok(())
 	}
 
-	fn write_border_bottom<W>(&self, out: &mut W) -> std::io::Result<()>
+	fn write_border_bottom<W>(&self, out: &mut W, ctx: &RenderContext<'_>)
+		-> std::io::Result<()>
 		where W: std::io::Write
 	{
 		self.write_div(
 			out,
+			ctx,
 			self.style.border_bottom.corner_bottom_left(
 				self.style.border_left,
 				self.style.round_corners),
@@ -234,55 +241,42 @@ impl Renderer for BoxDrawingRenderer {
 		Features::MULTILINE
 	}
 
-	fn init(
-		&mut self,
-		column_descs: &[ColumnDesc<'_>],
-		_row_count: usize,
-		column_widths: &[usize])
-	{
-		self.column_widths = column_widths.iter().copied().collect();
-	}
-
-	fn write_table_start<W>(&mut self, out: &mut W)
+	fn write_table_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		if self.column_widths.is_empty() { return Ok(()) }
-		self.write_border_top(out)?;
+		if ctx.is_empty() { return Ok(()) }
+		self.write_border_top(out, ctx)?;
 		writeln!(out)
 	}
 
-	fn write_header_end<W>(&mut self, out: &mut W)
+	fn write_header_end<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		if self.column_widths.is_empty() { return Ok(()) }
-		self.write_section_sep(out)?;
+		if ctx.is_empty() { return Ok(()) }
+		self.write_section_sep(out, ctx)?;
 		writeln!(out)
 	}
 
 	fn write_data_cell_line<W>(
 		&mut self,
 		out: &mut W,
-		_row: usize,
-		_col: usize,
-		_line: usize,
-		text: &str,
-		width: usize,
-		horz_align: HorzAlign)
+		_ctx: &RenderContext<'_>,
+		cell: &CellContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let mut pad = width.saturating_sub(text.len());
+		let mut pad = cell.padding();
 		pad += self.extra_width as usize;
-		let (l_pad, r_pad) = match horz_align {
+		let (l_pad, r_pad) = match cell.desc.horz_align {
 			HorzAlign::Left   => (0,     pad),
 			HorzAlign::Center => (pad/2, pad.div_ceil(2)),
 			HorzAlign::Right  => (pad,   0),
 		};
 		
 		for _ in 0..l_pad { write!(out, " ")?; }
-		write!(out, "{}", text)?;
+		write!(out, "{}", cell.text)?;
 		for _ in 0..r_pad { write!(out, " ")?; }
 		Ok(())
 	}
@@ -290,14 +284,12 @@ impl Renderer for BoxDrawingRenderer {
 	fn write_data_cell_line_start<W>(
 		&mut self,
 		out: &mut W,
-		_row: usize,
-		col: usize,
-		_line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		if col == 0 {
-			self.write_border_left(out)?;
+		if ctx.is_first_column() {
+			self.write_border_left(out,)?;
 		}
 		Ok(())
 	}
@@ -305,14 +297,12 @@ impl Renderer for BoxDrawingRenderer {
 	fn write_data_cell_line_end<W>(
 		&mut self,
 		out: &mut W,
-		_row: usize,
-		col: usize,
-		_line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		if col + 1 == self.column_widths.len() {
-			self.write_border_right(out)
+		if ctx.is_last_column() {
+			self.write_border_right(out,)
 		} else {
 			self.write_column_sep(out)
 		}
@@ -321,27 +311,28 @@ impl Renderer for BoxDrawingRenderer {
 	fn write_data_row_start<W>(
 		&mut self,
 		out: &mut W,
-		row: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		if self.column_widths.is_empty() || row == 0 { return Ok(()) }
-		self.write_row_sep(out)?;
+		if ctx.is_empty() || ctx.is_first_row() { return Ok(()) }
+		self.write_row_sep(out, ctx)?;
 		writeln!(out)
 	}
 
-	fn write_footer_start<W>(&mut self, out: &mut W)
+	fn write_footer_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		self.write_header_end(out)
+		self.write_header_end(out, ctx)
 	}
 
-	fn write_table_end<W>(&mut self, out: &mut W) -> std::io::Result<()>
+	fn write_table_end<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
+		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		if self.column_widths.is_empty() { return Ok(()) }
-		self.write_border_bottom(out)?;
+		if ctx.is_empty() { return Ok(()) }
+		self.write_border_bottom(out, ctx)?;
 		writeln!(out)
 	}
 }
@@ -503,6 +494,65 @@ mod test {
 │          ┆         ┆         ┆ the blank line between   │
 │          ┆         ┆         ┆ rows                     │
 └──────────┴─────────┴─────────┴──────────────────────────┘
+");
+	}
+
+
+	#[test]
+	fn multiline_table_alt() {
+		let data: Vec<(&str, &str, f64, &str)> = vec![
+			("First", "row",
+				12.0, "Example of a row that\nspans multiple lines."),
+			("Second", "row",
+				5.0, "Here's another one. Note\nthe blank line between\nrows"),
+		];
+
+		let col_descs = vec![
+			ColumnDesc::new()
+				.with_header("Centered\nHeader")
+				.with_horz_align(HorzAlign::Center),
+			ColumnDesc::new()
+				.with_header("Left\nAligned")
+				.with_horz_align(HorzAlign::Left),
+			ColumnDesc::new()
+				.with_header("Right\nAligned")
+				.with_horz_align(HorzAlign::Right),
+			ColumnDesc::new()
+				.with_header("Left\nAligned")
+				.with_horz_align(HorzAlign::Left),
+		];
+
+		let mut table = Table::new_builder(data, BoxDrawingRenderer::new()
+				.with_style(BoxStyle {
+					border_left: LineStyle::Light,
+					border_right: LineStyle::Light,
+					border_top: LineStyle::Double,
+					border_bottom: LineStyle::Light,
+					row_sep: LineStyle::Empty,
+					col_sep: LineStyle::Heavy,
+					div_sep: LineStyle::HeavyDash2,
+					round_corners: true,
+				}))
+			.with_column_descs(&col_descs)
+			.finish();
+
+		let mut out: Vec<u8> = Vec::new();
+		assert!(table.render(&mut out).is_ok());
+		let out = String::from_utf8(out).unwrap();
+		//println!("{}", out);
+
+		assert_eq!(out, "\
+╒══════════╦═════════╦═════════╦══════════════════════════╕
+│ Centered ┃ Left    ┃   Right ┃ Left                     │
+│  Header  ┃ Aligned ┃ Aligned ┃ Aligned                  │
+┝╍╍╍╍╍╍╍╍╍╍╋╍╍╍╍╍╍╍╍╍╋╍╍╍╍╍╍╍╍╍╋╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍┥
+│  First   ┃ row     ┃      12 ┃ Example of a row that    │
+│          ┃         ┃         ┃ spans multiple lines.    │
+│          ┃         ┃         ┃                          │
+│  Second  ┃ row     ┃       5 ┃ Here's another one. Note │
+│          ┃         ┃         ┃ the blank line between   │
+│          ┃         ┃         ┃ rows                     │
+╰──────────┸─────────┸─────────┸──────────────────────────╯
 ");
 	}
 }

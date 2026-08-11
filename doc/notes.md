@@ -2,12 +2,14 @@
 
 # Implementation tasks:
 
-+ Support extra width in aggregator.
++ Implement colors for terminal renderers
++ Implement renderer formatting hooks
++ Support custom line breaker
++ Support extra width in aggregator
 + Deduplicate sort indices
 + Deduplicate column references
 + Implement Transpose operation
 + Support independent header/footer alignment
-+ Support custom line breaker
 + Support unicode string widths
 + Implement Features
 + Implement parallelism
@@ -17,15 +19,7 @@
 + Implement more robust formatting options
 
 
-# Renderer tasks:
-
-+ Implement html renderer
-+ Implement csv renderer
-
-
-
-
-
 # Documentation & API tasks:
 
++ Write tests for single-column tables.
 + Write API documentation

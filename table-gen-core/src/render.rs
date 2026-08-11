@@ -6,8 +6,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Internal library imports.
-use crate::ColumnDesc;
 use crate::HorzAlign;
+use crate::RenderContext;
+use crate::CellContext;
 
 // External library imports.
 use bitflags::bitflags;
@@ -35,12 +36,7 @@ pub trait Renderer {
 	fn features(&self) -> Features;
 
 	/// Initializes the renderer. Will be called before any rendering begins.
-	fn init(
-		&mut self,
-		_column_descs: &[ColumnDesc<'_>],
-		_row_count: usize,
-		_column_widths: &[usize])
-	{}
+	fn init(&mut self, _ctx: &RenderContext<'_>) {}
 
 	// Data writing hooks
 	////////////////////////////////////////////////////////////////////////////
@@ -48,24 +44,20 @@ pub trait Renderer {
 	fn write_data_cell_line<W>(
 		&mut self,
 		out: &mut W,
-		_row: usize,
-		_col: usize,
-		_line: usize,
-		text: &str,
-		width: usize,
-		horz_align: HorzAlign)
+		_ctx: &RenderContext<'_>,
+		cell: &CellContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let pad = width.saturating_sub(text.len());
-		let (l_pad, r_pad) = match horz_align {
+		let pad = cell.width.saturating_sub(cell.text.len());
+		let (l_pad, r_pad) = match cell.desc.horz_align {
 			HorzAlign::Left   => (0,     pad),
 			HorzAlign::Center => (pad/2, pad.div_ceil(2)),
 			HorzAlign::Right  => (pad,   0),
 		};
 		
 		for _ in 0..l_pad { write!(out, " ")?; }
-		write!(out, "{}", text)?;
+		write!(out, "{}", cell.text)?;
 		for _ in 0..r_pad { write!(out, " ")?; }
 		Ok(())
 	}
@@ -74,38 +66,30 @@ pub trait Renderer {
 	fn write_header_cell_line<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize,
-		text: &str,
-		width: usize,
-		horz_align: HorzAlign)
+		ctx: &RenderContext<'_>,
+		cell: &CellContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		self.write_data_cell_line(out, row, col, line, text, width, horz_align)
+		self.write_data_cell_line(out, ctx, cell)
 	}
 
 	/// Hook for writing single cell's line in a footer row.
 	fn write_footer_cell_line<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize,
-		text: &str,
-		width: usize,
-		horz_align: HorzAlign)
+		ctx: &RenderContext<'_>,
+		cell: &CellContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		self.write_data_cell_line(out, row, col, line, text, width, horz_align)
+		self.write_data_cell_line(out, ctx, cell)
 	}
 
 	// Section hooks
 	////////////////////////////////////////////////////////////////////////////
 	/// Hook for writing at the start of the table render.
-	fn write_table_start<W>(&mut self, _out: &mut W)
+	fn write_table_start<W>(&mut self, _out: &mut W, _ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -113,7 +97,7 @@ pub trait Renderer {
 	}
 
 	/// Hook for writing at the end of the table render.
-	fn write_table_end<W>(&mut self, _out: &mut W)
+	fn write_table_end<W>(&mut self, _out: &mut W, _ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -121,7 +105,7 @@ pub trait Renderer {
 	}
 
 	/// Hook for writing at the start of the header.
-	fn write_header_start<W>(&mut self, _out: &mut W)
+	fn write_header_start<W>(&mut self, _out: &mut W, _ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -129,7 +113,7 @@ pub trait Renderer {
 	}
 
 	/// Hook for writing at the end of the header.
-	fn write_header_end<W>(&mut self, _out: &mut W)
+	fn write_header_end<W>(&mut self, _out: &mut W, _ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -137,7 +121,7 @@ pub trait Renderer {
 	}
 
 	/// Hook for writing at the start of the data.
-	fn write_data_start<W>(&mut self, _out: &mut W)
+	fn write_data_start<W>(&mut self, _out: &mut W, _ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -145,7 +129,7 @@ pub trait Renderer {
 	}
 
 	/// Hook for writing at the end of the data.
-	fn write_data_end<W>(&mut self, _out: &mut W)
+	fn write_data_end<W>(&mut self, _out: &mut W, _ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -153,7 +137,7 @@ pub trait Renderer {
 	}
 
 	/// Hook for writing at the start of the footer.
-	fn write_footer_start<W>(&mut self, _out: &mut W)
+	fn write_footer_start<W>(&mut self, _out: &mut W, _ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -161,7 +145,7 @@ pub trait Renderer {
 	}
 
 	/// Hook for writing at the end of the footer.
-	fn write_footer_end<W>(&mut self, _out: &mut W)
+	fn write_footer_end<W>(&mut self, _out: &mut W, _ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -172,7 +156,10 @@ pub trait Renderer {
 	////////////////////////////////////////////////////////////////////////////
 
 	/// Hook for writing at the start of a header row.
-	fn write_header_row_start<W>(&mut self, _out: &mut W, _row: usize)
+	fn write_header_row_start<W>(
+		&mut self,
+		_out: &mut W, 
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -180,7 +167,10 @@ pub trait Renderer {
 	}
 
 	/// Hook for writing at the end of a header row.
-	fn write_header_row_end<W>(&mut self, _out: &mut W, _row: usize)
+	fn write_header_row_end<W>(
+		&mut self,
+		_out: &mut W, 
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -189,7 +179,10 @@ pub trait Renderer {
 
 
 	/// Hook for writing at the start of a data row.
-	fn write_data_row_start<W>(&mut self, _out: &mut W, _row: usize)
+	fn write_data_row_start<W>(
+		&mut self,
+		_out: &mut W, 
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -197,7 +190,10 @@ pub trait Renderer {
 	}
 
 	/// Hook for writing at the end of a data row.
-	fn write_data_row_end<W>(&mut self, _out: &mut W, _row: usize)
+	fn write_data_row_end<W>(
+		&mut self,
+		_out: &mut W, 
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -205,7 +201,10 @@ pub trait Renderer {
 	}
 
 	/// Hook for writing at the start of a footer row.
-	fn write_footer_row_start<W>(&mut self, _out: &mut W, _row: usize)
+	fn write_footer_row_start<W>(
+		&mut self,
+		_out: &mut W, 
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -213,7 +212,10 @@ pub trait Renderer {
 	}
 
 	/// Hook for writing at the end of a footer row.
-	fn write_footer_row_end<W>(&mut self, _out: &mut W, _row: usize)
+	fn write_footer_row_end<W>(
+		&mut self,
+		_out: &mut W, 
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -228,8 +230,7 @@ pub trait Renderer {
 	fn write_header_cell_start<W>(
 		&mut self,
 		_out: &mut W,
-		_row: usize,
-		_col: usize)
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -240,8 +241,7 @@ pub trait Renderer {
 	fn write_header_cell_end<W>(
 		&mut self,
 		_out: &mut W,
-		_row: usize,
-		_col: usize)
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -252,8 +252,7 @@ pub trait Renderer {
 	fn write_data_cell_start<W>(
 		&mut self,
 		_out: &mut W,
-		_row: usize,
-		_col: usize)
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -264,8 +263,7 @@ pub trait Renderer {
 	fn write_data_cell_end<W>(
 		&mut self,
 		_out: &mut W,
-		_row: usize,
-		_col: usize)
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -276,8 +274,7 @@ pub trait Renderer {
 	fn write_footer_cell_start<W>(
 		&mut self,
 		_out: &mut W,
-		_row: usize,
-		_col: usize)
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -288,8 +285,7 @@ pub trait Renderer {
 	fn write_footer_cell_end<W>(
 		&mut self,
 		_out: &mut W,
-		_row: usize,
-		_col: usize)
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -303,8 +299,7 @@ pub trait Renderer {
 	fn write_header_line_start<W>(
 		&mut self,
 		_out: &mut W,
-		_row: usize,
-		_line: usize)
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -315,20 +310,18 @@ pub trait Renderer {
 	fn write_header_line_end<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		self.write_data_line_end(out, row, line)
+		self.write_data_line_end(out, ctx)
 	}
 
 	/// Hook for writing at the start of a data line.
 	fn write_data_line_start<W>(
 		&mut self,
 		_out: &mut W,
-		_row: usize,
-		_line: usize)
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -339,8 +332,7 @@ pub trait Renderer {
 	fn write_data_line_end<W>(
 		&mut self,
 		out: &mut W,
-		_row: usize,
-		_line: usize)
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -351,8 +343,7 @@ pub trait Renderer {
 	fn write_footer_line_start<W>(
 		&mut self,
 		_out: &mut W,
-		_row: usize,
-		_line: usize)
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -363,12 +354,11 @@ pub trait Renderer {
 	fn write_footer_line_end<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		self.write_data_line_end(out, row, line)
+		self.write_data_line_end(out, ctx)
 	}
 
 	// Cell line-based hooks
@@ -378,35 +368,29 @@ pub trait Renderer {
 	fn write_header_cell_line_start<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		self.write_data_cell_line_start(out, row, col, line)
+		self.write_data_cell_line_start(out, ctx)
 	}
 
 	/// Hook for writing at the end of a cell line.
 	fn write_header_cell_line_end<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		self.write_data_cell_line_end(out, row, col, line)
+		self.write_data_cell_line_end(out, ctx)
 	}
 
 	/// Hook for writing at the start of a cell line.
 	fn write_data_cell_line_start<W>(
 		&mut self,
 		_out: &mut W,
-		_row: usize,
-		_col: usize,
-		_line: usize)
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -417,9 +401,7 @@ pub trait Renderer {
 	fn write_data_cell_line_end<W>(
 		&mut self,
 		out: &mut W,
-		_row: usize,
-		_col: usize,
-		_line: usize)
+		_ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -430,26 +412,22 @@ pub trait Renderer {
 	fn write_footer_cell_line_start<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		self.write_data_cell_line_start(out, row, col, line)
+		self.write_data_cell_line_start(out, ctx)
 	}
 
 	/// Hook for writing at the end of a cell line.
 	fn write_footer_cell_line_end<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		self.write_data_cell_line_end(out, row, col, line)
+		self.write_data_cell_line_end(out, ctx)
 	}
 }
 

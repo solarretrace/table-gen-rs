@@ -6,8 +6,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Workspace library imports.
+use table_gen_core::CellContext;
 use table_gen_core::Features;
-use table_gen_core::HorzAlign;
+use table_gen_core::RenderContext;
 use table_gen_core::Renderer;
 
 
@@ -28,156 +29,190 @@ impl Renderer for DebugRenderer {
 	fn write_data_cell_line<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize,
-		text: &str,
-		width: usize,
-		align: HorzAlign)
+		ctx: &RenderContext<'_>,
+		cell: &CellContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_data_cell_line(row: {}, col: {}, line: {}, \
-				width: {}, align: {:?}, text: {:?})",
-			row, col, line, width, align, text)
+		writeln!(out, "write_data_cell_line(\
+			row: {:?}, col: {:?}, line: {:?}, {:?})",
+			ctx.row, ctx.col, ctx.line, cell)
 	}
 
 	fn write_header_cell_line<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize,
-		text: &str,
-		width: usize,
-		align: HorzAlign)
+		ctx: &RenderContext<'_>,
+		cell: &CellContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_header_cell_line(row: {}, col: {}, line: {}, \
-				width: {}, align: {:?}, text: {:?})",
-			row, col, line, width, align, text)
+		writeln!(out, "write_data_cell_line(\
+			row: {:?}, col: {:?}, line: {:?}, {:?})",
+			ctx.row, ctx.col, ctx.line, cell)
 	}
 
 	fn write_footer_cell_line<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize,
-		text: &str,
-		width: usize,
-		align: HorzAlign)
+		ctx: &RenderContext<'_>,
+		cell: &CellContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_footer_cell_line(row: {}, col: {}, line: {}, \
-				width: {}, align: {:?}, text: {:?})",
-			row, col, line, width, align, text)
+		writeln!(out, "write_data_cell_line(\
+			row: {:?}, col: {:?}, line: {:?}, {:?})",
+			ctx.row, ctx.col, ctx.line, cell)
 	}
 
 	// Section hooks
 	///////////////////////////////////////////////
-	fn write_table_start<W>(&mut self, out: &mut W)
+	fn write_table_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_table_start()")
+		writeln!(out, "write_table_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
-	fn write_table_end<W>(&mut self, out: &mut W)
+	fn write_table_end<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_table_end()")
+		writeln!(out, "write_table_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
-	fn write_header_start<W>(&mut self, out: &mut W)
+	fn write_header_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_header_start()")
+		writeln!(out, "write_header_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
-	fn write_header_end<W>(&mut self, out: &mut W)
+	fn write_header_end<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_header_end()")
+		writeln!(out, "write_header_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
-	fn write_data_start<W>(&mut self, out: &mut W)
+	fn write_data_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_data_start()")
+		writeln!(out, "write_data_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
-	fn write_data_end<W>(&mut self, out: &mut W)
+	fn write_data_end<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_data_end()")
+		writeln!(out, "write_data_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
-	fn write_footer_start<W>(&mut self, out: &mut W)
+	fn write_footer_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_footer_start()")
+		writeln!(out, "write_footer_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
-	fn write_footer_end<W>(&mut self, out: &mut W)
+	fn write_footer_end<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_footer_end()")
+		writeln!(out, "write_footer_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	// Row-based hooks
 	////////////////////////////////////////////////////////////////////////////
 
-	fn write_header_row_start<W>(&mut self, out: &mut W, row: usize)
+	fn write_header_row_start<W>(
+		&mut self,
+		out: &mut W,
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_header_row_start(row: {})", row)
+		writeln!(out, "write_header_row_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
-	fn write_header_row_end<W>(&mut self, out: &mut W, row: usize)
+	fn write_header_row_end<W>(
+		&mut self,
+		out: &mut W,
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_header_row_end(row: {})", row)
+		writeln!(out, "write_header_row_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 
-	fn write_data_row_start<W>(&mut self, out: &mut W, row: usize)
+	fn write_data_row_start<W>(
+		&mut self,
+		out: &mut W,
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_data_row_start(row: {})", row)
+		writeln!(out, "write_data_row_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
-	fn write_data_row_end<W>(&mut self, out: &mut W, row: usize)
+	fn write_data_row_end<W>(
+		&mut self,
+		out: &mut W,
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_data_row_end(row: {})", row)
+		writeln!(out, "write_data_row_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
-	fn write_footer_row_start<W>(&mut self, out: &mut W, row: usize)
+	fn write_footer_row_start<W>(
+		&mut self,
+		out: &mut W,
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_footer_row_start(row: {})", row)
+		writeln!(out, "write_footer_row_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
-	fn write_footer_row_end<W>(&mut self, out: &mut W, row: usize)
+	fn write_footer_row_end<W>(
+		&mut self,
+		out: &mut W,
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_footer_row_end(row: {})", row)
+		writeln!(out, "write_footer_row_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 
@@ -187,73 +222,73 @@ impl Renderer for DebugRenderer {
 	fn write_header_cell_start<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_header_cell_start(row: {}, col: {}",
-			row, col)
+		writeln!(out, "write_header_cell_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_header_cell_end<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_header_cell_end(row: {}, col: {}",
-			row, col)
+		writeln!(out, "write_header_cell_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_data_cell_start<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_data_cell_start(row: {}, col: {})",
-			row, col)
+		writeln!(out, "write_data_cell_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_data_cell_end<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_data_cell_end(row: {}, col: {})",
-			row, col)
+		writeln!(out, "write_data_cell_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_footer_cell_start<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_footer_cell_start(row: {}, col: {}",
-			row, col)
+		writeln!(out, "write_footer_cell_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_footer_cell_end<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_footer_cell_end(row: {}, col: {}",
-			row, col)
+		writeln!(out, "write_footer_cell_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 
@@ -262,73 +297,73 @@ impl Renderer for DebugRenderer {
 	fn write_header_line_start<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_header_line_start(row: {}, line: {})",
-			row, line)
+		writeln!(out, "write_header_line_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_header_line_end<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_header_line_end(row: {}, line: {})",
-			row, line)
+		writeln!(out, "write_header_line_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_data_line_start<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_data_line_start(row: {}, line: {})",
-			row, line)
+		writeln!(out, "write_data_line_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_data_line_end<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_data_line_end(row: {}, line: {})",
-			row, line)
+		writeln!(out, "write_data_line_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_footer_line_start<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_footer_line_start(row: {}, line: {})",
-			row, line)
+		writeln!(out, "write_footer_line_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_footer_line_end<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_footer_line_end(row: {}, line: {})",
-			row, line)
+		writeln!(out, "write_footer_line_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	// Cell line-based hooks
@@ -337,79 +372,73 @@ impl Renderer for DebugRenderer {
 	fn write_header_cell_line_start<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_header_cell_line_start(row: {}, col: {}, line: {})",
-			row, col, line)
+		writeln!(out, "write_header_cell_line_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_header_cell_line_end<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_header_cell_line_end(row: {}, col: {}, line: {})",
-			row, col, line)
+		writeln!(out, "write_header_cell_line_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_data_cell_line_start<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_data_cell_line_start(row: {}, col: {}, line: {})",
-			row, col, line)
+		writeln!(out, "write_data_cell_line_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_data_cell_line_end<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_data_cell_line_end(row: {}, col: {}, line: {})",
-			row, col, line)
+		writeln!(out, "write_data_cell_line_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_footer_cell_line_start<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_footer_cell_line_start(row: {}, col: {}, line: {})",
-			row, col, line)
+		writeln!(out, "write_footer_cell_line_start(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 
 	fn write_footer_cell_line_end<W>(
 		&mut self,
 		out: &mut W,
-		row: usize,
-		col: usize,
-		line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		writeln!(out, "write_footer_cell_line_end(row: {}, col: {}, line: {})",
-			row, col, line)
+		writeln!(out, "write_footer_cell_line_end(\
+			row: {:?}, col: {:?}, line: {:?})",
+			ctx.row, ctx.col, ctx.line)
 	}
 }
 
@@ -439,10 +468,10 @@ mod test {
 		//println!("{}", out);
 
 		assert_eq!(out, "\
-write_table_start()
-write_data_start()
-write_data_end()
-write_table_end()
+write_table_start(row: None, col: None, line: None)
+write_data_start(row: None, col: None, line: None)
+write_data_end(row: None, col: None, line: None)
+write_table_end(row: None, col: None, line: None)
 ");
 	}
 
@@ -468,22 +497,22 @@ write_table_end()
 		//println!("{}", out);
 
 		assert_eq!(out, "\
-write_table_start()
-write_header_start()
-write_header_row_start(row: 0)
-write_header_line_start(row: 0, line: 0)
-write_header_line_end(row: 0, line: 0)
-write_header_row_end(row: 0)
-write_header_end()
-write_data_start()
-write_data_end()
-write_footer_start()
-write_footer_row_start(row: 0)
-write_footer_line_start(row: 0, line: 0)
-write_footer_line_end(row: 0, line: 0)
-write_footer_row_end(row: 0)
-write_footer_end()
-write_table_end()
+write_table_start(row: None, col: None, line: None)
+write_header_start(row: None, col: None, line: None)
+write_header_row_start(row: None, col: None, line: None)
+write_header_line_start(row: None, col: None, line: Some(0))
+write_header_line_end(row: None, col: None, line: Some(0))
+write_header_row_end(row: None, col: None, line: None)
+write_header_end(row: None, col: None, line: None)
+write_data_start(row: None, col: None, line: None)
+write_data_end(row: None, col: None, line: None)
+write_footer_start(row: None, col: None, line: None)
+write_footer_row_start(row: None, col: None, line: None)
+write_footer_line_start(row: None, col: None, line: Some(0))
+write_footer_line_end(row: None, col: None, line: Some(0))
+write_footer_row_end(row: None, col: None, line: None)
+write_footer_end(row: None, col: None, line: None)
+write_table_end(row: None, col: None, line: None)
 ");
 	}
 
@@ -512,70 +541,70 @@ write_table_end()
 		//println!("{}", out);
 
 		assert_eq!(out, "\
-write_table_start()
-write_header_start()
-write_header_row_start(row: 0)
-write_header_line_start(row: 0, line: 0)
-write_header_cell_start(row: 0, col: 0
-write_header_cell_line_start(row: 0, col: 0, line: 0)
-write_header_cell_line(row: 0, col: 0, line: 0, width: 6, align: Left, text: \"H0\")
-write_header_cell_line_end(row: 0, col: 0, line: 0)
-write_header_cell_end(row: 0, col: 0
-write_header_cell_start(row: 0, col: 1
-write_header_cell_line_start(row: 0, col: 1, line: 0)
-write_header_cell_line(row: 0, col: 1, line: 0, width: 2, align: Left, text: \"H1\")
-write_header_cell_line_end(row: 0, col: 1, line: 0)
-write_header_cell_end(row: 0, col: 1
-write_header_line_end(row: 0, line: 0)
-write_header_row_end(row: 0)
-write_header_end()
-write_data_start()
-write_data_row_start(row: 0)
-write_data_line_start(row: 0, line: 0)
-write_data_cell_start(row: 0, col: 0)
-write_data_cell_line_start(row: 0, col: 0, line: 0)
-write_data_cell_line(row: 0, col: 0, line: 0, width: 6, align: Left, text: \"-17\")
-write_data_cell_line_end(row: 0, col: 0, line: 0)
-write_data_cell_end(row: 0, col: 0)
-write_data_cell_start(row: 0, col: 1)
-write_data_cell_line_start(row: 0, col: 1, line: 0)
-write_data_cell_line(row: 0, col: 1, line: 0, width: 2, align: Left, text: \"b\")
-write_data_cell_line_end(row: 0, col: 1, line: 0)
-write_data_cell_end(row: 0, col: 1)
-write_data_line_end(row: 0, line: 0)
-write_data_row_end(row: 0)
-write_data_row_start(row: 1)
-write_data_line_start(row: 1, line: 0)
-write_data_cell_start(row: 1, col: 0)
-write_data_cell_line_start(row: 1, col: 0, line: 0)
-write_data_cell_line(row: 1, col: 0, line: 0, width: 6, align: Left, text: \"170000\")
-write_data_cell_line_end(row: 1, col: 0, line: 0)
-write_data_cell_end(row: 1, col: 0)
-write_data_cell_start(row: 1, col: 1)
-write_data_cell_line_start(row: 1, col: 1, line: 0)
-write_data_cell_line(row: 1, col: 1, line: 0, width: 2, align: Left, text: \"&\")
-write_data_cell_line_end(row: 1, col: 1, line: 0)
-write_data_cell_end(row: 1, col: 1)
-write_data_line_end(row: 1, line: 0)
-write_data_row_end(row: 1)
-write_data_end()
-write_footer_start()
-write_footer_row_start(row: 0)
-write_footer_line_start(row: 0, line: 0)
-write_footer_cell_start(row: 0, col: 0
-write_footer_cell_line_start(row: 0, col: 0, line: 0)
-write_footer_cell_line(row: 0, col: 0, line: 0, width: 6, align: Left, text: \"F0\")
-write_footer_cell_line_end(row: 0, col: 0, line: 0)
-write_footer_cell_end(row: 0, col: 0
-write_footer_cell_start(row: 0, col: 1
-write_footer_cell_line_start(row: 0, col: 1, line: 0)
-write_footer_cell_line(row: 0, col: 1, line: 0, width: 2, align: Left, text: \"F1\")
-write_footer_cell_line_end(row: 0, col: 1, line: 0)
-write_footer_cell_end(row: 0, col: 1
-write_footer_line_end(row: 0, line: 0)
-write_footer_row_end(row: 0)
-write_footer_end()
-write_table_end()
+write_table_start(row: None, col: None, line: None)
+write_header_start(row: None, col: None, line: None)
+write_header_row_start(row: None, col: None, line: None)
+write_header_line_start(row: None, col: None, line: Some(0))
+write_header_cell_start(row: None, col: Some(0), line: Some(0))
+write_header_cell_line_start(row: None, col: Some(0), line: Some(0))
+write_data_cell_line(row: None, col: Some(0), line: Some(0), CellContext { text: \"H0\", width: 6, desc: ColumnDesc { header: \"H0\", footer: \"F0\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_header_cell_line_end(row: None, col: Some(0), line: Some(0))
+write_header_cell_end(row: None, col: Some(0), line: Some(0))
+write_header_cell_start(row: None, col: Some(1), line: Some(0))
+write_header_cell_line_start(row: None, col: Some(1), line: Some(0))
+write_data_cell_line(row: None, col: Some(1), line: Some(0), CellContext { text: \"H1\", width: 2, desc: ColumnDesc { header: \"H1\", footer: \"F1\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_header_cell_line_end(row: None, col: Some(1), line: Some(0))
+write_header_cell_end(row: None, col: Some(1), line: Some(0))
+write_header_line_end(row: None, col: None, line: Some(0))
+write_header_row_end(row: None, col: None, line: None)
+write_header_end(row: None, col: None, line: None)
+write_data_start(row: None, col: None, line: None)
+write_data_row_start(row: Some(0), col: None, line: None)
+write_data_line_start(row: Some(0), col: None, line: Some(0))
+write_data_cell_start(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_line_start(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_line(row: Some(0), col: Some(0), line: Some(0), CellContext { text: \"-17\", width: 6, desc: ColumnDesc { header: \"H0\", footer: \"F0\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_data_cell_line_end(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_end(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_start(row: Some(0), col: Some(1), line: Some(0))
+write_data_cell_line_start(row: Some(0), col: Some(1), line: Some(0))
+write_data_cell_line(row: Some(0), col: Some(1), line: Some(0), CellContext { text: \"b\", width: 2, desc: ColumnDesc { header: \"H1\", footer: \"F1\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_data_cell_line_end(row: Some(0), col: Some(1), line: Some(0))
+write_data_cell_end(row: Some(0), col: Some(1), line: Some(0))
+write_data_line_end(row: Some(0), col: None, line: Some(0))
+write_data_row_end(row: Some(0), col: None, line: None)
+write_data_row_start(row: Some(1), col: None, line: None)
+write_data_line_start(row: Some(1), col: None, line: Some(0))
+write_data_cell_start(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_line_start(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_line(row: Some(1), col: Some(0), line: Some(0), CellContext { text: \"170000\", width: 6, desc: ColumnDesc { header: \"H0\", footer: \"F0\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_data_cell_line_end(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_end(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_start(row: Some(1), col: Some(1), line: Some(0))
+write_data_cell_line_start(row: Some(1), col: Some(1), line: Some(0))
+write_data_cell_line(row: Some(1), col: Some(1), line: Some(0), CellContext { text: \"&\", width: 2, desc: ColumnDesc { header: \"H1\", footer: \"F1\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_data_cell_line_end(row: Some(1), col: Some(1), line: Some(0))
+write_data_cell_end(row: Some(1), col: Some(1), line: Some(0))
+write_data_line_end(row: Some(1), col: None, line: Some(0))
+write_data_row_end(row: Some(1), col: None, line: None)
+write_data_end(row: Some(1), col: None, line: None)
+write_footer_start(row: Some(1), col: None, line: None)
+write_footer_row_start(row: Some(1), col: None, line: None)
+write_footer_line_start(row: Some(1), col: None, line: Some(0))
+write_footer_cell_start(row: Some(1), col: Some(0), line: Some(0))
+write_footer_cell_line_start(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_line(row: Some(1), col: Some(0), line: Some(0), CellContext { text: \"F0\", width: 6, desc: ColumnDesc { header: \"H0\", footer: \"F0\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_footer_cell_line_end(row: Some(1), col: Some(0), line: Some(0))
+write_footer_cell_end(row: Some(1), col: Some(0), line: Some(0))
+write_footer_cell_start(row: Some(1), col: Some(1), line: Some(0))
+write_footer_cell_line_start(row: Some(1), col: Some(1), line: Some(0))
+write_data_cell_line(row: Some(1), col: Some(1), line: Some(0), CellContext { text: \"F1\", width: 2, desc: ColumnDesc { header: \"H1\", footer: \"F1\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_footer_cell_line_end(row: Some(1), col: Some(1), line: Some(0))
+write_footer_cell_end(row: Some(1), col: Some(1), line: Some(0))
+write_footer_line_end(row: Some(1), col: None, line: Some(0))
+write_footer_row_end(row: Some(1), col: None, line: None)
+write_footer_end(row: Some(1), col: None, line: None)
+write_table_end(row: Some(1), col: None, line: None)
 ");
 	}
 
@@ -601,70 +630,70 @@ write_table_end()
 		//println!("{}", out);
 
 		assert_eq!(out, "\
-write_table_start()
-write_header_start()
-write_header_row_start(row: 0)
-write_header_line_start(row: 0, line: 0)
-write_header_cell_start(row: 0, col: 0
-write_header_cell_line_start(row: 0, col: 0, line: 0)
-write_header_cell_line(row: 0, col: 0, line: 0, width: 6, align: Left, text: \"H0\")
-write_header_cell_line_end(row: 0, col: 0, line: 0)
-write_header_cell_end(row: 0, col: 0
-write_header_cell_start(row: 0, col: 1
-write_header_cell_line_start(row: 0, col: 1, line: 0)
-write_header_cell_line(row: 0, col: 1, line: 0, width: 1, align: Left, text: \"\")
-write_header_cell_line_end(row: 0, col: 1, line: 0)
-write_header_cell_end(row: 0, col: 1
-write_header_line_end(row: 0, line: 0)
-write_header_row_end(row: 0)
-write_header_end()
-write_data_start()
-write_data_row_start(row: 0)
-write_data_line_start(row: 0, line: 0)
-write_data_cell_start(row: 0, col: 0)
-write_data_cell_line_start(row: 0, col: 0, line: 0)
-write_data_cell_line(row: 0, col: 0, line: 0, width: 6, align: Left, text: \"-17\")
-write_data_cell_line_end(row: 0, col: 0, line: 0)
-write_data_cell_end(row: 0, col: 0)
-write_data_cell_start(row: 0, col: 1)
-write_data_cell_line_start(row: 0, col: 1, line: 0)
-write_data_cell_line(row: 0, col: 1, line: 0, width: 1, align: Left, text: \"b\")
-write_data_cell_line_end(row: 0, col: 1, line: 0)
-write_data_cell_end(row: 0, col: 1)
-write_data_line_end(row: 0, line: 0)
-write_data_row_end(row: 0)
-write_data_row_start(row: 1)
-write_data_line_start(row: 1, line: 0)
-write_data_cell_start(row: 1, col: 0)
-write_data_cell_line_start(row: 1, col: 0, line: 0)
-write_data_cell_line(row: 1, col: 0, line: 0, width: 6, align: Left, text: \"170000\")
-write_data_cell_line_end(row: 1, col: 0, line: 0)
-write_data_cell_end(row: 1, col: 0)
-write_data_cell_start(row: 1, col: 1)
-write_data_cell_line_start(row: 1, col: 1, line: 0)
-write_data_cell_line(row: 1, col: 1, line: 0, width: 1, align: Left, text: \"&\")
-write_data_cell_line_end(row: 1, col: 1, line: 0)
-write_data_cell_end(row: 1, col: 1)
-write_data_line_end(row: 1, line: 0)
-write_data_row_end(row: 1)
-write_data_end()
-write_footer_start()
-write_footer_row_start(row: 0)
-write_footer_line_start(row: 0, line: 0)
-write_footer_cell_start(row: 0, col: 0
-write_footer_cell_line_start(row: 0, col: 0, line: 0)
-write_footer_cell_line(row: 0, col: 0, line: 0, width: 6, align: Left, text: \"F0\")
-write_footer_cell_line_end(row: 0, col: 0, line: 0)
-write_footer_cell_end(row: 0, col: 0
-write_footer_cell_start(row: 0, col: 1
-write_footer_cell_line_start(row: 0, col: 1, line: 0)
-write_footer_cell_line(row: 0, col: 1, line: 0, width: 1, align: Left, text: \"\")
-write_footer_cell_line_end(row: 0, col: 1, line: 0)
-write_footer_cell_end(row: 0, col: 1
-write_footer_line_end(row: 0, line: 0)
-write_footer_row_end(row: 0)
-write_footer_end()
-write_table_end()
+write_table_start(row: None, col: None, line: None)
+write_header_start(row: None, col: None, line: None)
+write_header_row_start(row: None, col: None, line: None)
+write_header_line_start(row: None, col: None, line: Some(0))
+write_header_cell_start(row: None, col: Some(0), line: Some(0))
+write_header_cell_line_start(row: None, col: Some(0), line: Some(0))
+write_data_cell_line(row: None, col: Some(0), line: Some(0), CellContext { text: \"H0\", width: 6, desc: ColumnDesc { header: \"H0\", footer: \"F0\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_header_cell_line_end(row: None, col: Some(0), line: Some(0))
+write_header_cell_end(row: None, col: Some(0), line: Some(0))
+write_header_cell_start(row: None, col: Some(1), line: Some(0))
+write_header_cell_line_start(row: None, col: Some(1), line: Some(0))
+write_data_cell_line(row: None, col: Some(1), line: Some(0), CellContext { text: \"\", width: 1, desc: ColumnDesc { header: \"\", footer: \"\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_header_cell_line_end(row: None, col: Some(1), line: Some(0))
+write_header_cell_end(row: None, col: Some(1), line: Some(0))
+write_header_line_end(row: None, col: None, line: Some(0))
+write_header_row_end(row: None, col: None, line: None)
+write_header_end(row: None, col: None, line: None)
+write_data_start(row: None, col: None, line: None)
+write_data_row_start(row: Some(0), col: None, line: None)
+write_data_line_start(row: Some(0), col: None, line: Some(0))
+write_data_cell_start(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_line_start(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_line(row: Some(0), col: Some(0), line: Some(0), CellContext { text: \"-17\", width: 6, desc: ColumnDesc { header: \"H0\", footer: \"F0\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_data_cell_line_end(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_end(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_start(row: Some(0), col: Some(1), line: Some(0))
+write_data_cell_line_start(row: Some(0), col: Some(1), line: Some(0))
+write_data_cell_line(row: Some(0), col: Some(1), line: Some(0), CellContext { text: \"b\", width: 1, desc: ColumnDesc { header: \"\", footer: \"\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_data_cell_line_end(row: Some(0), col: Some(1), line: Some(0))
+write_data_cell_end(row: Some(0), col: Some(1), line: Some(0))
+write_data_line_end(row: Some(0), col: None, line: Some(0))
+write_data_row_end(row: Some(0), col: None, line: None)
+write_data_row_start(row: Some(1), col: None, line: None)
+write_data_line_start(row: Some(1), col: None, line: Some(0))
+write_data_cell_start(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_line_start(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_line(row: Some(1), col: Some(0), line: Some(0), CellContext { text: \"170000\", width: 6, desc: ColumnDesc { header: \"H0\", footer: \"F0\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_data_cell_line_end(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_end(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_start(row: Some(1), col: Some(1), line: Some(0))
+write_data_cell_line_start(row: Some(1), col: Some(1), line: Some(0))
+write_data_cell_line(row: Some(1), col: Some(1), line: Some(0), CellContext { text: \"&\", width: 1, desc: ColumnDesc { header: \"\", footer: \"\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_data_cell_line_end(row: Some(1), col: Some(1), line: Some(0))
+write_data_cell_end(row: Some(1), col: Some(1), line: Some(0))
+write_data_line_end(row: Some(1), col: None, line: Some(0))
+write_data_row_end(row: Some(1), col: None, line: None)
+write_data_end(row: Some(1), col: None, line: None)
+write_footer_start(row: Some(1), col: None, line: None)
+write_footer_row_start(row: Some(1), col: None, line: None)
+write_footer_line_start(row: Some(1), col: None, line: Some(0))
+write_footer_cell_start(row: Some(1), col: Some(0), line: Some(0))
+write_footer_cell_line_start(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_line(row: Some(1), col: Some(0), line: Some(0), CellContext { text: \"F0\", width: 6, desc: ColumnDesc { header: \"H0\", footer: \"F0\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_footer_cell_line_end(row: Some(1), col: Some(0), line: Some(0))
+write_footer_cell_end(row: Some(1), col: Some(0), line: Some(0))
+write_footer_cell_start(row: Some(1), col: Some(1), line: Some(0))
+write_footer_cell_line_start(row: Some(1), col: Some(1), line: Some(0))
+write_data_cell_line(row: Some(1), col: Some(1), line: Some(0), CellContext { text: \"\", width: 1, desc: ColumnDesc { header: \"\", footer: \"\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_footer_cell_line_end(row: Some(1), col: Some(1), line: Some(0))
+write_footer_cell_end(row: Some(1), col: Some(1), line: Some(0))
+write_footer_line_end(row: Some(1), col: None, line: Some(0))
+write_footer_row_end(row: Some(1), col: None, line: None)
+write_footer_end(row: Some(1), col: None, line: None)
+write_table_end(row: Some(1), col: None, line: None)
 ");
 	}
 
@@ -684,29 +713,29 @@ write_table_end()
 		//println!("{}", out);
 
 		assert_eq!(out, "\
-write_table_start()
-write_data_start()
-write_data_row_start(row: 0)
-write_data_line_start(row: 0, line: 0)
-write_data_cell_start(row: 0, col: 0)
-write_data_cell_line_start(row: 0, col: 0, line: 0)
-write_data_cell_line(row: 0, col: 0, line: 0, width: 1, align: Left, text: \"1\")
-write_data_cell_line_end(row: 0, col: 0, line: 0)
-write_data_cell_end(row: 0, col: 0)
-write_data_cell_start(row: 0, col: 1)
-write_data_cell_line_start(row: 0, col: 1, line: 0)
-write_data_cell_line(row: 0, col: 1, line: 0, width: 3, align: Left, text: \"100\")
-write_data_cell_line_end(row: 0, col: 1, line: 0)
-write_data_cell_end(row: 0, col: 1)
-write_data_cell_start(row: 0, col: 2)
-write_data_cell_line_start(row: 0, col: 2, line: 0)
-write_data_cell_line(row: 0, col: 2, line: 0, width: 4, align: Left, text: \"1000\")
-write_data_cell_line_end(row: 0, col: 2, line: 0)
-write_data_cell_end(row: 0, col: 2)
-write_data_line_end(row: 0, line: 0)
-write_data_row_end(row: 0)
-write_data_end()
-write_table_end()
+write_table_start(row: None, col: None, line: None)
+write_data_start(row: None, col: None, line: None)
+write_data_row_start(row: Some(0), col: None, line: None)
+write_data_line_start(row: Some(0), col: None, line: Some(0))
+write_data_cell_start(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_line_start(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_line(row: Some(0), col: Some(0), line: Some(0), CellContext { text: \"1\", width: 1, desc: ColumnDesc { header: \"\", footer: \"\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_data_cell_line_end(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_end(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_start(row: Some(0), col: Some(1), line: Some(0))
+write_data_cell_line_start(row: Some(0), col: Some(1), line: Some(0))
+write_data_cell_line(row: Some(0), col: Some(1), line: Some(0), CellContext { text: \"100\", width: 3, desc: ColumnDesc { header: \"\", footer: \"\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_data_cell_line_end(row: Some(0), col: Some(1), line: Some(0))
+write_data_cell_end(row: Some(0), col: Some(1), line: Some(0))
+write_data_cell_start(row: Some(0), col: Some(2), line: Some(0))
+write_data_cell_line_start(row: Some(0), col: Some(2), line: Some(0))
+write_data_cell_line(row: Some(0), col: Some(2), line: Some(0), CellContext { text: \"1000\", width: 4, desc: ColumnDesc { header: \"\", footer: \"\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_data_cell_line_end(row: Some(0), col: Some(2), line: Some(0))
+write_data_cell_end(row: Some(0), col: Some(2), line: Some(0))
+write_data_line_end(row: Some(0), col: None, line: Some(0))
+write_data_row_end(row: Some(0), col: None, line: None)
+write_data_end(row: Some(0), col: None, line: None)
+write_table_end(row: Some(0), col: None, line: None)
 ");
 	}
 
@@ -750,54 +779,54 @@ write_table_end()
 		//println!("{}", out);
 
 		assert_eq!(out, "\
-write_table_start()
-write_header_start()
-write_header_row_start(row: 0)
-write_header_line_start(row: 0, line: 0)
-write_header_cell_start(row: 0, col: 0
-write_header_cell_line_start(row: 0, col: 0, line: 0)
-write_header_cell_line(row: 0, col: 0, line: 0, width: 5, align: Left, text: \"<-0->\")
-write_header_cell_line_end(row: 0, col: 0, line: 0)
-write_header_cell_end(row: 0, col: 0
-write_header_cell_start(row: 0, col: 1
-write_header_cell_line_start(row: 0, col: 1, line: 0)
-write_header_cell_line(row: 0, col: 1, line: 0, width: 5, align: Center, text: \"<-1->\")
-write_header_cell_line_end(row: 0, col: 1, line: 0)
-write_header_cell_end(row: 0, col: 1
-write_header_line_end(row: 0, line: 0)
-write_header_row_end(row: 0)
-write_header_end()
-write_data_start()
-write_data_row_start(row: 0)
-write_data_line_start(row: 0, line: 0)
-write_data_cell_start(row: 0, col: 0)
-write_data_cell_line_start(row: 0, col: 0, line: 0)
-write_data_cell_line(row: 0, col: 0, line: 0, width: 5, align: Left, text: \"-3.70\")
-write_data_cell_line_end(row: 0, col: 0, line: 0)
-write_data_cell_end(row: 0, col: 0)
-write_data_cell_start(row: 0, col: 1)
-write_data_cell_line_start(row: 0, col: 1, line: 0)
-write_data_cell_line(row: 0, col: 1, line: 0, width: 5, align: Center, text: \"d\")
-write_data_cell_line_end(row: 0, col: 1, line: 0)
-write_data_cell_end(row: 0, col: 1)
-write_data_line_end(row: 0, line: 0)
-write_data_row_end(row: 0)
-write_data_row_start(row: 1)
-write_data_line_start(row: 1, line: 0)
-write_data_cell_start(row: 1, col: 0)
-write_data_cell_line_start(row: 1, col: 0, line: 0)
-write_data_cell_line(row: 1, col: 0, line: 0, width: 5, align: Left, text: \"+4.60\")
-write_data_cell_line_end(row: 1, col: 0, line: 0)
-write_data_cell_end(row: 1, col: 0)
-write_data_cell_start(row: 1, col: 1)
-write_data_cell_line_start(row: 1, col: 1, line: 0)
-write_data_cell_line(row: 1, col: 1, line: 0, width: 5, align: Center, text: \"e\")
-write_data_cell_line_end(row: 1, col: 1, line: 0)
-write_data_cell_end(row: 1, col: 1)
-write_data_line_end(row: 1, line: 0)
-write_data_row_end(row: 1)
-write_data_end()
-write_table_end()
+write_table_start(row: None, col: None, line: None)
+write_header_start(row: None, col: None, line: None)
+write_header_row_start(row: None, col: None, line: None)
+write_header_line_start(row: None, col: None, line: Some(0))
+write_header_cell_start(row: None, col: Some(0), line: Some(0))
+write_header_cell_line_start(row: None, col: Some(0), line: Some(0))
+write_data_cell_line(row: None, col: Some(0), line: Some(0), CellContext { text: \"<-0->\", width: 5, desc: ColumnDesc { header: \"<-0->\", footer: \"\", display_fmt: DisplayFmt { precision: Some(2), sign: Some(Plus) }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_header_cell_line_end(row: None, col: Some(0), line: Some(0))
+write_header_cell_end(row: None, col: Some(0), line: Some(0))
+write_header_cell_start(row: None, col: Some(1), line: Some(0))
+write_header_cell_line_start(row: None, col: Some(1), line: Some(0))
+write_data_cell_line(row: None, col: Some(1), line: Some(0), CellContext { text: \"<-1->\", width: 5, desc: ColumnDesc { header: \"<-1->\", footer: \"\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Center, vert_align: Center } })
+write_header_cell_line_end(row: None, col: Some(1), line: Some(0))
+write_header_cell_end(row: None, col: Some(1), line: Some(0))
+write_header_line_end(row: None, col: None, line: Some(0))
+write_header_row_end(row: None, col: None, line: None)
+write_header_end(row: None, col: None, line: None)
+write_data_start(row: None, col: None, line: None)
+write_data_row_start(row: Some(0), col: None, line: None)
+write_data_line_start(row: Some(0), col: None, line: Some(0))
+write_data_cell_start(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_line_start(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_line(row: Some(0), col: Some(0), line: Some(0), CellContext { text: \"-3.70\", width: 5, desc: ColumnDesc { header: \"<-0->\", footer: \"\", display_fmt: DisplayFmt { precision: Some(2), sign: Some(Plus) }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_data_cell_line_end(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_end(row: Some(0), col: Some(0), line: Some(0))
+write_data_cell_start(row: Some(0), col: Some(1), line: Some(0))
+write_data_cell_line_start(row: Some(0), col: Some(1), line: Some(0))
+write_data_cell_line(row: Some(0), col: Some(1), line: Some(0), CellContext { text: \"d\", width: 5, desc: ColumnDesc { header: \"<-1->\", footer: \"\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Center, vert_align: Center } })
+write_data_cell_line_end(row: Some(0), col: Some(1), line: Some(0))
+write_data_cell_end(row: Some(0), col: Some(1), line: Some(0))
+write_data_line_end(row: Some(0), col: None, line: Some(0))
+write_data_row_end(row: Some(0), col: None, line: None)
+write_data_row_start(row: Some(1), col: None, line: None)
+write_data_line_start(row: Some(1), col: None, line: Some(0))
+write_data_cell_start(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_line_start(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_line(row: Some(1), col: Some(0), line: Some(0), CellContext { text: \"+4.60\", width: 5, desc: ColumnDesc { header: \"<-0->\", footer: \"\", display_fmt: DisplayFmt { precision: Some(2), sign: Some(Plus) }, min_width: 0, max_width: 18446744073709551615, horz_align: Left, vert_align: Top } })
+write_data_cell_line_end(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_end(row: Some(1), col: Some(0), line: Some(0))
+write_data_cell_start(row: Some(1), col: Some(1), line: Some(0))
+write_data_cell_line_start(row: Some(1), col: Some(1), line: Some(0))
+write_data_cell_line(row: Some(1), col: Some(1), line: Some(0), CellContext { text: \"e\", width: 5, desc: ColumnDesc { header: \"<-1->\", footer: \"\", display_fmt: DisplayFmt { precision: None, sign: None }, min_width: 0, max_width: 18446744073709551615, horz_align: Center, vert_align: Center } })
+write_data_cell_line_end(row: Some(1), col: Some(1), line: Some(0))
+write_data_cell_end(row: Some(1), col: Some(1), line: Some(0))
+write_data_line_end(row: Some(1), col: None, line: Some(0))
+write_data_row_end(row: Some(1), col: None, line: None)
+write_data_end(row: Some(1), col: None, line: None)
+write_table_end(row: Some(1), col: None, line: None)
 ");
 	}
 }

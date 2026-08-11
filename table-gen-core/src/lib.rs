@@ -107,6 +107,7 @@
 // Internal modules.
 mod aggregate;
 mod collate;
+mod context;
 mod driver;
 mod format;
 mod render;
@@ -129,6 +130,8 @@ pub (in crate) use split::TextRow;
 pub use collate::ColumnDesc;
 pub use collate::HorzAlign;
 pub use collate::VertAlign;
+pub use context::CellContext;
+pub use context::RenderContext;
 pub use driver::Table;
 pub use driver::TableBuilder;
 pub use format::DisplayFmt;

@@ -14,6 +14,8 @@ use crate::TextRow;
 use crate::SplitRow;
 use crate::ColumnDesc;
 use crate::ColumnOrd;
+use crate::RenderContext;
+use crate::CellContext;
 
 // Standard library imports.
 use std::ops::RangeBounds;
@@ -157,55 +159,54 @@ impl<'a, R, T> Table<'a, R, T>
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let col_descs = self.inner.column_descs();
-		let col_widths = self.inner.col_widths();
 		let rows = self.inner.rows();
+		let mut ctx = RenderContext {
+			default_col_desc: &self.default_col_desc,
+			col_descs: self.inner.column_descs(),
+			col_widths: self.inner.col_widths(),
+			row_count: rows.len(),
+			row: None,
+			col: None,
+			line: None,
+		};
 
-		self.renderer.init(col_descs, rows.len(), &col_widths);
+		self.renderer.init(&ctx);
 
-		self.renderer.write_table_start(out)?;
+		self.renderer.write_table_start(out, &ctx)?;
 		// Write the header.
 		if let Some(row) = self.inner.header_row().as_ref() {
-			self.renderer.write_header_start(out)?;
+			self.renderer.write_header_start(out, &ctx)?;
 			Self::render_header_row(
 				&mut self.renderer,
-				col_descs,
-				&self.default_col_desc,
-				col_widths,
+				&mut ctx,
 				out,
-				row,
-				0)?;
-			self.renderer.write_header_end(out)?;
+				row)?;
+			self.renderer.write_header_end(out, &ctx)?;
 		}
 
 		// Write the data.
-		self.renderer.write_data_start(out)?;
+		self.renderer.write_data_start(out, &ctx)?;
 		for (row_idx, row) in rows.iter().enumerate() {
+			ctx.row = Some(row_idx);
 			Self::render_data_row(
 				&mut self.renderer,
-				col_descs,
-				&self.default_col_desc,
-				col_widths,
+				&mut ctx,
 				out,
-				row,
-				row_idx)?;
+				row)?;
 		}
-		self.renderer.write_data_end(out)?;
+		self.renderer.write_data_end(out, &ctx)?;
 
 		// Write the footer.
 		if let Some(row) = self.inner.footer_row().as_ref() {
-			self.renderer.write_footer_start(out)?;
+			self.renderer.write_footer_start(out, &ctx)?;
 			Self::render_footer_row(
 				&mut self.renderer,
-				col_descs,
-				&self.default_col_desc,
-				col_widths,
+				&mut ctx,
 				out,
-				row,
-				0)?;
-			self.renderer.write_footer_end(out)?;
+				row)?;
+			self.renderer.write_footer_end(out, &ctx)?;
 		}
-		self.renderer.write_table_end(out)?;
+		self.renderer.write_table_end(out, &ctx)?;
 
 		Ok(())
 	}
@@ -213,170 +214,144 @@ impl<'a, R, T> Table<'a, R, T>
 	/// Renders a row of the header.
 	fn render_header_row<W>(
 		renderer: &mut T,
-		col_descs: &[ColumnDesc<'_>],
-		default_col_desc: &ColumnDesc<'_>,
-		col_widths: &[usize],
+		ctx: &mut RenderContext<'_>,
 		out: &mut W,
-		row: &TextRow<'_>,
-		row_idx: usize)
+		row: &TextRow<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		renderer.write_header_row_start(out, row_idx)?;
+		renderer.write_header_row_start(out, ctx)?;
 		
 		for line_idx in 0..row.height() {
-			renderer.write_header_line_start(out, row_idx, line_idx)?;
+			ctx.line = Some(line_idx);
+			renderer.write_header_line_start(out, ctx)?;
 			for col_idx in 0..row.len() {
+				ctx.col = Some(col_idx);
 				if line_idx == 0 {
-					renderer.write_header_cell_start(out, row_idx, col_idx)?;
+					renderer.write_header_cell_start(out, ctx)?;
 				}
-				
-				let col_desc = col_descs
+
+				let desc = ctx.col_descs
 					.get(col_idx)
-					.unwrap_or(&default_col_desc);
+					.unwrap_or(&ctx.default_col_desc);
 				let text = row.line_vert_aligned(
 					col_idx,
 					line_idx,
-					col_desc.vert_align);
-				renderer.write_header_cell_line_start(
-					out,
-					row_idx,
-					col_idx,
-					line_idx)?;
-				renderer.write_header_cell_line(
-					out,
-					row_idx,
-					col_idx,
-					line_idx,
+					desc.vert_align);
+				let cell = CellContext {
 					text,
-					col_widths[col_idx],
-					col_desc.horz_align)?;
-				renderer.write_header_cell_line_end(
-					out,
-					row_idx,
-					col_idx,
-					line_idx)?;
+					width: ctx.col_widths[col_idx],
+					desc,
+				};
+				renderer.write_header_cell_line_start(out, ctx)?;
+				renderer.write_header_cell_line(out, ctx, &cell)?;
+				renderer.write_header_cell_line_end(out, ctx)?;
 				if line_idx == row.height() - 1 {
-					renderer.write_header_cell_end(out, row_idx, col_idx)?;
+					renderer.write_header_cell_end(out, ctx)?;
 				}
 			}
-			renderer.write_header_line_end(out, row_idx, line_idx)?;
+			ctx.col = None;
+			renderer.write_header_line_end(out, ctx)?;
 		}
+		ctx.line = None;
 
-		renderer.write_header_row_end(out, row_idx)?;
+		renderer.write_header_row_end(out, ctx)?;
 		Ok(())
 	}
 
-	/// Renders row of table data.
+	/// Renders a row of the table data.
 	fn render_data_row<W>(
 		renderer: &mut T,
-		col_descs: &[ColumnDesc<'_>],
-		default_col_desc: &ColumnDesc<'_>,
-		col_widths: &[usize],
+		ctx: &mut RenderContext<'_>,
 		out: &mut W,
-		row: &SplitRow<'_, R>,
-		row_idx: usize)
+		row: &SplitRow<'_, R>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		renderer.write_data_row_start(out, row_idx)?;
+		renderer.write_data_row_start(out, ctx)?;
+		
 		for line_idx in 0..row.height() {
-			renderer.write_data_line_start(out, row_idx, line_idx)?;
+			ctx.line = Some(line_idx);
+			renderer.write_data_line_start(out, ctx)?;
 			for col_idx in 0..row.len() {
+				ctx.col = Some(col_idx);
 				if line_idx == 0 {
-					renderer.write_data_cell_start(out, row_idx, col_idx)?;
+					renderer.write_data_cell_start(out, ctx)?;
 				}
 
-				let col_desc = col_descs
+				let desc = ctx.col_descs
 					.get(col_idx)
-					.unwrap_or(&default_col_desc);
+					.unwrap_or(&ctx.default_col_desc);
 				let text = row.line_vert_aligned(
 					col_idx,
 					line_idx,
-					col_desc.vert_align);
-				renderer.write_data_cell_line_start(
-					out,
-					row_idx,
-					col_idx,
-					line_idx)?;
-				renderer.write_data_cell_line(
-					out,
-					row_idx,
-					col_idx,
-					line_idx,
+					desc.vert_align);
+				let cell = CellContext {
 					text,
-					col_widths[col_idx],
-					col_desc.horz_align)?;
-				renderer.write_data_cell_line_end(
-					out,
-					row_idx,
-					col_idx,
-					line_idx)?;
+					width: ctx.col_widths[col_idx],
+					desc,
+				};
+				renderer.write_data_cell_line_start(out, ctx)?;
+				renderer.write_data_cell_line(out, ctx, &cell)?;
+				renderer.write_data_cell_line_end(out, ctx)?;
 				if line_idx == row.height() - 1 {
-					renderer.write_data_cell_end(out, row_idx, col_idx)?;
+					renderer.write_data_cell_end(out, ctx)?;
 				}
 			}
-			renderer.write_data_line_end(out, row_idx, line_idx)?;
+			ctx.col = None;
+			renderer.write_data_line_end(out, ctx)?;
 		}
+		ctx.line = None;
 
-		renderer.write_data_row_end(out, row_idx)?;
+		renderer.write_data_row_end(out, ctx)?;
 		Ok(())
 	}
-
 
 	/// Renders a row of the footer.
 	fn render_footer_row<W>(
 		renderer: &mut T,
-		col_descs: &[ColumnDesc<'_>],
-		default_col_desc: &ColumnDesc<'_>,
-		col_widths: &[usize],
+		ctx: &mut RenderContext<'_>,
 		out: &mut W,
-		row: &TextRow<'_>,
-		row_idx: usize)
+		row: &TextRow<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		renderer.write_footer_row_start(out, row_idx)?;
+		renderer.write_footer_row_start(out, ctx)?;
+		
 		for line_idx in 0..row.height() {
-			renderer.write_footer_line_start(out, row_idx, line_idx)?;
+			ctx.line = Some(line_idx);
+			renderer.write_footer_line_start(out, ctx)?;
 			for col_idx in 0..row.len() {
+				ctx.col = Some(col_idx);
 				if line_idx == 0 {
-					renderer.write_footer_cell_start(out, row_idx, col_idx)?;
+					renderer.write_footer_cell_start(out, ctx)?;
 				}
-				
-				let col_desc = col_descs
+
+				let desc = ctx.col_descs
 					.get(col_idx)
-					.unwrap_or(&default_col_desc);
+					.unwrap_or(&ctx.default_col_desc);
 				let text = row.line_vert_aligned(
 					col_idx,
 					line_idx,
-					col_desc.vert_align);
-				renderer.write_footer_cell_line_start(
-					out,
-					row_idx,
-					col_idx,
-					line_idx)?;
-				renderer.write_footer_cell_line(
-					out,
-					row_idx,
-					col_idx,
-					line_idx,
+					desc.vert_align);
+				let cell = CellContext {
 					text,
-					col_widths[col_idx],
-					col_desc.horz_align)?;
-				renderer.write_footer_cell_line_end(
-					out,
-					row_idx,
-					col_idx,
-					line_idx)?;
+					width: ctx.col_widths[col_idx],
+					desc,
+				};
+				renderer.write_footer_cell_line_start(out, ctx)?;
+				renderer.write_footer_cell_line(out, ctx, &cell)?;
+				renderer.write_footer_cell_line_end(out, ctx)?;
 				if line_idx == row.height() - 1 {
-					renderer.write_footer_cell_end(out, row_idx, col_idx)?;
+					renderer.write_footer_cell_end(out, ctx)?;
 				}
 			}
-			renderer.write_footer_line_end(out, row_idx, line_idx)?;
+			ctx.col = None;
+			renderer.write_footer_line_end(out, ctx)?;
 		}
+		ctx.line = None;
 
-		renderer.write_footer_row_end(out, row_idx)?;
+		renderer.write_footer_row_end(out, ctx)?;
 		Ok(())
 	}
 }

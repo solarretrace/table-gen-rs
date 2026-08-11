@@ -6,8 +6,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Workspace library imports.
-use table_gen_core::ColumnDesc;
 use table_gen_core::Features;
+use table_gen_core::RenderContext;
 use table_gen_core::Renderer;
 
 
@@ -16,16 +16,11 @@ use table_gen_core::Renderer;
 ////////////////////////////////////////////////////////////////////////////////
 /// A table renderer that renders tables with minimal decoration.
 #[derive(Debug, Clone, Copy, Default)]
-pub struct MinimalRenderer {
-	/// The index of the last column. 
-	last_column: usize,
-}
+pub struct MinimalRenderer;
 
 impl MinimalRenderer {
 	pub fn new() -> Self {
-		Self {
-			last_column: 0,
-		}
+		Self
 	}
 }
 
@@ -34,25 +29,14 @@ impl Renderer for MinimalRenderer {
 		Features::MULTILINE
 	}
 
-	fn init(
-		&mut self,
-		_column_descs: &[ColumnDesc<'_>],
-		_row_count: usize,
-		column_widths: &[usize])
-	{
-		self.last_column = column_widths.len().saturating_sub(1);
-	}
-
 	fn write_data_cell_line_end<W>(
 		&mut self,
 		out: &mut W,
-		_row: usize,
-		col: usize,
-		_line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		if col == self.last_column { return Ok(()); }
+		if ctx.is_last_column() { return Ok(()); }
 		write!(out, " ")
 	}
 }

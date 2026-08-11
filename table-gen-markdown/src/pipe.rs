@@ -6,9 +6,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Workspace library imports.
-use table_gen_core::ColumnDesc;
+use table_gen_core::CellContext;
 use table_gen_core::Features;
 use table_gen_core::HorzAlign;
+use table_gen_core::RenderContext;
 use table_gen_core::Renderer;
 
 
@@ -23,14 +24,12 @@ bitflags! {
 	/// Renderer feature flags.
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 	struct Flags: u8 {
-		/// Indicates that headers were provided for rendering.
-		const HEADERS_PROVIDED    = 0b_0000_0001;
 		/// Whether alignment markers should be omitted.
-		const ALIGN_MARKERS       = 0b_0000_0010;
+		const ALIGN_MARKERS       = 0b_0000_0001;
 		/// Whether pipes should used in the header divider separator.
-		const HEADER_PIPES        = 0b_0000_0100;
+		const HEADER_PIPES        = 0b_0000_0010;
 		/// Indicates that the last column should be padded on the right.
-		const PAD_TRAILING_COLUMN = 0b_0000_1000;
+		const PAD_TRAILING_COLUMN = 0b_0000_0100;
 
 		/// All default flags set.
 		const DEFAULT = Self::ALIGN_MARKERS.bits()
@@ -46,10 +45,6 @@ bitflags! {
 /// A table renderer that renders tables in the pandoc-markdown 'grid' style.
 #[derive(Debug, Clone)]
 pub struct MarkdownPipeRenderer {
-	/// The column widths. Used to render separators with the correct size.
-	column_widths: Vec<usize>,
-	/// The column horizontal aligments. Used to render alignment symbols.
-	column_horz_aligns: Vec<HorzAlign>,
 	/// The amount of space to allocate between columns.
 	column_padding: u8,
 	/// The amount of extra space to allocate within columns.
@@ -68,8 +63,6 @@ impl MarkdownPipeRenderer {
 	/// Constructs a new `MarkdownPipeRenderer`.
 	pub const fn new() -> Self {
 		Self {
-			column_widths: Vec::new(),
-			column_horz_aligns: Vec::new(),
 			column_padding: 0,
 			extra_width: 0,
 			flags: Flags::DEFAULT,
@@ -116,19 +109,19 @@ impl MarkdownPipeRenderer {
 	}
 
 	/// Renders an empty row.
-	fn write_empty_row<W>(&self, out: &mut W)
+	fn write_empty_row<W>(&self, out: &mut W, ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
 		self.write_column_sep(out, HorzAlign::Left, "|", " ", " ", " ")?;
-		for (col, col_width) in self.column_widths.iter().copied().enumerate() {
+		for (col, col_width) in ctx.col_widths.iter().copied().enumerate() {
 			if self.flags.contains(Flags::PAD_TRAILING_COLUMN) 
-				|| col + 1 < self.column_widths.len()
+				|| col + 1 < ctx.column_count()
 			{
 				for _ in 0..col_width { write!(out, " ")?; }
 				for _ in 0..self.extra_width { write!(out, " ")?; }
 			} 
-			if col + 1 == self.column_widths.len() { break; }
+			if col + 1 == ctx.column_count() { break; }
 			self.write_column_sep(out, HorzAlign::Center, "|", " ", " ", " ")?;
 		}
 		self.write_column_sep(out, HorzAlign::Right, "|", " ", " ", " ")?;
@@ -171,58 +164,39 @@ impl Renderer for MarkdownPipeRenderer {
 		Features::empty()
 	}
 
-	fn init(
-		&mut self,
-		column_descs: &[ColumnDesc<'_>],
-		_row_count: usize,
-		column_widths: &[usize])
-	{
-		self.column_widths = column_widths.iter().copied().collect();
-		self.column_horz_aligns = Vec::with_capacity(column_descs.len());
-		let mut headers_provided = false;
-		for column_desc in column_descs.iter() {
-			self.column_horz_aligns.push(column_desc.horz_align);
-			headers_provided |= !column_desc.header.is_empty();
-		}
-		self.flags.set(Flags::HEADERS_PROVIDED, headers_provided);
-	}
-
 	fn write_data_cell_line<W>(
 		&mut self,
 		out: &mut W,
-		_row: usize,
-		col: usize,
-		_line: usize,
-		text: &str,
-		width: usize,
-		horz_align: HorzAlign)
+		ctx: &RenderContext<'_>,
+		cell: &CellContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let mut pad = width.saturating_sub(text.len());
+		let mut pad = cell.padding();
 		pad += self.extra_width as usize;
-		let (l_pad, r_pad) = match horz_align {
+		let (l_pad, r_pad) = match cell.desc.horz_align {
 			HorzAlign::Left   => (0,     pad),
 			HorzAlign::Center => (pad/2, pad.div_ceil(2)),
 			HorzAlign::Right  => (pad,   0),
 		};
 		
 		for _ in 0..l_pad { write!(out, " ")?; }
-		write!(out, "{}", text)?;
+		write!(out, "{}", cell.text)?;
 		if self.flags.contains(Flags::PAD_TRAILING_COLUMN) 
-			|| col + 1 < self.column_widths.len()
+			|| !ctx.is_last_column()
 		{
 			for _ in 0..r_pad { write!(out, " ")?; }
 		}
 		Ok(())
 	}
 
-	fn write_data_start<W>(&mut self, out: &mut W) -> std::io::Result<()>
+	fn write_data_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
+		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		if self.column_widths.is_empty() { return Ok(()) }
-		if !self.flags.contains(Flags::HEADERS_PROVIDED) {
-			self.write_empty_row(out)?;
+		if ctx.is_empty() { return Ok(()) }
+		if ctx.is_headerless() {
+			self.write_empty_row(out, ctx)?;
 			writeln!(out)?;
 		}
 
@@ -235,8 +209,8 @@ impl Renderer for MarkdownPipeRenderer {
 		let im = if header_pipes { pm } else { "+" }; // internal div marker
 
 		use HorzAlign::*;
-		for (col, col_width) in self.column_widths.iter().copied().enumerate() {
-			let cur_align = self.column_horz_aligns.get(col).copied();
+		for (col, col_width) in ctx.col_widths.iter().copied().enumerate() {
+			let cur_align = ctx.col_descs.get(col).map(|d| d.horz_align);
 			if col == 0 {
 				let r = if matches!(cur_align, Some(Right|Center)) {
 					am
@@ -248,14 +222,16 @@ impl Renderer for MarkdownPipeRenderer {
 			for _ in 0..col_width { write!(out, "{}", dm)?; }
 			for _ in 0..self.extra_width { write!(out, "{}", dm)?; }
 
-			let (l, r) = match (cur_align, self.column_horz_aligns.get(col + 1))
+			let (l, r) = match (
+				cur_align,
+				ctx.col_descs.get(col + 1).map(|d| d.horz_align))
 			{
 				(Some(Right|Center), Some(Left|Center)) => (am, am),
 				(Some(Right|Center), _)                 => (am, dm),
 				(_,                  Some(Left|Center)) => (dm, am),
 				_                                       => (dm, dm),
 			};
-			if col + 1 == self.column_widths.len() { 
+			if col + 1 == ctx.column_count() { 
 				self.write_column_sep(out, Right, pm, dm, l, " ")?;
 				break;
 			}
@@ -267,14 +243,12 @@ impl Renderer for MarkdownPipeRenderer {
 	fn write_data_cell_line_start<W>(
 		&mut self,
 		out: &mut W,
-		_row: usize,
-		col: usize,
-		_line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
 		let pm = "|"; // pipe marker
-		if col == 0 {
+		if ctx.is_first_column() {
 			self.write_column_sep(out, HorzAlign::Left, pm, " ", " ", " ")?;
 		}
 		Ok(())
@@ -283,14 +257,12 @@ impl Renderer for MarkdownPipeRenderer {
 	fn write_data_cell_line_end<W>(
 		&mut self,
 		out: &mut W,
-		_row: usize,
-		col: usize,
-		_line: usize)
+		ctx: &RenderContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
 		let pm = "|"; // pipe marker
-		if col + 1 == self.column_widths.len() {
+		if ctx.is_last_column() {
 			self.write_column_sep(out, HorzAlign::Right, pm, " ", " ", " ")
 		} else {
 			self.write_column_sep(out, HorzAlign::Center, pm, " ", " ", " ")
