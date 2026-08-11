@@ -170,21 +170,24 @@ impl ColumnOrd {
 	}
 
 	/// Toggles the sort order and returns the `ColumnOrd`.
-	pub fn reverse(mut self) -> Self {
+	#[must_use]
+	pub fn with_reversed_order(mut self) -> Self {
 		self.flags.toggle(ColumnOrdFlags::REVERSE);
 		self
 	}
 
 	/// Sets a flag indicating to order by the formatted column text and returns
 	/// the `ColumnOrd`.
-	pub fn formatted(mut self) -> Self {
+	#[must_use]
+	pub fn with_formatted_order(mut self) -> Self {
 		self.flags.set(ColumnOrdFlags::FORMATTED, true);
 		self
 	}
 
 	/// Sets a flag indicating to order `None` values before all other values
 	/// and returns the `ColumnOrd`.
-	pub fn none_less(mut self) -> Self {
+	#[must_use]
+	pub fn with_none_lt_order(mut self) -> Self {
 		self.flags.set(ColumnOrdFlags::NONE_LESS, true);
 		self
 	}
