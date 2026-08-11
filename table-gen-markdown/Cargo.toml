@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 description = "table-gen markdown implementations"
 readme.workspace = true
-keywords.workspace = true
+keywords = ["markdown", "library"]
 categories.workspace = true
 homepage.workspace = true
 

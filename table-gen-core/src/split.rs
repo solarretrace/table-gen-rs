@@ -80,6 +80,7 @@ impl<'a, R, S> Split<'a, R, S>
 		S: Iterator<Item=R>,
 {
 	/// Constructs a new `Split` for the given data source.
+	#[must_use]
 	pub (in crate) fn new(inner: Sort<'a, R, S>) -> Self {
 		Self {
 			inner,
@@ -87,11 +88,13 @@ impl<'a, R, S> Split<'a, R, S>
 	}
 
 	/// The row selection bounds.
+	#[must_use]
 	pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
 		self.inner.row_selection()
 	}
 
 	/// The column output specifications.
+	#[must_use]
 	pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
 		self.inner.column_descs()
 	}
@@ -138,6 +141,8 @@ impl<R> Row for SplitRow<'_, R>
 impl<'a, R> SplitRow<'a, R>
 	where R: Row,
 {
+	/// Returns a new `SplitRow` over the given `FormatRow`.
+	#[must_use]
 	pub (in crate) fn new(inner: FormatRow<'a, R>) -> Self {
 		let height = (0..inner.len())
 			.map(|c| inner.text(c).lines().count())
@@ -149,18 +154,27 @@ impl<'a, R> SplitRow<'a, R>
 		}
 	}
 
+	/// Returns the maximum number of lines to render in this row.
+	#[must_use]
 	pub (in crate) fn height(&self) -> usize {
 		self.height
 	}
 
+	/// Returns the text of the cell with the given column index.
+	#[must_use]
 	pub (in crate) fn text(&self, col_idx: usize) -> &str {
 		self.inner.text(col_idx)
 	}
 
+	/// Returns an iterator over the lines of the cell with the given column
+	/// index.
 	pub (in crate) fn lines(&self, col_idx: usize) -> Lines<'_> {
 		self.text(col_idx).lines()
 	}
 	
+	/// Returns the text of the line at the given column & line index, after
+	/// vertically aligning it as specified.
+	#[must_use]
 	pub (in crate) fn line_vert_aligned(
 		&self,
 		col_idx: usize,
@@ -184,6 +198,7 @@ impl<'a, R> SplitRow<'a, R>
 /// A single table row containing text cells with line splitting.
 #[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq)]
 pub (in crate) struct TextRow<'a> {
+	/// The text of the row's columns.
 	inner: Vec<&'a str>,
 	/// The maximum number of lines in the row.
 	height: usize,
@@ -192,6 +207,8 @@ pub (in crate) struct TextRow<'a> {
 }
 
 impl<'a> TextRow<'a> {
+	/// Returns a new `TextRow` over the given strings.
+	#[must_use]
 	pub (in crate) fn new(inner: Vec<&'a str>) -> Self {
 		let len = inner.len();
 		let height = (0..len)
@@ -205,29 +222,43 @@ impl<'a> TextRow<'a> {
 		}
 	}
 
+	/// Sets the overall length of the row, ensuring empty strings are returned
+	/// for column indices beyond those already provided.
+	#[must_use]
 	pub (in crate) fn with_len(mut self, len: usize) -> Self {
 		self.len = len;
 		self
 	}
 
+	/// Returns the maximum number of lines to render in this row.
+	#[must_use]
 	pub (in crate) fn height(&self) -> usize {
 		self.height
 	}
 	
+	/// Returns the number of columns in the row.
+	#[must_use]
 	pub (in crate) fn len(&self) -> usize {
 		self.len
 	}
 	
+	/// Returns the text of the cell with the given column index.
+	#[must_use]
 	pub (in crate) fn text(&self, col_idx: usize) -> &str {
 		self.inner
 			.get(col_idx)
 			.map_or("", |t| t)
 	}
 
+	/// Returns an iterator over the lines of the cell with the given column
+	/// index.
 	pub (in crate) fn lines(&self, col_idx: usize) -> Lines<'_> {
 		self.text(col_idx).lines()
 	}
 	
+	/// Returns the text of the line at the given column & line index, after
+	/// vertically aligning it as specified.
+	#[must_use]
 	pub (in crate) fn line_vert_aligned(
 		&self,
 		col_idx: usize,
@@ -247,7 +278,7 @@ impl<'a> TextRow<'a> {
 ////////////////////////////////////////////////////////////////////////////////
 // SplitRow
 ////////////////////////////////////////////////////////////////////////////////
-// Vertically aligns text from a `Lines` iterator.
+/// Vertically aligns text from a `Lines` iterator.
 fn vert_align_from_iter(
 	mut lines: Lines<'_>,
 	line_idx: usize,

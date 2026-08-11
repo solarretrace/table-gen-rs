@@ -20,12 +20,14 @@ use seq_macro::seq;
 /// A partially orderable, displayable, object safe interface to a single table
 /// cell.
 pub trait Cell: Display {
+	#[must_use]
 	/// Convert a cell to `Any` to enable downcasting to the base type.
 	fn as_any(&self) -> &dyn Any;
 
 	/// Perform a partial compare to another cell. This will return `None` if
 	/// we are comparing cells from different columns, but this should never be
 	/// done anyway.
+	#[must_use]
 	fn dyn_partial_cmp(&self, other: &dyn Cell) -> Option<Ordering>;
 }
 
@@ -48,10 +50,19 @@ impl<T: PartialOrd + Display + 'static> Cell for T {
 /// Provides methods required for processing a single table row.
 pub trait Row {
 	/// Returns the number of columns in the row.
+	#[must_use]
 	fn len(&self) -> usize;
+
 	/// Returns the cell at the given column index. Returns `None` if the cell
-	/// is not
+	/// is not.
+	#[must_use]
 	fn cell(&self, col_idx: usize) -> Option<&dyn Cell>;
+
+	/// Returns `true` if the row contains no columns.
+	#[must_use]
+	fn is_empty(&self) -> bool {
+		self.len() == 0
+	}
 }
 
 
@@ -86,7 +97,8 @@ impl<const N: usize, C> Row for [C; N]
 	}
 }
 
-// Heterogeneous tables rows provided via tuples.
+
+/// Generates `Row` implementations for tuples of the given length.
 macro_rules! tuple_row_impl {
 	($idx:literal) => {
 		seq!(N in 0..$idx {
@@ -105,6 +117,7 @@ macro_rules! tuple_row_impl {
 	};
 }
 
+// Heterogeneous row impls provided via tuples.
 tuple_row_impl!(1);
 tuple_row_impl!(2);
 tuple_row_impl!(3);

@@ -58,6 +58,7 @@
 // Clippy groups.
 #![warn(clippy::cargo)]
 #![warn(clippy::nursery)]
+#![allow(clippy::redundant_pub_crate)] // False positives for exports.
 #![warn(clippy::pedantic)]
 
 // Clippy restriction lints.

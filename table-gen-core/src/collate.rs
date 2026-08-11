@@ -55,6 +55,7 @@ impl<'a, R, S> Collate<'a, S>
 		S: Iterator<Item=R>,
 {
 	/// Constructs a new `Collate` for the given data source.
+	#[must_use]
 	pub (in crate) fn new(inner: S) -> Self {
 		Self {
 			inner,
@@ -67,6 +68,7 @@ impl<'a, R, S> Collate<'a, S>
 	}
 
 	/// Sets the supported features and returns the `Collate`.
+	#[must_use]
 	pub (in crate) fn with_features(mut self, features: Features)
 		-> Self
 	{
@@ -75,6 +77,7 @@ impl<'a, R, S> Collate<'a, S>
 	}
 
 	/// Sets the column selection and returns the `Collate`.
+	#[must_use]
 	pub (in crate) fn with_column_selection(mut self, col_select: &'a [usize])
 		-> Self
 	{
@@ -83,6 +86,7 @@ impl<'a, R, S> Collate<'a, S>
 	}
 
 	/// Sets the row selection and returns the `Collate`.
+	#[must_use]
 	pub (in crate) fn with_row_selection<B>(mut self, row_select: B) -> Self 
 		where B: RangeBounds<usize>
 	{
@@ -93,6 +97,7 @@ impl<'a, R, S> Collate<'a, S>
 	}
 
 	/// Sets the column descriptors and returns the `Collate`.
+	#[must_use]
 	pub (in crate) fn with_column_descs(
 		mut self,
 		col_descs: &'a [ColumnDesc<'a>])
@@ -103,6 +108,7 @@ impl<'a, R, S> Collate<'a, S>
 	}
 
 	/// Sets the column order and returns the `Collate`.
+	#[must_use]
 	pub (in crate) fn with_sort_columns(mut self, col_order: &'a [ColumnOrd])
 		-> Self
 	{
@@ -111,23 +117,27 @@ impl<'a, R, S> Collate<'a, S>
 	}
 
 	/// Returns the supported features for the renderer.
+	#[must_use]
 	pub (in crate) fn features(&self) -> Features {
 		self.features
 	}
 
 	/// The row selection bounds.
+	#[must_use]
 	pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
 		&self.row_select
 	}
 
 	/// The column output specifications.
+	#[must_use]
 	pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
-		&self.col_descs[..]
+		self.col_descs
 	}
 
 	/// The sort parameters for columns, in order of sort priority.
+	#[must_use]
 	pub (in crate) fn column_order(&self) -> &'a [ColumnOrd] {
-		&self.col_order[..]
+		self.col_order
 	}
 }
 
@@ -141,7 +151,7 @@ impl<'a, R, S> Iterator for Collate<'a, S>
 	fn next(&mut self) -> Option<Self::Item> {
 		self.inner
 			.next()
-			.map(|r| CollateRow { inner: r, col_select: &self.col_select[..], })
+			.map(|r| CollateRow { inner: r, col_select: self.col_select, })
 	}
 }
 
@@ -209,6 +219,7 @@ impl Default for ColumnDesc<'_> {
 
 impl<'a> ColumnDesc<'a> {
 	/// Constructs a new `ColumnDesc` with a default value.
+	#[must_use]
 	pub const fn new() -> Self {
 		Self {
 			header: "",
@@ -222,24 +233,28 @@ impl<'a> ColumnDesc<'a> {
 	}
 	
 	/// Sets the header text and returns the `ColumnDesc`.
+	#[must_use]
 	pub const fn with_header(mut self, header: &'a str) -> Self {
 		self.header = header;
 		self
 	}
 	
 	/// Sets the footer text and returns the `ColumnDesc`.
+	#[must_use]
 	pub const fn with_footer(mut self, footer: &'a str) -> Self {
 		self.footer = footer;
 		self
 	}
 	
 	/// Sets the `DisplayFmt` and returns the `ColumnDesc`.
+	#[must_use]
 	pub const fn with_display_fmt(mut self, display_fmt: DisplayFmt) -> Self {
 		self.display_fmt = display_fmt;
 		self
 	}
 	
 	/// Sets the minimum and maximum column widths and returns the `ColumnDesc`.
+	#[must_use]
 	pub const fn with_width(mut self, width: usize) -> Self {
 		self.min_width = width;
 		self.max_width = width;
@@ -247,24 +262,28 @@ impl<'a> ColumnDesc<'a> {
 	}
 	
 	/// Sets the minimum column widths and returns the `ColumnDesc`.
+	#[must_use]
 	pub const fn with_min_width(mut self, min_width: usize) -> Self {
 		self.min_width = min_width;
 		self
 	}
 	
 	/// Sets the maximum column widths and returns the `ColumnDesc`.
+	#[must_use]
 	pub const fn with_max_width(mut self, max_width: usize) -> Self {
 		self.max_width = max_width;
 		self
 	}
 	
 	/// Sets the horizontal text alignment and returns the `ColumnDesc`.
+	#[must_use]
 	pub const fn with_horz_align(mut self, horz_align: HorzAlign) -> Self {
 		self.horz_align = horz_align;
 		self
 	}
 	
 	/// Sets the vertical text alignment and returns the `ColumnDesc`.
+	#[must_use]
 	pub const fn with_vert_align(mut self, vert_align: VertAlign) -> Self {
 		self.vert_align = vert_align;
 		self

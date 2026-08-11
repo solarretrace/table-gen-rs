@@ -38,6 +38,7 @@ impl<'a, R> Aggregate<'a, R>
 	where R: Row,
 {
 	/// Constructs a new `Aggregate` for the given data source.
+	#[must_use]
 	pub (in crate) fn new<S, T>(inner: T, default_col_desc: &ColumnDesc<'_>)
 		-> Self
 		where
@@ -47,14 +48,14 @@ impl<'a, R> Aggregate<'a, R>
 	{
 		let str_width = |l: &str| { l.len() };
 		let inner = inner.into();
-		let row_select = inner.row_selection().clone();
+		let row_select = *inner.row_selection();
 		let col_descs = inner.column_descs();
 
 		// Build the header row.
 		let mut header_used = false;
 		let header_cells: Vec<&str> = col_descs.iter()
 			.map(|col_desc| col_desc.header)
-			.map(|c| { header_used |= !c.is_empty(); c })
+			.inspect(|c| header_used |= !c.is_empty())
 			.collect();
 		let mut header_row = header_used
 			.then_some(header_cells)
@@ -63,7 +64,7 @@ impl<'a, R> Aggregate<'a, R>
 		let mut footer_used = false;
 		let footer_cells: Vec<&str> = col_descs.iter()
 			.map(|col_desc| col_desc.footer)
-			.map(|c| { footer_used |= !c.is_empty(); c })
+			.inspect(|c| footer_used |= !c.is_empty())
 			.collect();
 		let mut footer_row = footer_used
 			.then_some(footer_cells)
@@ -77,11 +78,11 @@ impl<'a, R> Aggregate<'a, R>
 			(Some(h), Some(f)) => (0..col_descs.len())
 				.map(|idx| std::cmp::max(
 					h.lines(idx)
-						.map(|l| (str_width)(l))
+						.map(str_width)
 						.max()
 						.unwrap_or(col_descs[idx].min_width),
 					f.lines(idx)
-						.map(|l| (str_width)(l))
+						.map(str_width)
 						.max()
 						.unwrap_or(col_descs[idx].min_width)))
 				.collect(),
@@ -90,7 +91,7 @@ impl<'a, R> Aggregate<'a, R>
 			(None,    Some(r)) => (0..col_descs.len())
 				.map(|idx| r
 					.lines(idx)
-					.map(|l| (str_width)(l))
+					.map(str_width)
 					.max()
 					.unwrap_or(col_descs[idx].min_width))
 				.collect(),
@@ -126,7 +127,7 @@ impl<'a, R> Aggregate<'a, R>
 					} else {
 						// The col width is dynamic. Get the width of the cell.
 						let cell_width = row.lines(idx)
-							.map(|l| (str_width)(l))
+							.map(str_width)
 							.max()
 							.unwrap_or(0);
 						// The cell width is at least as wide as the min_width.
@@ -157,26 +158,31 @@ impl<'a, R> Aggregate<'a, R>
 	}
 
 	/// The column widths.
+	#[must_use]
 	pub (in crate) fn rows(&self) -> &[SplitRow<'a, R>] {
 		&self.rows[..]
 	}
 
 	/// The column output descriptors.
+	#[must_use]
 	pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
-		&self.col_descs[..]
+		self.col_descs
 	}
 
 	/// The column widths.
+	#[must_use]
 	pub (in crate) fn col_widths(&self) -> &[usize] {
-		&self.col_widths[..]
+		&self.col_widths
 	}
 
 	/// The header row.
+	#[must_use]
 	pub (in crate) fn header_row(&self) -> Option<&TextRow<'_>> {
 		self.header_row.as_ref()
 	}
 
 	/// The footer row.
+	#[must_use]
 	pub (in crate) fn footer_row(&self) -> Option<&TextRow<'_>> {
 		self.footer_row.as_ref()
 	}

@@ -57,6 +57,7 @@ impl<'a, R, S> Format<'a, S>
 		R: Row,
 {
 	/// Constructs a new `Format` for the given data source.
+	#[must_use]
 	pub (in crate) fn new(inner: Collate<'a, S>) -> Self {
 		Self {
 			inner,
@@ -64,16 +65,19 @@ impl<'a, R, S> Format<'a, S>
 	}
 
 	/// The row selection bounds.
+	#[must_use]
 	pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
 		self.inner.row_selection()
 	}
 
 	/// The column output specifications.
+	#[must_use]
 	pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
 		self.inner.column_descs()
 	}
 
 	/// The sort parameters for columns, in order of sort priority.
+	#[must_use]
 	pub (in crate) fn column_order(&self) -> &'a [ColumnOrd] {
 		self.inner.column_order()
 	}
@@ -129,6 +133,7 @@ impl<'a, R> FormatRow<'a, R>
 {
 	/// Constructs a new `FormatRow` over the given `CollateRow` and
 	/// `ColumnDesc`s.
+	#[must_use]
 	pub (in crate) fn new(
 		inner: CollateRow<'a, R>,
 		col_descs: &'a [ColumnDesc<'a>],
@@ -145,13 +150,13 @@ impl<'a, R> FormatRow<'a, R>
 	}
 
 	/// Returns the text of the cell at the given column index.
+	#[must_use]
 	pub (in crate) fn text(&self, col_idx: usize) -> &str {
 		self.cache[col_idx].get_or_init(|| match self.inner.cell(col_idx) {
 			Some(cell) => {
 				self.col_descs
 					.get(col_idx)
-					.map(|spec| spec.display_fmt)
-					.unwrap_or(DisplayFmt::default())
+					.map_or_else(DisplayFmt::default, |spec| spec.display_fmt)
 					.apply(cell, self.multiline)
 			},
 			None => String::new().into_boxed_str(),
@@ -179,6 +184,7 @@ impl Default for DisplayFmt {
 
 impl DisplayFmt {
 	/// Constructs a new `DisplayFmt` with the default settings.
+	#[must_use]
 	pub const fn new() -> Self {
 		Self {
 			precision: None,
@@ -188,7 +194,11 @@ impl DisplayFmt {
 
 	/// Sets the precision and returns the `DisplayFmt`.
 	///
-	/// See https://doc.rust-lang.org/std/fmt/index.html for details.
+	/// Indicates that the cell value should be formatted with the given
+	/// precision. See the 
+	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html)
+	/// for details.
+	#[must_use]
 	pub const fn with_precision_option(mut self, precision: Option<usize>)
 		-> Self 
 	{
@@ -198,7 +208,11 @@ impl DisplayFmt {
 
 	/// Sets the sign and returns the `DisplayFmt`.
 	///
-	/// See https://doc.rust-lang.org/std/fmt/index.html for details.
+	/// Indicates that the cell value should be formatted with the given sign.
+	/// See the 
+	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html)
+	/// for details.
+	#[must_use]
 	pub const fn with_sign_option(mut self, sign: Option<Sign>) -> Self {
 		self.sign = sign;
 		self
@@ -206,7 +220,11 @@ impl DisplayFmt {
 
 	/// Sets the precision and returns the `DisplayFmt`.
 	///
-	/// See https://doc.rust-lang.org/std/fmt/index.html for details.
+	/// Indicates that the cell value should be formatted with the given
+	/// precision. See the 
+	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html)
+	/// for details.
+	#[must_use]
 	pub fn with_precision<T>(mut self, precision: T) -> Self 
 		where T: Into<Option<usize>>
 	{
@@ -216,7 +234,11 @@ impl DisplayFmt {
 
 	/// Sets the sign and returns the `DisplayFmt`.
 	///
-	/// See https://doc.rust-lang.org/std/fmt/index.html for details.
+	/// Indicates that the cell value should be formatted with the given sign.
+	/// See the 
+	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html)
+	/// for details.
+	#[must_use]
 	pub fn with_sign<T>(mut self, sign: T) -> Self 
 		where T: Into<Option<Sign>>
 	{
@@ -226,6 +248,7 @@ impl DisplayFmt {
 	
 	/// Applies the `DisplayFmt` to the given cell, rendering it as a
 	/// `Box<str>`.
+	#[must_use]
 	pub fn apply<C>(&self, cell: C, multiline: bool) -> Box<str>
 		where C: Display
 	{
@@ -240,14 +263,17 @@ impl DisplayFmt {
 			(None,    Some(Zero))  => format!("{:0}", cell),
 			(None,    None)        => format!("{}", cell),
 		};
-		if !multiline { res = res.replace("\n", " "); }
+		if !multiline { res = res.replace('\n', " "); }
 		res.into_boxed_str()
 	}
 }
 
 /// Format sign specifier.
-	///
-	/// See https://doc.rust-lang.org/std/fmt/index.html for details.
+///
+/// Indicates that the cell value should be formatted with the given sign. See
+/// the 
+/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html)
+/// for details.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Sign {
 	/// Format numerical values with the '+' format option.

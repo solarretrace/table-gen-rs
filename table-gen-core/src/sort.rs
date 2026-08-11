@@ -28,6 +28,8 @@ use std::vec::IntoIter;
 pub (in crate) struct Sort<'a, R, S> {
 	/// The table data source.
 	inner: Format<'a, S>,
+	/// An iterator over the sorted rows of the table. Populated on first row
+	/// access.
 	sorted: Option<IntoIter<FormatRow<'a, R>>>,
 }
 
@@ -68,6 +70,7 @@ impl<'a, R, S> Sort<'a, R, S>
 		S: Iterator<Item=R>,
 {
 	/// Constructs a new `Sort` for the given data source.
+	#[must_use]
 	pub (in crate) fn new(inner: Format<'a, S>) -> Self {
 		Self {
 			inner,
@@ -76,22 +79,26 @@ impl<'a, R, S> Sort<'a, R, S>
 	}
 
 	/// The row selection bounds.
+	#[must_use]
 	pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
 		self.inner.row_selection()
 	}
 
 	/// The column output specifications.
+	#[must_use]
 	pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
 		self.inner.column_descs()
 	}
 
 	/// The sort parameters for columns, in order of sort priority.
+	#[must_use]
 	pub (in crate) fn column_order(&self) -> &'a [ColumnOrd] {
 		self.inner.column_order()
 	}
 
 	/// Compares two `FormatRow`s according to the ordering given by
 	/// `[ColumnOrd]`.
+	#[must_use]
 	fn compare_rows(
 		row_a: &FormatRow<'_, R>,
 		row_b: &FormatRow<'_, R>,
@@ -162,8 +169,9 @@ pub struct ColumnOrd {
 
 impl ColumnOrd {
 	/// Constructs a new `ColumnOrd` ordering on the given column index.
+	#[must_use]
 	pub fn new(idx: usize) -> Self {
-		ColumnOrd {
+		Self {
 			idx,
 			flags: ColumnOrdFlags::default(),
 		}
@@ -211,6 +219,6 @@ bitflags! {
 
 impl Default for ColumnOrdFlags {
 	fn default() -> Self {
-		ColumnOrdFlags::empty()
+		Self::empty()
 	}
 }

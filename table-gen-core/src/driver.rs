@@ -31,7 +31,7 @@ pub struct TableBuilder<'a, S, T> {
 	inner: Collate<'a, S>,
 	/// The table renderer.
 	renderer: T,
-	/// The default ColumnDesc.
+	/// The default `ColumnDesc`.
 	default_col_desc: ColumnDesc<'a>,
 }
 
@@ -42,7 +42,8 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 		T: Renderer,
 {
 	/// Constructs a new `TableBuilder`.
-	pub fn new<I>(source: I, renderer: T) -> TableBuilder<'a, S, T>
+	#[must_use]
+	pub fn new<I>(source: I, renderer: T) -> Self
 		where I: IntoIterator<Item=R, IntoIter=S>
 	{
 		Self {
@@ -55,6 +56,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 
 	/// Prepares the table builder with the given columns selected for output in
 	/// the given order.
+	#[must_use]
 	pub fn with_column_selection(mut self, col_select: &'a [usize]) -> Self {
 		self.inner = self.inner.with_column_selection(col_select);
 		self
@@ -62,6 +64,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 
 	/// Prepares the table builder such that only the given rows will be
 	/// rendered.
+	#[must_use]
 	pub fn with_row_selection<B>(mut self, row_select: B) -> Self 
 		where B: RangeBounds<usize>
 	{
@@ -70,6 +73,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 	}
 
 	/// Prepares the table builder with the given column output specifications.
+	#[must_use]
 	pub fn with_column_descs(mut self, col_descs: &'a [ColumnDesc<'a>]) -> Self
 	{
 		self.inner = self.inner.with_column_descs(col_descs);
@@ -78,6 +82,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 
 	/// Prepares the table builder with the given default column output
 	/// specification.
+	#[must_use]
 	pub fn with_default_col_desc(mut self, default_col_desc: ColumnDesc<'a>)
 		-> Self
 	{
@@ -86,6 +91,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 	}
 
 	/// Prepares the table builder with the given output column orderings.
+	#[must_use]
 	pub fn with_sort_columns(mut self, col_order: &'a [ColumnOrd]) -> Self {
 		self.inner = self.inner.with_sort_columns(col_order);
 		self
@@ -93,6 +99,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 
 	/// Finishes collation of the data source and returns a `Table` for
 	/// rendering.
+	#[must_use]
 	pub fn finish(self) -> Table<'a, R, T> {
 		Table::new(self.inner, self.default_col_desc, self.renderer)
 	}
@@ -120,7 +127,7 @@ pub struct Table<'a, R, T> {
 	inner: Aggregate<'a, R>,
 	/// The table renderer.
 	renderer: T,
-	/// The default ColumnDesc.
+	/// The default `ColumnDesc`.
 	default_col_desc: ColumnDesc<'a>,
 }
 
@@ -131,6 +138,7 @@ impl<'a, R, T> Table<'a, R, T>
 {
 	/// Constructs a new `TableBuilder` suitable for building this type of
 	/// table.
+	#[must_use]
 	pub fn new_builder<I, S>(source: I, renderer: T) -> TableBuilder<'a, S, T>
 		where
 			I: IntoIterator<Item=R, IntoIter=S>,
@@ -140,6 +148,7 @@ impl<'a, R, T> Table<'a, R, T>
 	}
 
 	/// Constructs a new `Table` from a collated data source and renderer.
+	#[must_use]
 	pub (in crate) fn new<S>(
 		source: Collate<'a, S>,
 		default_col_desc: ColumnDesc<'a>,
@@ -155,6 +164,12 @@ impl<'a, R, T> Table<'a, R, T>
 	}
 
 	/// Renders the table output.
+	///
+	/// # Errors
+	///
+	/// Writing to the provided output may generate I/O errors. See the 
+	/// [std library docs](https://doc.rust-lang.org/std/io/trait.Write.html#errors)
+	/// for details.
 	pub fn render<W>(&mut self, out: &mut W)
 		-> std::io::Result<()>
 		where W: std::io::Write
@@ -233,7 +248,7 @@ impl<'a, R, T> Table<'a, R, T>
 
 				let desc = ctx.col_descs
 					.get(col_idx)
-					.unwrap_or(&ctx.default_col_desc);
+					.unwrap_or(ctx.default_col_desc);
 				let text = row.line_vert_aligned(
 					col_idx,
 					line_idx,
@@ -281,7 +296,7 @@ impl<'a, R, T> Table<'a, R, T>
 
 				let desc = ctx.col_descs
 					.get(col_idx)
-					.unwrap_or(&ctx.default_col_desc);
+					.unwrap_or(ctx.default_col_desc);
 				let text = row.line_vert_aligned(
 					col_idx,
 					line_idx,
@@ -329,7 +344,7 @@ impl<'a, R, T> Table<'a, R, T>
 
 				let desc = ctx.col_descs
 					.get(col_idx)
-					.unwrap_or(&ctx.default_col_desc);
+					.unwrap_or(ctx.default_col_desc);
 				let text = row.line_vert_aligned(
 					col_idx,
 					line_idx,

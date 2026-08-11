@@ -5,15 +5,15 @@ members = [
 ]
 
 [workspace.package]
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Skylor R Schermer <skyschermer@gmail.com>"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/solarretrace/table-fmt-rs"
 description = "A formatted table generator library"
 readme = "readme.md"
-keywords = []
-categories = []
+keywords = ["utility", "generator", "library"]
+categories = ["template-engine", "value-formatting"]
 homepage = "https://github.com/solarretrace/table-fmt-rs"
 exclude = [
 	"*.sublime-project",

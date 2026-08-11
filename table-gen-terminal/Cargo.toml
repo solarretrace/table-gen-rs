@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 description = "table-gen terminal renderer implementations"
 readme.workspace = true
-keywords.workspace = true
+keywords = ["terminal", "library"]
 categories.workspace = true
 homepage.workspace = true
 

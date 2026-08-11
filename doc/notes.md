@@ -44,7 +44,7 @@
 			.with_vert_align(VertAlign::Bottom)
 			.with_max_width(10),
 	];
-	let order = [ColumnOrd::new(1).reverse(), ColumnOrd::new(2)];
+	let order = [ColumnOrd::new(1).with_reversed_order(), ColumnOrd::new(2)];
 		
 	let mut table = Table::new_builder(data, MinimalRenderer::new())
 		.with_column_descs(&col_descs)
