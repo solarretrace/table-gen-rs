@@ -7,15 +7,15 @@
 
 # Implementation tasks:
 
++ Implement Features
+	- Support custom line breaker/wrapping	
+	- Support unicode string widths
+	- Support extra width in aggregator
+	- Support custom formatting
 + Support full table width constraints
 + Implement colors for terminal renderers
-+ Implement renderer formatting hooks
-+ Support custom line breaker
-+ Support extra width in aggregator
 + Deduplicate column references
 + Support independent header/footer alignment
-+ Support unicode string widths
-+ Implement Features
 + Implement parallelism
 + Implement custom aggregation
 + Support subcolumns

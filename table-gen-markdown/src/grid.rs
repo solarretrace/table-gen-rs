@@ -160,7 +160,7 @@ impl Renderer for MarkdownGridRenderer {
 		let align = if ctx.is_last_column() {
 			HorzAlign::Right
 		} else {
-			HorzAlign::Left
+			HorzAlign::Center
 		};
 
 		self.write_column_sep(out, align, "|", " ")
@@ -289,7 +289,7 @@ mod test {
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		//println!("{}", out);
+		println!("{}", out);
 
 		assert_eq!(out, "\
 +-------+-------+-------+
@@ -335,7 +335,7 @@ mod test {
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		//println!("{}", out);
+		println!("{}", out);
 
 		assert_eq!(out, "\
 +----------+---------+---------+--------------------------+
