@@ -380,7 +380,7 @@ mod test {
             [100],
         ];
 
-        let order = [ColumnOrd::new(0).reverse()];
+        let order = [ColumnOrd::new(0).with_reversed_order()];
         let mut table = Table::new_builder(data, BoxTileRenderer::new())
             .with_sort_columns(&order)
             .finish();
