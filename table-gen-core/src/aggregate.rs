@@ -38,7 +38,8 @@ impl<'a, R> Aggregate<'a, R>
 	where R: Row,
 {
 	/// Constructs a new `Aggregate` for the given data source.
-	pub (in crate) fn new<S, T>(inner: T, default_col_desc: &ColumnDesc<'_>) -> Self
+	pub (in crate) fn new<S, T>(inner: T, default_col_desc: &ColumnDesc<'_>)
+		-> Self
 		where
 			T: Into<Split<'a, R, S>>,
 			S: Iterator<Item=R>,

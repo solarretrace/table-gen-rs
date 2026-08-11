@@ -6,13 +6,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Internal modules.
-mod box_draw;
+mod box_grid;
 mod debug;
 mod line_style;
 mod minimal;
 
 // Exports.
-pub use box_draw::*;
+pub use box_grid::*;
 pub use debug::*;
 pub use line_style::*;
 pub use minimal::*;

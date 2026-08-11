@@ -17,11 +17,11 @@ use table_gen_core::Renderer;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// BoxStyle
+// BoxGridStyle
 ////////////////////////////////////////////////////////////////////////////////
 /// The style specification for the box renderer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct BoxStyle {
+pub struct BoxGridStyle {
 	/// The style to use for the left table border.
 	pub border_left: LineStyle,
 	/// The style to use for the right table border.
@@ -40,14 +40,14 @@ pub struct BoxStyle {
 	pub round_corners: bool,
 }
 
-impl Default for BoxStyle {
+impl Default for BoxGridStyle {
 	fn default() -> Self {
 		Self::new()
 	}
 }
 
-impl BoxStyle {
-	/// Constructs a new `BoxStyle` with the default styling.
+impl BoxGridStyle {
+	/// Constructs a new `BoxGridStyle` with the default styling.
 	pub const fn new() -> Self {
 		Self {
 			border_left: LineStyle::Light,
@@ -63,32 +63,32 @@ impl BoxStyle {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// BoxDrawingRenderer
+// BoxGridRenderer
 ////////////////////////////////////////////////////////////////////////////////
 /// A table renderer that renders tables using box-drawing unicode style.
 #[derive(Debug, Clone)]
-pub struct BoxDrawingRenderer {
+pub struct BoxGridRenderer {
 	/// The amount of space to allocate between columns.
 	column_padding: u8,
 	/// The amount of extra space to allocate within columns.
 	extra_width: u8,
-	/// The `BoxStyle` to render with.
-	style: BoxStyle,
+	/// The `BoxGridStyle` to render with.
+	style: BoxGridStyle,
 }
 
-impl Default for BoxDrawingRenderer {
+impl Default for BoxGridRenderer {
 	fn default() -> Self {
 		Self::new()
 	}
 }
 
-impl BoxDrawingRenderer {
-	/// Constructs a new `BoxDrawingRenderer`.
+impl BoxGridRenderer {
+	/// Constructs a new `BoxGridRenderer`.
 	pub const fn new() -> Self {
 		Self {
 			column_padding: 0,
 			extra_width: 0,
-			style: BoxStyle::new(),
+			style: BoxGridStyle::new(),
 		}
 	}
 
@@ -98,14 +98,14 @@ impl BoxDrawingRenderer {
 		self
 	}
 
-	/// Sets the extra column width and returns the `BoxDrawingRenderer`.
+	/// Sets the extra column width and returns the `BoxGridRenderer`.
 	pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
 		self.extra_width = extra_width;
 		self
 	}
 
-	/// Sets the style and returns the `BoxDrawingRenderer`.
-	pub const fn with_style(mut self, style: BoxStyle) -> Self {
+	/// Sets the style and returns the `BoxGridRenderer`.
+	pub const fn with_style(mut self, style: BoxGridStyle) -> Self {
 		self.style = style;
 		self
 	}
@@ -236,7 +236,7 @@ impl BoxDrawingRenderer {
 	}
 }
 
-impl Renderer for BoxDrawingRenderer {
+impl Renderer for BoxGridRenderer {
 	fn features(&self) -> Features {
 		Features::MULTILINE
 	}
@@ -350,7 +350,7 @@ mod test {
 	fn empty_table() {
 		let data: Vec<(usize, )> = vec![];
 
-		let mut table = Table::new_builder(data, BoxDrawingRenderer::new())
+		let mut table = Table::new_builder(data, BoxGridRenderer::new())
 			.finish();
 
 		let mut out: Vec<u8> = Vec::new();
@@ -383,7 +383,7 @@ mod test {
 				.with_horz_align(HorzAlign::Center),
 		];
 
-		let mut table = Table::new_builder(data, BoxDrawingRenderer::new())
+		let mut table = Table::new_builder(data, BoxGridRenderer::new())
 			.with_column_descs(&col_descs)
 			.with_column_selection(&[0, 0, 0])
 			.finish();
@@ -426,7 +426,7 @@ mod test {
 				.with_horz_align(HorzAlign::Center),
 		];
 
-		let mut table = Table::new_builder(data, BoxDrawingRenderer::new())
+		let mut table = Table::new_builder(data, BoxGridRenderer::new())
 			.with_column_descs(&col_descs)
 			.with_column_selection(&[0, 0, 0])
 			.finish();
@@ -473,7 +473,7 @@ mod test {
 				.with_horz_align(HorzAlign::Left),
 		];
 
-		let mut table = Table::new_builder(data, BoxDrawingRenderer::new())
+		let mut table = Table::new_builder(data, BoxGridRenderer::new())
 			.with_column_descs(&col_descs)
 			.finish();
 
@@ -522,8 +522,8 @@ mod test {
 				.with_horz_align(HorzAlign::Left),
 		];
 
-		let mut table = Table::new_builder(data, BoxDrawingRenderer::new()
-				.with_style(BoxStyle {
+		let mut table = Table::new_builder(data, BoxGridRenderer::new()
+				.with_style(BoxGridStyle {
 					border_left: LineStyle::Light,
 					border_right: LineStyle::Light,
 					border_top: LineStyle::Double,

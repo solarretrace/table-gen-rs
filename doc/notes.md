@@ -1,14 +1,18 @@
 
+# Documentation & API tasks:
+
++ Write tests for single-column tables.
++ Write API documentation
+
 
 # Implementation tasks:
 
++ Support full table width constraints
 + Implement colors for terminal renderers
 + Implement renderer formatting hooks
 + Support custom line breaker
 + Support extra width in aggregator
-+ Deduplicate sort indices
 + Deduplicate column references
-+ Implement Transpose operation
 + Support independent header/footer alignment
 + Support unicode string widths
 + Implement Features
@@ -18,8 +22,11 @@
 + Support multiple header/footer rows
 + Implement more robust formatting options
 
+# Deferred tasks:
 
-# Documentation & API tasks:
-
-+ Write tests for single-column tables.
-+ Write API documentation
++ Deduplicate sort indices
+	- Requires copying the order
+	- little payoff
++ Implement Transpose operation
+	- Can no longer expose ColumnDesc array to renderers.
+	- Need a way to request column descriptors dynamically.

@@ -157,11 +157,13 @@ impl Renderer for MarkdownGridRenderer {
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		if ctx.is_last_column() {
-			self.write_column_sep(out, HorzAlign::Right, "|", " ")
+		let align = if ctx.is_last_column() {
+			HorzAlign::Right
 		} else {
-			self.write_column_sep(out, HorzAlign::Center, "|", " ")
-		}
+			HorzAlign::Left
+		};
+
+		self.write_column_sep(out, align, "|", " ")
 	}
 
 	fn write_data_row_start<W>(

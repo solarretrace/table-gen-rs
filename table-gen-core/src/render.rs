@@ -222,7 +222,6 @@ pub trait Renderer {
 		Ok(())
 	}
 
-
 	// Cell-based hooks
 	////////////////////////////////////////////////////////////////////////////
 
@@ -291,7 +290,6 @@ pub trait Renderer {
 	{
 		Ok(())
 	}
-
 
 	// Line-based hooks
 	////////////////////////////////////////////////////////////////////////////
@@ -430,6 +428,3 @@ pub trait Renderer {
 		self.write_data_cell_line_end(out, ctx)
 	}
 }
-
-
-
