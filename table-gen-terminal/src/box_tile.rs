@@ -362,7 +362,6 @@ mod test {
     use super::*;
     use table_gen::ColumnDesc;
     use table_gen::ColumnOrd;
-    use table_gen::HorzAlign;
     use table_gen::Table;
 
     #[test]
