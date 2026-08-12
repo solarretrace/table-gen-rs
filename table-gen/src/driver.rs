@@ -174,6 +174,7 @@ impl<'a, R, T> Table<'a, R, T>
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
+		let str_width_fn = self.inner.str_width_fn();
 		let rows = self.inner.rows();
 		let mut ctx = RenderContext {
 			default_col_desc: &self.default_col_desc,
@@ -195,7 +196,8 @@ impl<'a, R, T> Table<'a, R, T>
 				&mut self.renderer,
 				&mut ctx,
 				out,
-				row)?;
+				row,
+				str_width_fn)?;
 			self.renderer.write_header_end(out, &ctx)?;
 		}
 
@@ -207,7 +209,8 @@ impl<'a, R, T> Table<'a, R, T>
 				&mut self.renderer,
 				&mut ctx,
 				out,
-				row)?;
+				row,
+				str_width_fn)?;
 		}
 		self.renderer.write_data_end(out, &ctx)?;
 
@@ -218,7 +221,8 @@ impl<'a, R, T> Table<'a, R, T>
 				&mut self.renderer,
 				&mut ctx,
 				out,
-				row)?;
+				row,
+				str_width_fn)?;
 			self.renderer.write_footer_end(out, &ctx)?;
 		}
 		self.renderer.write_table_end(out, &ctx)?;
@@ -231,7 +235,8 @@ impl<'a, R, T> Table<'a, R, T>
 		renderer: &mut T,
 		ctx: &mut RenderContext<'_>,
 		out: &mut W,
-		row: &TextRow<'_>)
+		row: &TextRow<'_>,
+		str_width_fn: Option<fn(&str) -> usize>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -255,7 +260,8 @@ impl<'a, R, T> Table<'a, R, T>
 					desc.vert_align);
 				let cell = CellContext {
 					text,
-					width: ctx.col_widths[col_idx],
+					text_width: str_width_fn.map(|f| (f)(text)),
+					cell_width: ctx.col_widths[col_idx],
 					desc,
 				};
 				renderer.write_header_cell_line_start(out, ctx)?;
@@ -279,7 +285,8 @@ impl<'a, R, T> Table<'a, R, T>
 		renderer: &mut T,
 		ctx: &mut RenderContext<'_>,
 		out: &mut W,
-		row: &SplitRow<'_, R>)
+		row: &SplitRow<'_, R>,
+		str_width_fn: Option<fn(&str) -> usize>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -303,7 +310,8 @@ impl<'a, R, T> Table<'a, R, T>
 					desc.vert_align);
 				let cell = CellContext {
 					text,
-					width: ctx.col_widths[col_idx],
+					text_width: str_width_fn.map(|f| (f)(text)),
+					cell_width: ctx.col_widths[col_idx],
 					desc,
 				};
 				renderer.write_data_cell_line_start(out, ctx)?;
@@ -327,7 +335,8 @@ impl<'a, R, T> Table<'a, R, T>
 		renderer: &mut T,
 		ctx: &mut RenderContext<'_>,
 		out: &mut W,
-		row: &TextRow<'_>)
+		row: &TextRow<'_>,
+		str_width_fn: Option<fn(&str) -> usize>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
@@ -351,7 +360,8 @@ impl<'a, R, T> Table<'a, R, T>
 					desc.vert_align);
 				let cell = CellContext {
 					text,
-					width: ctx.col_widths[col_idx],
+					text_width: str_width_fn.map(|f| (f)(text)),
+					cell_width: ctx.col_widths[col_idx],
 					desc,
 				};
 				renderer.write_footer_cell_line_start(out, ctx)?;

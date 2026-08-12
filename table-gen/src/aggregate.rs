@@ -26,6 +26,9 @@ pub (in crate) struct Aggregate<'a, R> {
 	rows: Vec<SplitRow<'a, R>>,
 	/// The column output specifications.
 	col_descs: &'a [ColumnDesc<'a>],
+    /// Function to use for calculating column widths. A `None` value means
+    /// column widths should not be calculated.
+	str_width_fn: Option<fn(&str) -> usize>,
 	/// The column widths.
 	col_widths: Vec<usize>,
 	/// The table header row.
@@ -158,6 +161,7 @@ impl<'a, R> Aggregate<'a, R>
 		Self {
 			rows,
 			col_descs,
+			str_width_fn,
 			col_widths,
 			header_row,
 			footer_row,
@@ -174,6 +178,13 @@ impl<'a, R> Aggregate<'a, R>
 	#[must_use]
 	pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
 		self.col_descs
+	}
+
+	/// The Function to use for calculating column widths. A `None` value means
+    /// column widths should not be calculated.
+	#[must_use]
+	pub (in crate) fn str_width_fn(&self) -> Option<fn(&str) -> usize> {
+		self.str_width_fn
 	}
 
 	/// The column widths.

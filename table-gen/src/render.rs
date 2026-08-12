@@ -6,11 +6,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Internal library imports.
-use crate::HorzAlign;
-use crate::RenderContext;
 use crate::CellContext;
 use crate::Features;
-use crate::util::unicode_display_width;
+use crate::HorzAlign;
+use crate::RenderContext;
 use crate::util::TruncateState;
 use crate::util::unicode_grapheme_aware_truncation;
 
@@ -44,25 +43,26 @@ pub trait Renderer {
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
+		let text_width = match cell.text_width {
+			None        => return write!(out, "{}", cell.text),
+			Some(width) => width,
+		};
 		let align = cell.desc.horz_align;
-		let text_width = unicode_display_width(cell.text);
+		let cell_width = cell.cell_width;
 		let ellipses_space = if align == HorzAlign::Center { 2 } else { 1 };
 
-		let (text, state) = if text_width > cell.width {
+		let (text, state) = if text_width > cell_width {
 			unicode_grapheme_aware_truncation(
 				cell.text,
 				text_width,
-				cell.width.saturating_sub(ellipses_space),
+				cell_width.saturating_sub(ellipses_space),
 				cell.desc.horz_align)
 		} else {
 			(cell.text, TruncateState::Neither(text_width))
 		};
-		let text_width = state.width();
-
 
 		// Compute cell padding.
-		let pad = cell.width
-			.saturating_sub(text_width);
+		let pad = cell.cell_width.saturating_sub(state.width());
 		let (mut l_pad, mut r_pad) = match align {
 			HorzAlign::Left   => (0,     pad),
 			HorzAlign::Center => (pad/2, pad.div_ceil(2)),

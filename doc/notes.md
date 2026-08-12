@@ -55,7 +55,8 @@
 
 # Implementation tasks:
 
-+ Implement Features
++ Add text_width to CellContext & fn padding.
++ Implement Features:
 	- Support custom line wrapping
 	- Support extra width in aggregator
 	- Support custom formatting

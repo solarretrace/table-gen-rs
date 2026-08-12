@@ -103,8 +103,10 @@ impl RenderContext<'_> {
 pub struct CellContext<'a> {
 	/// The cell line's text.
 	pub text: &'a str,
+	/// The width of the text.
+	pub text_width: Option<usize>,
 	/// The width of the cell.
-	pub width: usize,
+	pub cell_width: usize,
 	/// The `ColumnDesc` associated with the cell's column.
 	pub desc: &'a ColumnDesc<'a>,
 }
@@ -113,6 +115,9 @@ impl CellContext<'_> {
 	/// Returns the difference between the cell width and text length.
 	#[must_use]
 	pub fn padding(&self) -> usize {
-		self.width.saturating_sub(self.text.len())
+		match self.text_width {
+			Some(width) => self.cell_width.saturating_sub(width),
+			None        => 0,
+		}
 	}
 }

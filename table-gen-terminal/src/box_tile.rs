@@ -15,6 +15,8 @@ use table_gen::Features;
 use table_gen::HorzAlign;
 use table_gen::RenderContext;
 use table_gen::Renderer;
+use table_gen::util::TruncateState;
+use table_gen::util::unicode_grapheme_aware_truncation;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -205,16 +207,39 @@ impl Renderer for BoxTileRenderer {
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        let mut pad = cell.padding();
-        pad += self.extra_width as usize;
-        let (l_pad, r_pad) = match cell.desc.horz_align {
+        let text_width = match cell.text_width {
+            None        => return write!(out, "{}", cell.text),
+            Some(width) => width,
+        };
+        let align = cell.desc.horz_align;
+        let cell_width = cell.cell_width;
+        let ellipses_space = if align == HorzAlign::Center { 2 } else { 1 };
+
+        let (text, state) = if text_width > cell_width {
+            unicode_grapheme_aware_truncation(
+                cell.text,
+                text_width,
+                cell_width.saturating_sub(ellipses_space),
+                cell.desc.horz_align)
+        } else {
+            (cell.text, TruncateState::Neither(text_width))
+        };
+
+        // Compute cell padding.
+        let pad = cell.cell_width.saturating_sub(state.width());
+        let (mut l_pad, mut r_pad) = match align {
             HorzAlign::Left   => (0,     pad),
             HorzAlign::Center => (pad/2, pad.div_ceil(2)),
             HorzAlign::Right  => (pad,   0),
         };
+        if state.left_truncated() { l_pad = l_pad.saturating_sub(1); }
+        if state.right_truncated() { r_pad = r_pad.saturating_sub(1); }
+
         
         for _ in 0..l_pad { write!(out, " ")?; }
-        write!(out, "{}", cell.text)?;
+        if state.left_truncated() { write!(out, "…")?; }
+        write!(out, "{}", text)?;
+        if state.right_truncated() { write!(out, "…")?; }
         for _ in 0..r_pad { write!(out, " ")?; }
         Ok(())
     }
