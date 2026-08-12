@@ -5,8 +5,9 @@
 //! Renderer features module.
 ////////////////////////////////////////////////////////////////////////////////
 
-// External library imports.
-use unicode_display_width::width;
+// Internal library imports.
+use crate::util::unicode_display_width;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Features
@@ -35,7 +36,7 @@ impl Features {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            str_width_fn: Some(Features::unicode_display_width),
+            str_width_fn: Some(unicode_display_width),
             post_format_fn: std::convert::identity,
         }
     }
@@ -68,16 +69,6 @@ impl Features {
     {
         self.post_format_fn = post_format_fn;
         self
-    }
-
-    /// Calculates the width of a string according to the Unicode 15.1.0
-    /// standard.
-    ///
-    /// See the [unicode-display-width crate](https://docs.rs/unicode-display-width/0.3.0/unicode_display_width/)
-    /// for details.
-    #[must_use]
-    pub fn unicode_display_width(text: &str) -> usize {
-        width(text).try_into().expect("unpack string width u64 into usize")
     }
 
     /// Replaces line break chars ("\r\n", "\r", "\n") in the given `String`

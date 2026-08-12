@@ -54,11 +54,9 @@
 
 
 # Implementation tasks:
-.
+
 + Implement Features
-	- Support truncating long values
 	- Support custom line wrapping
-	- Support unicode string widths
 	- Support extra width in aggregator
 	- Support custom formatting
 + Support full table width constraints

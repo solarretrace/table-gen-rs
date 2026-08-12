@@ -47,7 +47,7 @@ impl<'a, R> Aggregate<'a, R>
 			R: Row
 	{
 		let inner = inner.into();
-		let str_width_fn = inner.features().str_width_fn.clone();
+		let str_width_fn = inner.features().str_width_fn;
 		let row_select = *inner.row_selection();
 		let col_descs = inner.column_descs();
 

@@ -337,18 +337,18 @@ N <-1-> <-2-> <-3->
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		//println!("{}", out);
+		println!("{}", out);
 
 		assert_eq!(out, "\
-i64                    f64         bool left-aligned             bool ht-aligned
+i64                    f64         bool left-aligned             bool …t-aligned
 values (wide)        values      values strings                 again    strings
 0                  +180000.000          A                                      A
                                    true multi-                            multi-
                                         line                                line
                                         column                   true     column
 -15                  +18.000       true A two-                            A two-
-                                        line column              true ine column
-15                   +0.000       false A single line column    false ine column
+                                        line column              true …ne column
+15                   +0.000       false A single line column    false …ne column
 COLUMN 0            COLUMN 1   COLUMN 2 COLUMN 3             COLUMN 4   COLUMN 5
 ");
 	}

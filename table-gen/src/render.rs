@@ -10,6 +10,9 @@ use crate::HorzAlign;
 use crate::RenderContext;
 use crate::CellContext;
 use crate::Features;
+use crate::util::unicode_display_width;
+use crate::util::TruncateState;
+use crate::util::unicode_grapheme_aware_truncation;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,15 +44,38 @@ pub trait Renderer {
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let pad = cell.width.saturating_sub(cell.text.len());
-		let (l_pad, r_pad) = match cell.desc.horz_align {
+		let align = cell.desc.horz_align;
+		let text_width = unicode_display_width(cell.text);
+		let ellipses_space = if align == HorzAlign::Center { 2 } else { 1 };
+
+		let (text, state) = if text_width > cell.width {
+			unicode_grapheme_aware_truncation(
+				cell.text,
+				text_width,
+				cell.width.saturating_sub(ellipses_space),
+				cell.desc.horz_align)
+		} else {
+			(cell.text, TruncateState::Neither(text_width))
+		};
+		let text_width = state.width();
+
+
+		// Compute cell padding.
+		let pad = cell.width
+			.saturating_sub(text_width);
+		let (mut l_pad, mut r_pad) = match align {
 			HorzAlign::Left   => (0,     pad),
 			HorzAlign::Center => (pad/2, pad.div_ceil(2)),
 			HorzAlign::Right  => (pad,   0),
 		};
+		if state.left_truncated() { l_pad = l_pad.saturating_sub(1); }
+		if state.right_truncated() { r_pad = r_pad.saturating_sub(1); }
+
 		
 		for _ in 0..l_pad { write!(out, " ")?; }
-		write!(out, "{}", cell.text)?;
+		if state.left_truncated() { write!(out, "…")?; }
+		write!(out, "{}", text)?;
+		if state.right_truncated() { write!(out, "…")?; }
 		for _ in 0..r_pad { write!(out, " ")?; }
 		Ok(())
 	}
