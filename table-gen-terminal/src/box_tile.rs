@@ -42,7 +42,7 @@ impl Default for BoxTileStyle {
 impl BoxTileStyle {
     /// Constructs a new `BoxTileStyle` with the default styling.
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             header: LineStyle::Double,
             footer: LineStyle::Double,
@@ -76,7 +76,7 @@ impl Default for BoxTileRenderer {
 impl BoxTileRenderer {
     /// Constructs a new `BoxTileRenderer`.
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             column_padding: 0,
             extra_width: 0,
@@ -86,21 +86,21 @@ impl BoxTileRenderer {
 
     /// Sets the column padding and returns the `MarkdownGridRenderer`.
     #[must_use]
-    pub const fn with_column_padding(mut self, column_padding: u8) -> Self {
+    pub fn with_column_padding(mut self, column_padding: u8) -> Self {
         self.column_padding = column_padding;
         self
     }
 
     /// Sets the extra column width and returns the `BoxTileRenderer`.
     #[must_use]
-    pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
+    pub fn with_extra_width(mut self, extra_width: u8) -> Self {
         self.extra_width = extra_width;
         self
     }
 
     /// Sets the style and returns the `BoxTileRenderer`.
     #[must_use]
-    pub const fn with_style(mut self, style: BoxTileStyle) -> Self {
+    pub fn with_style(mut self, style: BoxTileStyle) -> Self {
         self.style = style;
         self
     }

@@ -35,7 +35,7 @@ impl Default for MarkdownGridRenderer {
 impl MarkdownGridRenderer {
 	/// Constructs a new `MarkdownGridRenderer`.
 	#[must_use]
-	pub const fn new() -> Self {
+	pub fn new() -> Self {
 		Self {
 			column_padding: 0,
 			extra_width: 0,
@@ -44,14 +44,14 @@ impl MarkdownGridRenderer {
 
 	/// Sets the column padding and returns the `MarkdownGridRenderer`.
 	#[must_use]
-	pub const fn with_column_padding(mut self, column_padding: u8) -> Self {
+	pub fn with_column_padding(mut self, column_padding: u8) -> Self {
 		self.column_padding = column_padding;
 		self
 	}
 
 	/// Sets the extra column width and returns the `MarkdownGridRenderer`.
 	#[must_use]
-	pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
+	pub fn with_extra_width(mut self, extra_width: u8) -> Self {
 		self.extra_width = extra_width;
 		self
 	}

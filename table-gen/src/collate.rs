@@ -220,7 +220,7 @@ impl Default for ColumnDesc<'_> {
 impl<'a> ColumnDesc<'a> {
 	/// Constructs a new `ColumnDesc` with a default value.
 	#[must_use]
-	pub const fn new() -> Self {
+	pub fn new() -> Self {
 		Self {
 			header: "",
 			footer: "",
@@ -234,28 +234,28 @@ impl<'a> ColumnDesc<'a> {
 	
 	/// Sets the header text and returns the `ColumnDesc`.
 	#[must_use]
-	pub const fn with_header(mut self, header: &'a str) -> Self {
+	pub fn with_header(mut self, header: &'a str) -> Self {
 		self.header = header;
 		self
 	}
 	
 	/// Sets the footer text and returns the `ColumnDesc`.
 	#[must_use]
-	pub const fn with_footer(mut self, footer: &'a str) -> Self {
+	pub fn with_footer(mut self, footer: &'a str) -> Self {
 		self.footer = footer;
 		self
 	}
 	
 	/// Sets the `DisplayFmt` and returns the `ColumnDesc`.
 	#[must_use]
-	pub const fn with_display_fmt(mut self, display_fmt: DisplayFmt) -> Self {
+	pub fn with_display_fmt(mut self, display_fmt: DisplayFmt) -> Self {
 		self.display_fmt = display_fmt;
 		self
 	}
 	
 	/// Sets the minimum and maximum column widths and returns the `ColumnDesc`.
 	#[must_use]
-	pub const fn with_width(mut self, width: usize) -> Self {
+	pub fn with_width(mut self, width: usize) -> Self {
 		self.min_width = width;
 		self.max_width = width;
 		self
@@ -263,28 +263,28 @@ impl<'a> ColumnDesc<'a> {
 	
 	/// Sets the minimum column widths and returns the `ColumnDesc`.
 	#[must_use]
-	pub const fn with_min_width(mut self, min_width: usize) -> Self {
+	pub fn with_min_width(mut self, min_width: usize) -> Self {
 		self.min_width = min_width;
 		self
 	}
 	
 	/// Sets the maximum column widths and returns the `ColumnDesc`.
 	#[must_use]
-	pub const fn with_max_width(mut self, max_width: usize) -> Self {
+	pub fn with_max_width(mut self, max_width: usize) -> Self {
 		self.max_width = max_width;
 		self
 	}
 	
 	/// Sets the horizontal text alignment and returns the `ColumnDesc`.
 	#[must_use]
-	pub const fn with_horz_align(mut self, horz_align: HorzAlign) -> Self {
+	pub fn with_horz_align(mut self, horz_align: HorzAlign) -> Self {
 		self.horz_align = horz_align;
 		self
 	}
 	
 	/// Sets the vertical text alignment and returns the `ColumnDesc`.
 	#[must_use]
-	pub const fn with_vert_align(mut self, vert_align: VertAlign) -> Self {
+	pub fn with_vert_align(mut self, vert_align: VertAlign) -> Self {
 		self.vert_align = vert_align;
 		self
 	}

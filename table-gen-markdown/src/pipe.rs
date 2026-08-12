@@ -63,7 +63,7 @@ impl Default for MarkdownPipeRenderer {
 impl MarkdownPipeRenderer {
 	/// Constructs a new `MarkdownPipeRenderer`.
 	#[must_use]
-	pub const fn new() -> Self {
+	pub fn new() -> Self {
 		Self {
 			column_padding: 0,
 			extra_width: 0,
@@ -73,14 +73,14 @@ impl MarkdownPipeRenderer {
 
 	/// Sets the column padding and returns the `MarkdownPipeRenderer`.
 	#[must_use]
-	pub const fn with_column_padding(mut self, column_padding: u8) -> Self {
+	pub fn with_column_padding(mut self, column_padding: u8) -> Self {
 		self.column_padding = column_padding;
 		self
 	}
 
 	/// Sets the extra column width and returns the `MarkdownPipeRenderer`.
 	#[must_use]
-	pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
+	pub fn with_extra_width(mut self, extra_width: u8) -> Self {
 		self.extra_width = extra_width;
 		self
 	}

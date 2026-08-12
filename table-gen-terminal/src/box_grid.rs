@@ -50,7 +50,7 @@ impl Default for BoxGridStyle {
 impl BoxGridStyle {
 	/// Constructs a new `BoxGridStyle` with the default styling.
 	#[must_use]
-	pub const fn new() -> Self {
+	pub fn new() -> Self {
 		Self {
 			border_left: LineStyle::Light,
 			border_right: LineStyle::Light,
@@ -88,7 +88,7 @@ impl Default for BoxGridRenderer {
 impl BoxGridRenderer {
 	/// Constructs a new `BoxGridRenderer`.
 	#[must_use]
-	pub const fn new() -> Self {
+	pub fn new() -> Self {
 		Self {
 			column_padding: 0,
 			extra_width: 0,
@@ -98,21 +98,21 @@ impl BoxGridRenderer {
 
 	/// Sets the column padding and returns the `MarkdownGridRenderer`.
 	#[must_use]
-	pub const fn with_column_padding(mut self, column_padding: u8) -> Self {
+	pub fn with_column_padding(mut self, column_padding: u8) -> Self {
 		self.column_padding = column_padding;
 		self
 	}
 
 	/// Sets the extra column width and returns the `BoxGridRenderer`.
 	#[must_use]
-	pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
+	pub fn with_extra_width(mut self, extra_width: u8) -> Self {
 		self.extra_width = extra_width;
 		self
 	}
 
 	/// Sets the style and returns the `BoxGridRenderer`.
 	#[must_use]
-	pub const fn with_style(mut self, style: BoxGridStyle) -> Self {
+	pub fn with_style(mut self, style: BoxGridStyle) -> Self {
 		self.style = style;
 		self
 	}

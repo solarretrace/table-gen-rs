@@ -37,7 +37,7 @@ impl Default for MarkdownSimpleRenderer {
 impl MarkdownSimpleRenderer {
 	/// Constructs a new `MarkdownSimpleRenderer`.
 	#[must_use]
-	pub const fn new() -> Self {
+	pub fn new() -> Self {
 		Self {
 			column_padding: 0,
 			extra_width: 2,
@@ -47,14 +47,14 @@ impl MarkdownSimpleRenderer {
 
 	/// Sets the column padding and returns the `MarkdownSimpleRenderer`.
 	#[must_use]
-	pub const fn with_column_padding(mut self, column_padding: u8) -> Self {
+	pub fn with_column_padding(mut self, column_padding: u8) -> Self {
 		self.column_padding = column_padding;
 		self
 	}
 
 	/// Sets the extra column width and returns the `MarkdownSimpleRenderer`.
 	#[must_use]
-	pub const fn with_extra_width(mut self, extra_width: u8) -> Self {
+	pub fn with_extra_width(mut self, extra_width: u8) -> Self {
 		self.extra_width = extra_width;
 		self
 	}
@@ -62,7 +62,7 @@ impl MarkdownSimpleRenderer {
 	/// Sets the flag for adding trailing column padding and returns the
 	/// `MarkdownSimpleRenderer`.
 	#[must_use]
-	pub const fn with_padded_trailing_column(
+	pub fn with_padded_trailing_column(
 		mut self,
 		pad_trailing_column: bool)
 		-> Self

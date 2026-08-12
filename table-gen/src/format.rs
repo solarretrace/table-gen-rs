@@ -185,7 +185,7 @@ impl Default for DisplayFmt {
 impl DisplayFmt {
 	/// Constructs a new `DisplayFmt` with the default settings.
 	#[must_use]
-	pub const fn new() -> Self {
+	pub fn new() -> Self {
 		Self {
 			precision: None,
 			sign: None,
@@ -199,7 +199,7 @@ impl DisplayFmt {
 	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html#precision)
 	/// for details.
 	#[must_use]
-	pub const fn with_precision_option(mut self, precision: Option<usize>)
+	pub fn with_precision_option(mut self, precision: Option<usize>)
 		-> Self 
 	{
 		self.precision = precision;
@@ -213,7 +213,7 @@ impl DisplayFmt {
 	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.htmlsign0)
 	/// for details.
 	#[must_use]
-	pub const fn with_sign_option(mut self, sign: Option<Sign>) -> Self {
+	pub fn with_sign_option(mut self, sign: Option<Sign>) -> Self {
 		self.sign = sign;
 		self
 	}
