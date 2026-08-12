@@ -117,6 +117,9 @@ mod row;
 mod sort;
 mod split;
 
+// Public modules.
+pub mod util;
+
 // Internal exports.
 pub (in crate) use aggregate::Aggregate;
 pub (in crate) use collate::Collate;
