@@ -10,7 +10,9 @@ use crate::HorzAlign;
 
 // External library imports.
 use unicode_segmentation::UnicodeSegmentation as _;
-use unicode_display_width::width;
+
+// Re-exports.
+pub use unicode_display_width::width as unicode_display_width;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -77,7 +79,7 @@ pub fn unicode_grapheme_aware_truncation(
             let mut curr_width: u64 = 0;
             let mut end: usize = 0;
             for (idx, g) in text.grapheme_indices(true) {
-                let w = width(g);
+                let w = unicode_display_width(g);
                 if curr_width + w > cell_width { break; }
                 curr_width += w;
                 end = idx;
@@ -99,7 +101,7 @@ pub fn unicode_grapheme_aware_truncation(
             let mut curr_width: u64 = 0;
             let mut start: usize = text.len();
             for (idx, g) in text.grapheme_indices(true).rev() {
-                let w = width(g);
+                let w = unicode_display_width(g);
                 if curr_width + w > cell_width { break; }
                 curr_width += w;
                 start = idx;
@@ -126,7 +128,7 @@ pub fn unicode_grapheme_aware_truncation(
             let mut left_cut = 0;
             let mut iter = text.grapheme_indices(true).peekable();
             while let Some(&(idx, g)) = iter.peek() {
-                let w = width(g);
+                let w = unicode_display_width(g);
                 if left_cut + w > left_budget { break; }
                 left_cut += w;
                 start = idx + g.len();
@@ -140,7 +142,7 @@ pub fn unicode_grapheme_aware_truncation(
             let mut iter = text[start..]
                 .grapheme_indices(true).rev().peekable();
             while let Some(&(idx, g)) = iter.peek() {
-                let w = width(g);
+                let w = unicode_display_width(g);
                 if right_cut + w > right_budget { break; }
                 right_cut += w;
                 end = start + idx;
@@ -157,14 +159,14 @@ pub fn unicode_grapheme_aware_truncation(
                         .grapheme_indices(true).next_back()
                     {
                         end = start + idx;
-                        curr_width -= width(g);
+                        curr_width -= unicode_display_width(g);
                     }
                 } else {
                     if let Some((_, g)) = text[start..end]
                         .grapheme_indices(true).next()
                     {
                         let g_len = g.len();
-                        curr_width -= width(g);
+                        curr_width -= unicode_display_width(g);
                         start += g_len;
                     }
                 }
