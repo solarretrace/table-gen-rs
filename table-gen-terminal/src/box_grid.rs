@@ -252,7 +252,7 @@ impl BoxGridRenderer {
 
 impl Renderer for BoxGridRenderer {
 	fn features(&self) -> Features {
-		Features::MULTILINE
+		Features::default()
 	}
 
 	fn write_table_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)

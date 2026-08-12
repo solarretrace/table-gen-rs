@@ -76,7 +76,7 @@ impl MarkdownMultilineRenderer {
 
 impl Renderer for MarkdownMultilineRenderer {
 	fn features(&self) -> Features {
-		Features::MULTILINE
+		Features::default()
 	}
 
 	fn write_header_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)

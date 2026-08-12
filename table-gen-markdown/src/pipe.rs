@@ -168,7 +168,8 @@ impl MarkdownPipeRenderer {
 
 impl Renderer for MarkdownPipeRenderer {
 	fn features(&self) -> Features {
-		Features::empty()
+		Features::default()
+			.with_post_format_fn(Features::remove_line_breaks)
 	}
 
 	fn write_data_cell_line<W>(

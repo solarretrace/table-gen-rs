@@ -74,7 +74,7 @@ impl MarkdownSimpleRenderer {
 
 impl Renderer for MarkdownSimpleRenderer {
 	fn features(&self) -> Features {
-		Features::empty()
+		Features::default()
 	}
 
 	fn write_data_cell_line<W>(

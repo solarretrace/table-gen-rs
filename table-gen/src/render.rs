@@ -9,22 +9,7 @@
 use crate::HorzAlign;
 use crate::RenderContext;
 use crate::CellContext;
-
-// External library imports.
-use bitflags::bitflags;
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Features
-////////////////////////////////////////////////////////////////////////////////
-bitflags! {
-	/// Renderer feature flags.
-	#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-	pub struct Features: u8 {
-		/// Indicates that multi-line cells are supported.
-		const MULTILINE = 0b_0000_0001;
-	}
-}
+use crate::Features;
 
 
 ////////////////////////////////////////////////////////////////////////////////

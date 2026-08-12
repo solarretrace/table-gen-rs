@@ -21,7 +21,7 @@ pub struct DebugRenderer;
 
 impl Renderer for DebugRenderer {
 	fn features(&self) -> Features {
-		Features::all()
+		Features::default()
 	}
 
 	// Data writing hooks

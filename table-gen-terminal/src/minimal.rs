@@ -29,7 +29,7 @@ impl MinimalRenderer {
 
 impl Renderer for MinimalRenderer {
 	fn features(&self) -> Features {
-		Features::MULTILINE
+		Features::default()
 	}
 
 	fn write_data_cell_line_end<W>(

@@ -46,8 +46,8 @@ impl<'a, R> Aggregate<'a, R>
 			S: Iterator<Item=R>,
 			R: Row
 	{
-		let str_width = |l: &str| { l.len() };
 		let inner = inner.into();
+		let str_width_fn = inner.features().str_width_fn.clone();
 		let row_select = *inner.row_selection();
 		let col_descs = inner.column_descs();
 
@@ -71,34 +71,35 @@ impl<'a, R> Aggregate<'a, R>
 			.map(TextRow::new);
 
 		// Compute initial column widths from header/footer rows if available.
-		let mut col_widths: Vec<usize> = match (
-			header_row.as_ref(),
-			footer_row.as_ref())
-		{
-			(Some(h), Some(f)) => (0..col_descs.len())
-				.map(|idx| std::cmp::max(
-					h.lines(idx)
+		let mut col_widths: Vec<usize> = match str_width_fn {
+			Some(str_width) => match (header_row.as_ref(), footer_row.as_ref())
+			{
+				(Some(h), Some(f)) => (0..col_descs.len())
+					.map(|idx| std::cmp::max(
+						h.lines(idx)
+							.map(str_width)
+							.max()
+							.unwrap_or(col_descs[idx].min_width),
+						f.lines(idx)
+							.map(str_width)
+							.max()
+							.unwrap_or(col_descs[idx].min_width)))
+					.collect(),
+
+				(Some(r), None)    |
+				(None,    Some(r)) => (0..col_descs.len())
+					.map(|idx| r
+						.lines(idx)
 						.map(str_width)
 						.max()
-						.unwrap_or(col_descs[idx].min_width),
-					f.lines(idx)
-						.map(str_width)
-						.max()
-						.unwrap_or(col_descs[idx].min_width)))
-				.collect(),
+						.unwrap_or(col_descs[idx].min_width))
+					.collect(),
 
-			(Some(r), None)    |
-			(None,    Some(r)) => (0..col_descs.len())
-				.map(|idx| r
-					.lines(idx)
-					.map(str_width)
-					.max()
-					.unwrap_or(col_descs[idx].min_width))
-				.collect(),
-
-			_ => (0..col_descs.len())
-				.map(|idx| col_descs[idx].min_width)
-				.collect(),
+				_ => (0..col_descs.len())
+					.map(|idx| col_descs[idx].min_width)
+					.collect(),
+			},
+			None => Vec::new(),
 		};
 
 		let mut max_row_len = 0;
@@ -112,35 +113,41 @@ impl<'a, R> Aggregate<'a, R>
 				max_row_len = std::cmp::max(max_row_len, row.len());
 
 				// Expand the column widths if needed.
-				for idx in 0..row.len() {
-					// Expand widths array if past the end of the header/footer.
-					if idx >= col_widths.len() { col_widths.push(0); }
+				if let Some(str_width) = str_width_fn {
+					for idx in 0..row.len() {
+						// Expand widths array if past the end of the 
+						// header/footer.
+						if idx >= col_widths.len() { col_widths.push(0); }
 
-					// Get the ColumnDesc for this index.
-					let col_desc = col_descs
-						.get(idx)
-						.unwrap_or(default_col_desc);
+						// Get the ColumnDesc for this index.
+						let col_desc = col_descs
+							.get(idx)
+							.unwrap_or(default_col_desc);
 
-					if col_desc.min_width == col_desc.max_width {
-						// The col width is fixed, so set it.
-						col_widths[idx] = col_desc.max_width;
-					} else {
-						// The col width is dynamic. Get the width of the cell.
-						let cell_width = row.lines(idx)
-							.map(str_width)
-							.max()
-							.unwrap_or(0);
-						// The cell width is at least as wide as the min_width.
-						let cell_width = std::cmp::max(
-							col_desc.min_width,
-							cell_width);
-						// If the cell widens the current width, do so, but do
-						// not exceed the maximum allowed.
-						col_widths[idx] = std::cmp::min(
-							std::cmp::max(cell_width, col_widths[idx]),
-							col_desc.max_width);
+						if col_desc.min_width == col_desc.max_width {
+							// The col width is fixed, so set it.
+							col_widths[idx] = col_desc.max_width;
+						} else {
+							// The col width is dynamic. Get the width of the
+							// cell.
+							let cell_width = row.lines(idx)
+								.map(str_width)
+								.max()
+								.unwrap_or(0);
+							// The cell width is at least as wide as the
+							// min_width.
+							let cell_width = std::cmp::max(
+								col_desc.min_width,
+								cell_width);
+							// If the cell widens the current width, do so, but
+							// do not exceed the maximum allowed.
+							col_widths[idx] = std::cmp::min(
+								std::cmp::max(cell_width, col_widths[idx]),
+								col_desc.max_width);
+						}
 					}
 				}
+
 				rows.push(row);
 			}
 		}
@@ -157,7 +164,7 @@ impl<'a, R> Aggregate<'a, R>
 		}
 	}
 
-	/// The column widths.
+	/// The rows of the table.
 	#[must_use]
 	pub (in crate) fn rows(&self) -> &[SplitRow<'a, R>] {
 		&self.rows[..]

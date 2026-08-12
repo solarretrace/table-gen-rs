@@ -8,6 +8,7 @@
 // Internal library imports.
 use crate::Collate;
 use crate::ColumnDesc;
+use crate::Features;
 use crate::Format;
 use crate::FormatRow;
 use crate::Row;
@@ -78,6 +79,12 @@ impl<'a, R, S> Sort<'a, R, S>
 		}
 	}
 
+	/// Returns the supported features for the renderer.
+	#[must_use]
+	pub (in crate) fn features(&self) -> &Features {
+		self.inner.features()
+	}
+	
 	/// The row selection bounds.
 	#[must_use]
 	pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {

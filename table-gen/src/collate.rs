@@ -63,7 +63,7 @@ impl<'a, R, S> Collate<'a, S>
 			row_select: (Bound::Included(0), Bound::Unbounded),
 			col_descs: &[],
 			col_order: &[],
-			features: Features::empty(),
+			features: Features::default(),
 		}
 	}
 
@@ -118,8 +118,8 @@ impl<'a, R, S> Collate<'a, S>
 
 	/// Returns the supported features for the renderer.
 	#[must_use]
-	pub (in crate) fn features(&self) -> Features {
-		self.features
+	pub (in crate) fn features(&self) -> &Features {
+		&self.features
 	}
 
 	/// The row selection bounds.

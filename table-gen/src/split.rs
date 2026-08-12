@@ -10,6 +10,7 @@
 use crate::Cell;
 use crate::Collate;
 use crate::ColumnDesc;
+use crate::Features;
 use crate::Format;
 use crate::FormatRow;
 use crate::Row;
@@ -85,6 +86,12 @@ impl<'a, R, S> Split<'a, R, S>
 		Self {
 			inner,
 		}
+	}
+
+	/// Returns the supported features for the renderer.
+	#[must_use]
+	pub (in crate) fn features(&self) -> &Features {
+		self.inner.features()
 	}
 
 	/// The row selection bounds.
@@ -189,7 +196,6 @@ impl<'a, R> SplitRow<'a, R>
 			vert_align)
 	}
 }
-
 
 
 ////////////////////////////////////////////////////////////////////////////////
