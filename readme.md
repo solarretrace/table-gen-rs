@@ -60,51 +60,51 @@ You will usually want to extend this pattern by providing additional configurati
 
 The table-gen library generates a table through the following linear data flow sequence. 
 
-    +---------------------------+
-    | "Data Source"             |=> The data that will be iterated over to
-    +---------------------------+   populate the table's data rows.
-    | impl IntoIterator<Item=R> |
-    |      where R: Row         |
-    +---------------------------+
-      |
+    ┌───────────────────────────┐
+    │ "Data Source"             ╞═> The data that will be iterated over to
+    ├───────────────────────────┤   populate the table's data rows.
+    │ impl IntoIterator<Item=R> │
+    │      where R: Row         │
+    ╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯
+      │
       v
-    +-----------+
-    | Collate   |=> Responsible for specifying the column selection, headers, 
-    +-----------+   footers, cell alignment, and other output formatting detail.
-      |             The `Collate` structure maps output columns to their final
+    ╭┈┈┈┈┈┈┈┈┈┈┈╮
+    │ Collate   ╞═> Responsible for specifying the column selection, headers, 
+    ╰┈┈┈┈┈┈┈┈┈┈┈╯   footers, cell alignment, and other output formatting detail.
+      │             The `Collate` structure maps output columns to their final
       v             order, simplifying the rest of the flows.
-    +-----------+
-    | Format    |=> Responsible for rendering the table cell text. This is to
-    +-----------+   ensure the cells have a printable representation and a
-      |             suitable format for text sorting.
+    ╭┈┈┈┈┈┈┈┈┈┈┈╮
+    │ Format    ╞═> Responsible for rendering the table cell text. This is to
+    ╰┈┈┈┈┈┈┈┈┈┈┈╯   ensure the cells have a printable representation and a
+      │             suitable format for text sorting.
       v
-    +-----------+
-    | Sort      |=> Materializes columns relevant to sorting. The sort order is
-    +-----------+   provided by `Collate`, and only those column values are
-      |             cached.
+    ╭┈┈┈┈┈┈┈┈┈┈┈╮
+    │ Sort      ╞═> Materializes columns relevant to sorting. The sort order is
+    ╰┈┈┈┈┈┈┈┈┈┈┈╯   provided by `Collate`, and only those column values are
+      │             cached.
       v
-    +-----------+
-    | Split     |=> Responsible for splitting the cell text into lines.
-    +-----------+
-      |
+    ╭┈┈┈┈┈┈┈┈┈┈┈╮
+    │ Split     ╞═> Responsible for splitting the cell text into lines.
+    ╰┈┈┈┈┈┈┈┈┈┈┈╯
+      │
       v
-    +-----------+
-    | Aggregate |=> Runs column-based aggregation on the rows of the table. This
-    +-----------+   will materialize all non-fixed width columns as it computes
-      |             the required widths for each column.
+    ╭┈┈┈┈┈┈┈┈┈┈┈╮
+    │ Aggregate ╞═> Runs column-based aggregation on the rows of the table. This
+    ╰┈┈┈┈┈┈┈┈┈┈┈╯   will materialize all non-fixed width columns as it computes
+      │             the required widths for each column.
       v
-    +----------+
-    | "Driver" |=> Drives the table renderer by calling the renderer hook in the
-    +----------+   appropriate order and with the cell line data. Forwards table
-    | Table    |   formatting detail when relevant.
-    +----------+
-      |
+    ┌──────────┐
+    │ "Driver" ╞═> Drives the table renderer by calling the renderer hook in the
+    ├──────────┤   appropriate order and with the cell line data. Forwards table
+    │ Table    │   formatting detail when relevant.
+    ╰┈┈┈┈┈┈┈┈┈┈╯
+      │
       v
-    +---------------+
-    | "Render"      |=> Responsible for writing the table to output.
-    +---------------+
-    | impl Renderer |
-    +---------------+
+    ┌───────────────┐
+    │ "Render"      ╞═> Responsible for writing the table to output.
+    ├───────────────┤
+    │ impl Renderer │
+    ╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯
 
 In total, there are five traits relevant to generating a table:
 
