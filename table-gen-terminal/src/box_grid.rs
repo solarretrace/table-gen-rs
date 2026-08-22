@@ -75,7 +75,7 @@ impl BoxGridStyle {
         self.round_corners = round_corners;
         self
     }
-    
+
 	/// Sets the `LineShape` for the outer borders and returns the
 	/// `BoxGridStyle`.
 	#[must_use]
@@ -89,7 +89,7 @@ impl BoxGridStyle {
 
 	/// Sets the `Style` for the outer borders and returns the `BoxGridStyle`.
 	#[must_use]
-	pub fn with_borders_style(mut self, style: Shape) -> Self {
+	pub fn with_borders_style(mut self, style: Style) -> Self {
 		self.border_left.style = style;
 		self.border_right.style = style;
 		self.border_top.style = style;

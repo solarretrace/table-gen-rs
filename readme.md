@@ -94,9 +94,9 @@ The table-gen library generates a table through the following linear data flow s
       │             the required widths for each column.
       v
     ┌──────────┐
-    │ "Driver" ╞═> Drives the table renderer by calling the renderer hook in the
-    ├──────────┤   appropriate order and with the cell line data. Forwards table
-    │ Table    │   formatting detail when relevant.
+    │ "Driver" ╞═> Drives the table renderer by calling the renderer hooks in
+    ├──────────┤   the appropriate order and with the cell line data. Forwards
+    │ Table    │   table formatting detail when relevant.
     ╰┈┈┈┈┈┈┈┈┈┈╯
       │
       v

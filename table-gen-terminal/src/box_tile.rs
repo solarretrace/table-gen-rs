@@ -9,6 +9,7 @@
 // Internal library imports.
 use crate::LineStyle;
 use crate::LineShape;
+use crate::Style;
 
 // Workspace library imports.
 use table_gen::CellContext;
@@ -76,7 +77,7 @@ impl BoxTileStyle {
     /// Sets the `Style` for the header borders and returns the
     /// `BoxTileStyle`.
     #[must_use]
-    pub fn with_header_borders_style(mut self, style: Shape) -> Self {
+    pub fn with_header_borders_style(mut self, style: Style) -> Self {
         self.header.style = style;
         self
     }
@@ -89,11 +90,11 @@ impl BoxTileStyle {
         self
     }
 
-    /// Sets the `Style` for the data borders and returns the
+    /// Sets the `Style` for the footer borders and returns the
     /// `BoxTileStyle`.
     #[must_use]
-    pub fn with_data_borders_style(mut self, style: Shape) -> Self {
-        self.data.style = style;
+    pub fn with_footer_borders_style(mut self, style: Style) -> Self {
+        self.footer.style = style;
         self
     }
 
@@ -108,7 +109,7 @@ impl BoxTileStyle {
     /// Sets the `Style` for the data borders and returns the
     /// `BoxTileStyle`.
     #[must_use]
-    pub fn with_data_borders_style(mut self, style: Shape) -> Self {
+    pub fn with_data_borders_style(mut self, style: Style) -> Self {
         self.data.style = style;
         self
     }
