@@ -17,3 +17,6 @@ name = "table_gen_markdown"
 [dependencies]
 bitflags.workspace = true
 table-gen.workspace = true
+
+[lints]
+workspace = true
