@@ -29,11 +29,11 @@ use std::fmt::Display;
 /// The style specification for the box renderer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BoxTileStyle {
-    /// The style to use for the left table border.
+    /// The style to use for the header borders.
     pub header: LineStyle,
-    /// The style to use for the right table border.
+    /// The style to use for the footer borders.
     pub footer: LineStyle,
-    /// The style to use for the top table border.
+    /// The style to use for the data borders.
     pub data: LineStyle,
     /// Whether to use rounded corner variants.
     pub round_corners: bool,
@@ -55,6 +55,62 @@ impl BoxTileStyle {
             data: LineShape::Light.into(),
             round_corners: false,
         }
+    }
+
+    /// Sets the round corners flag for the borders and returns the
+    /// `BoxTileStyle`.
+    #[must_use]
+    pub fn with_round_corners(mut self, round_corners: bool) -> Self {
+        self.round_corners = round_corners;
+        self
+    }
+
+    /// Sets the `LineShape` for the header borders and returns the
+    /// `BoxTileStyle`.
+    #[must_use]
+    pub fn with_header_borders_shape(mut self, line_shape: LineShape) -> Self {
+        self.header.shape = line_shape;
+        self
+    }
+
+    /// Sets the `Style` for the header borders and returns the
+    /// `BoxTileStyle`.
+    #[must_use]
+    pub fn with_header_borders_style(mut self, style: Shape) -> Self {
+        self.header.style = style;
+        self
+    }
+
+    /// Sets the `LineShape` for the footer borders and returns the
+    /// `BoxTileStyle`.
+    #[must_use]
+    pub fn with_footer_borders_shape(mut self, line_shape: LineShape) -> Self {
+        self.footer.shape = line_shape;
+        self
+    }
+
+    /// Sets the `Style` for the data borders and returns the
+    /// `BoxTileStyle`.
+    #[must_use]
+    pub fn with_data_borders_style(mut self, style: Shape) -> Self {
+        self.data.style = style;
+        self
+    }
+
+    /// Sets the `LineShape` for the data borders and returns the
+    /// `BoxTileStyle`.
+    #[must_use]
+    pub fn with_data_borders_shape(mut self, line_shape: LineShape) -> Self {
+        self.data.shape = line_shape;
+        self
+    }
+
+    /// Sets the `Style` for the data borders and returns the
+    /// `BoxTileStyle`.
+    #[must_use]
+    pub fn with_data_borders_style(mut self, style: Shape) -> Self {
+        self.data.style = style;
+        self
     }
 }
 

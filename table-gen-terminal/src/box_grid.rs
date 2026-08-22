@@ -9,6 +9,7 @@
 // Internal library imports.
 use crate::LineStyle;
 use crate::LineShape;
+use crate::Style;
 
 // Workspace library imports.
 use table_gen::CellContext;
@@ -65,6 +66,55 @@ impl BoxGridStyle {
 			div_sep: LineShape::Double.into(),
 			round_corners: false,
 		}
+	}
+
+    /// Sets the round corners flag for the borders and returns the
+    /// `BoxGridStyle`.
+    #[must_use]
+    pub fn with_round_corners(mut self, round_corners: bool) -> Self {
+        self.round_corners = round_corners;
+        self
+    }
+    
+	/// Sets the `LineShape` for the outer borders and returns the
+	/// `BoxGridStyle`.
+	#[must_use]
+	pub fn with_borders_shape(mut self, line_shape: LineShape) -> Self {
+		self.border_left.shape = line_shape;
+		self.border_right.shape = line_shape;
+		self.border_top.shape = line_shape;
+		self.border_bottom.shape = line_shape;
+		self
+	}
+
+	/// Sets the `Style` for the outer borders and returns the `BoxGridStyle`.
+	#[must_use]
+	pub fn with_borders_style(mut self, style: Shape) -> Self {
+		self.border_left.style = style;
+		self.border_right.style = style;
+		self.border_top.style = style;
+		self.border_bottom.style = style;
+		self
+	}
+
+	/// Sets the `LineShape` for the inner separators and returns the
+	/// `BoxGridStyle`.
+	#[must_use]
+	pub fn with_separators_shape(mut self, line_shape: LineShape) -> Self {
+		self.row_sep.shape = line_shape;
+		self.col_sep.shape = line_shape;
+		self.div_sep.shape = line_shape;
+		self
+	}
+
+	/// Sets the `Style` for the inner separators and returns the
+	/// `BoxGridStyle`.
+	#[must_use]
+	pub fn with_separators_style(mut self, style: Style) -> Self {
+		self.row_sep.style = style;
+		self.col_sep.style = style;
+		self.div_sep.style = style;
+		self
 	}
 }
 
