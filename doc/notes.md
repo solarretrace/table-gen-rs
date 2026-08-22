@@ -61,7 +61,7 @@
 	- Support extra width in aggregator
 	- Support custom formatting
 + Support full table width constraints
-+ Implement colors for terminal renderers
++ Support outer border elision in terminal renderers
 + Support independent header/footer alignment
 + Implement parallelism
 + Implement custom aggregation

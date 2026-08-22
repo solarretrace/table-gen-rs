@@ -43,9 +43,8 @@ pub trait Renderer {
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let text_width = match cell.text_width {
-			None        => return write!(out, "{}", cell.text),
-			Some(width) => width,
+		let Some(text_width) = cell.text_width else {
+			return write!(out, "{}", cell.text);
 		};
 		let align = cell.desc.horz_align;
 		let cell_width = cell.cell_width;

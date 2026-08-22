@@ -8,6 +8,7 @@
 
 // Internal library imports.
 use crate::LineStyle;
+use crate::LineShape;
 
 // Workspace library imports.
 use table_gen::CellContext;
@@ -17,6 +18,9 @@ use table_gen::RenderContext;
 use table_gen::Renderer;
 use table_gen::util::TruncateState;
 use table_gen::util::unicode_grapheme_aware_truncation;
+
+// Standard library imports.
+use std::fmt::Display;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -46,9 +50,9 @@ impl BoxTileStyle {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            header: LineStyle::Double,
-            footer: LineStyle::Double,
-            data: LineStyle::Light,
+            header: LineShape::Double.into(),
+            footer: LineShape::Double.into(),
+            data: LineShape::Light.into(),
             round_corners: false,
         }
     }
@@ -108,15 +112,19 @@ impl BoxTileRenderer {
     }
 
     /// Writes a row divider line.
-    fn write_div<W>(
+    fn write_div<W, L, H, R>(
         &self, 
         out: &mut W,
         ctx: &RenderContext<'_>,
-        left: char,
-        horz: char,
-        right: char)
+        left: L,
+        horz: H,
+        right: R)
         -> std::io::Result<()>
-        where W: std::io::Write
+        where
+            W: std::io::Write,
+            L: Display,
+            H: Display,
+            R: Display,
     {
         let pad = std::cmp::max(self.column_padding / 2, 2);
 
@@ -207,9 +215,8 @@ impl Renderer for BoxTileRenderer {
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        let text_width = match cell.text_width {
-            None        => return write!(out, "{}", cell.text),
-            Some(width) => width,
+        let Some(text_width) = cell.text_width else {
+            return write!(out, "{}", cell.text);
         };
         let align = cell.desc.horz_align;
         let cell_width = cell.cell_width;
@@ -614,9 +621,9 @@ mod test {
 
         let mut table = Table::new_builder(data, BoxTileRenderer::new()
                 .with_style(BoxTileStyle {
-                    header: LineStyle::Heavy,
-                    footer: LineStyle::Light,
-                    data: LineStyle::LightDash4,
+                    header: LineShape::Heavy.into(),
+                    footer: LineShape::Light.into(),
+                    data: LineShape::LightDash4.into(),
                     round_corners: true,
                 }))
             .with_column_descs(&col_descs)

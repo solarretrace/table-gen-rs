@@ -16,3 +16,4 @@ name = "table_gen_terminal"
 
 [dependencies]
 table-gen.workspace = true
+anstyle = "1.0"

@@ -8,6 +8,7 @@
 
 // Internal library imports.
 use crate::LineStyle;
+use crate::LineShape;
 
 // Workspace library imports.
 use table_gen::CellContext;
@@ -15,6 +16,9 @@ use table_gen::Features;
 use table_gen::HorzAlign;
 use table_gen::RenderContext;
 use table_gen::Renderer;
+
+// Standard library imports.
+use std::fmt::Display;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,13 +56,13 @@ impl BoxGridStyle {
 	#[must_use]
 	pub fn new() -> Self {
 		Self {
-			border_left: LineStyle::Light,
-			border_right: LineStyle::Light,
-			border_top: LineStyle::Light,
-			border_bottom: LineStyle::Light,
-			row_sep: LineStyle::Light,
-			col_sep: LineStyle::LightDash3,
-			div_sep: LineStyle::Double,
+			border_left: LineShape::Light.into(),
+			border_right: LineShape::Light.into(),
+			border_top: LineShape::Light.into(),
+			border_bottom: LineShape::Light.into(),
+			row_sep: LineShape::Light.into(),
+			col_sep: LineShape::LightDash3.into(),
+			div_sep: LineShape::Double.into(),
 			round_corners: false,
 		}
 	}
@@ -118,16 +122,21 @@ impl BoxGridRenderer {
 	}
 
 	/// Writes a row divider.
-	fn write_div<W>(
+	fn write_div<W, L, H, C, R>(
 		&self, 
 		out: &mut W,
 		ctx: &RenderContext<'_>,
-		left: char,
-		horz: char,
-		cross: char,
-		right: char)
+		left: L,
+		horz: H,
+		cross: C,
+		right: R)
 		-> std::io::Result<()>
-		where W: std::io::Write
+		where
+			W: std::io::Write,
+			L: Display,
+			H: Display,
+			C: Display,
+			R: Display,
 	{
 		let pad = std::cmp::max(self.column_padding / 2, 2);
 
@@ -574,13 +583,13 @@ mod test {
 
 		let mut table = Table::new_builder(data, BoxGridRenderer::new()
 				.with_style(BoxGridStyle {
-					border_left: LineStyle::Light,
-					border_right: LineStyle::Light,
-					border_top: LineStyle::Double,
-					border_bottom: LineStyle::Light,
-					row_sep: LineStyle::Empty,
-					col_sep: LineStyle::Heavy,
-					div_sep: LineStyle::HeavyDash2,
+					border_left: LineShape::Light.into(),
+					border_right: LineShape::Light.into(),
+					border_top: LineShape::Double.into(),
+					border_bottom: LineShape::Light.into(),
+					row_sep: LineShape::Empty.into(),
+					col_sep: LineShape::Heavy.into(),
+					div_sep: LineShape::HeavyDash2.into(),
 					round_corners: true,
 				}))
 			.with_column_descs(&col_descs)

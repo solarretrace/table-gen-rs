@@ -118,3 +118,7 @@ pub use box_tile::*;
 pub use debug::*;
 pub use line_style::*;
 pub use minimal::*;
+
+// Re-exports.
+pub use anstyle::Style;
+pub use anstyle::Color;
