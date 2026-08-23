@@ -14,10 +14,11 @@ use std::fmt::Display;
 /// A diagnostic message.
 #[derive(Debug, Clone, Copy)]
 pub enum Diagnostic {
+    TableWidthConstraintUnsatisfied,
 }
 
 impl Display for Diagnostic {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		format!("{}", self.0).fmt(f)
+		todo!()
 	}
 }

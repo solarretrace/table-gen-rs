@@ -7,6 +7,7 @@
 
 // Internal library imports.
 use crate::ColumnDesc;
+use crate::Diagnostic;
 use crate::Row;
 use crate::Split;
 use crate::SplitRow;
@@ -47,7 +48,8 @@ impl<'a, R> Aggregate<'a, R>
 	pub (in crate) fn new<S, T>(
 		inner: T,
 		default_col_desc: &ColumnDesc<'_>,
-		max_table_width: Option<usize>)
+		max_table_width: Option<usize>,
+		diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
 		-> Self
 		where
 			T: Into<Split<'a, R, S>>,
@@ -202,7 +204,8 @@ impl<'a, R> Aggregate<'a, R>
 			col_descs,
 			default_col_desc,
 			&quant_widths,
-			max_table_width);
+			max_table_width,
+			diagnostic_sink_fn);
 
 		Self {
 			rows,
@@ -257,7 +260,8 @@ impl<'a, R> Aggregate<'a, R>
 		col_descs: &[ColumnDesc<'_>],
 		default_col_desc: &ColumnDesc<'_>,
 		quant_widths: &[usize],
-		max_table_width: Option<usize>)
+		max_table_width: Option<usize>,
+		diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
 	{
 		let Some(max_width) = max_table_width else {
 			// Reduce column widths to quantile widths if possible.
@@ -346,8 +350,7 @@ impl<'a, R> Aggregate<'a, R>
 		}
 		if overflow == 0 { return; }
 
-		
-		println!("table width contraints not satisfied");
+		(diagnostic_sink_fn)(Diagnostic::TableWidthConstraintUnsatisfied);
 	}
 }
 

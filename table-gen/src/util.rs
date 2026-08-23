@@ -256,13 +256,13 @@ pub struct QuantileEstimator<const EXACT: usize> {
 }
 
 impl<const EXACT: usize> QuantileEstimator<EXACT> {
-
 	/// Constructs a new `QuantileEstimator` for the given quantile.
 	///
 	/// # Panics
 	///
 	/// Panics if the quantile is not within the range [`0.0`, `1.0`].
 	pub fn new(quantile: f64) -> Self {
+		assert!(EXACT >= 5);
 		assert!(quantile >= 0.0 && quantile <= 1.0,
 			"quantile must be in (0, 1)");
 		Self {
@@ -298,7 +298,7 @@ impl<const EXACT: usize> QuantileEstimator<EXACT> {
 			// Initialize the estimator arrays if 5 observations have been made.
 			if self.init.len() == EXACT {
 				self.init.sort_by(|a, b| a.partial_cmp(b).unwrap());
-				self.q = <[f64; 5]>::try_from(&self.init[..])
+				self.q = <[f64; 5]>::try_from(&self.init[..5])
 					.expect("copy Vec into array");
 				self.n = [1.0, 2.0, 3.0, 4.0, 5.0];
 				self.np = [

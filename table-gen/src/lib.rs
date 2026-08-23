@@ -9,6 +9,7 @@
 mod aggregate;
 mod collate;
 mod context;
+mod diagnostic;
 mod driver;
 mod features;
 mod format;
@@ -37,6 +38,7 @@ pub use collate::HorzAlign;
 pub use collate::VertAlign;
 pub use context::CellContext;
 pub use context::RenderContext;
+pub use diagnostic::Diagnostic;
 pub use driver::Table;
 pub use driver::TableBuilder;
 pub use features::Features;

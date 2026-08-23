@@ -45,18 +45,27 @@ let column_descs = vec![
         .with_dynamic_width_weight(2.0),    // Avoid shrinking this column
     // ... other rows will use default formatting (`ColumnDesc::new()`).
 ];
-    
+
+// We can provide a multicolumn sort specification:
+let sort_columns = vec![
+    ColumnOrd::new(2)           // Sort on index 2
+        .with_reversed_order(), // Reverse the sort ordering
+    ColumnOrd::new(1)           // Then sort on index 1
+        .with_formatted_order() // Order by column text, not value
+        .with_none_lt_order(),  // Compare `None` values as less than others.
+];
+
 // Prepare the table. The renderer is provided up front to provide its own
 // output requirements to the table driver.
 let mut table = Table::new_builder(data, &mut renderer)
     // We can specify the default column metadata:
     .with_default_column_desc(ColumnDesc::new()) 
-    .with_column_descs(column_descs)
+    .with_column_descs(&column_descs)
     // We can render only a subset of columns, choose the order, and even
     // render columns multiple times:
     .with_column_selection(&[0, 2, 4, 2])
     // We can sort the rows by choosing a list of columns to order by:
-    .with_column_order(&[2, 1])
+    .with_sort_columns(&sort_columns)
     // Try to ensure the table will not exceed the given width. Columns can
     // be made narrower to fit, but never narrower than their min_width.
     .with_max_table_width(100)

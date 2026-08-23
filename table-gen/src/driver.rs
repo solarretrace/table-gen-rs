@@ -16,6 +16,7 @@ use crate::ColumnDesc;
 use crate::ColumnOrd;
 use crate::RenderContext;
 use crate::CellContext;
+use crate::Diagnostic;
 
 // Standard library imports.
 use std::ops::RangeBounds;
@@ -25,7 +26,7 @@ use std::ops::RangeBounds;
 // TableBuilder
 ////////////////////////////////////////////////////////////////////////////////
 /// A builder-style constructor for a `Table`.
-#[derive(Debug, Clone)]
+#[allow(missing_debug_implementations)]
 pub struct TableBuilder<'a, S, T> {
 	/// The table data source.
 	inner: Collate<'a, S>,
@@ -35,6 +36,8 @@ pub struct TableBuilder<'a, S, T> {
 	default_col_desc: ColumnDesc<'a>,
 	/// The maximum table width.
 	max_table_width: Option<usize>,
+	/// The diagnostic sink function.
+	diagnostic_sink_fn: Box<dyn FnMut(Diagnostic) + 'static>,
 }
 
 impl<'a, R, S, T> TableBuilder<'a, S, T>
@@ -54,6 +57,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 			renderer,
 			default_col_desc: ColumnDesc::new(),
 			max_table_width: None,
+			diagnostic_sink_fn: Box::new(|_| {/* Do nothing. */})
 		}
 	}
 
@@ -107,6 +111,15 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 		self
 	}
 
+	/// Sets the maximum table width and returns the `TableBuilder`.
+	#[must_use]
+	pub fn with_diagnostic_sink_fn<F>(mut self, diagnostic_sink_fn: F) -> Self 
+		where F: FnMut(Diagnostic) + 'static
+	{
+		self.diagnostic_sink_fn = Box::new(diagnostic_sink_fn);
+		self
+	}
+
 	/// Finishes collation of the data source and returns a `Table` for
 	/// rendering.
 	#[must_use]
@@ -115,6 +128,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 			self.inner,
 			self.renderer,
 			self.default_col_desc,
+			self.diagnostic_sink_fn,
 			self.max_table_width)
 	}
 }
@@ -135,7 +149,7 @@ impl<'a, R, S, T> From<TableBuilder<'a, S, T>> for Table<'a, R, T>
 // Table
 ////////////////////////////////////////////////////////////////////////////////
 /// A driver for a table renderer operating on a data source.
-#[derive(Debug, Clone)]
+#[allow(missing_debug_implementations)]
 pub struct Table<'a, R, T> {
 	/// The table data source.
 	inner: Aggregate<'a, R>,
@@ -143,6 +157,8 @@ pub struct Table<'a, R, T> {
 	renderer: T,
 	/// The default `ColumnDesc`.
 	default_col_desc: ColumnDesc<'a>,
+	/// The diagnostic sink function.
+	diagnostic_sink_fn: Box<dyn FnMut(Diagnostic) + 'static>,
 }
 
 impl<'a, R, T> Table<'a, R, T>
@@ -167,14 +183,20 @@ impl<'a, R, T> Table<'a, R, T>
 		source: Collate<'a, S>,
 		renderer: T,
 		default_col_desc: ColumnDesc<'a>,
+		mut diagnostic_sink_fn: Box<dyn FnMut(Diagnostic) + 'static>,
 		max_table_width: Option<usize>) -> Self
 		where S: Iterator<Item=R>
 	{
-		let inner = Aggregate::new(source, &default_col_desc, max_table_width);
+		let inner = Aggregate::new(
+			source,
+			&default_col_desc,
+			max_table_width,
+			&mut diagnostic_sink_fn);
 		Self {
 			inner,
 			renderer,
 			default_col_desc,
+			diagnostic_sink_fn,
 		}
 	}
 
