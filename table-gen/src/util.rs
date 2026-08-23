@@ -257,10 +257,9 @@ impl QuantileEstimator {
 	///
 	/// # Panics
 	///
-	/// Panics if the quantile is not within the range (`0.0`, `1.0`) (exlcuding
-	/// boundary points.)
+	/// Panics if the quantile is not within the range [`0.0`, `1.0`].
 	pub fn new(quantile: f64) -> Self {
-		assert!(quantile > 0.0 && quantile < 1.0,
+		assert!(quantile >= 0.0 && quantile <= 1.0,
 			"quantile must be in (0, 1)");
 		Self {
 			quantile,
@@ -283,6 +282,15 @@ impl QuantileEstimator {
 		// Buffer values if fewer than 5 observations have been made.
 		if self.init.len() < Self::VALUE_BUFFER_LEN {
 			self.init.push(value);
+			// Early exit if we're only doing degenerate min/max tracking.
+			if self.quantile == 0.0 && self.init[0] > value {
+				self.init[0] = value;
+				return;
+			}
+			if self.quantile == 1.0 && self.init[0] < value {
+				self.init[0] = value;
+				return;
+			}
 			// Initialize the estimator arrays if 5 observations have been made.
 			if self.init.len() == Self::VALUE_BUFFER_LEN {
 				self.init.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -364,6 +372,12 @@ impl QuantileEstimator {
 	/// estimated by positioning within the sorted array of observations that
 	/// have been made.
 	pub fn estimate(&self) -> f64 {
+		// Degenerate min/max value is tracked in self.init[0]:
+		if self.quantile == 0.0 || self.quantile == 1.0 {
+			return self.init[0];
+		}
+
+		// Do sort and positioning if we've seen fewer than 5 values:
 		if self.init.len() < Self::VALUE_BUFFER_LEN {
 			let mut values = <[f64; Self::VALUE_BUFFER_LEN]>::try_from(
 					&self.init[..])
@@ -371,10 +385,11 @@ impl QuantileEstimator {
 			values.sort_by(|a, b| a.partial_cmp(b).unwrap());
 			let idx = ((values.len() as f64 - 1.0) * self.quantile)
 				.round() as usize;
-			values.get(idx).copied().unwrap_or(0.0)
-		} else {
-			self.q[2]
+			return values.get(idx).copied().unwrap_or(0.0);
 		}
+
+		// Otherwise, return the estimate:
+		self.q[2]
 	}
 }
 
