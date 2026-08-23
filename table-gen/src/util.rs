@@ -119,7 +119,12 @@ pub fn unicode_grapheme_aware_truncation(
 			let mut end: usize = 0;
 			for (idx, g) in text.grapheme_indices(true) {
 				let w = width(g);
-				if curr_width + w > cell_width { break; }
+				if curr_width + w > cell_width {
+					// The index tracks the start of the grapheme, so we need
+					// to position the end one grapheme further.
+					end = idx;
+					break;
+				}
 				curr_width += w;
 				end = idx;
 			}
