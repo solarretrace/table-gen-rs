@@ -29,15 +29,17 @@ You will usually want to extend this pattern by providing additional configurati
     // in order of the output index:
     let column_descs = vec![
         ColumnDesc::new()
-            .with_header("Header")               // Header text for the column
-            .with_footer("Footer")               // Footer text for the column
-            .with_display_fmt(DisplayFmt::new()  // Formatting for cell values
-                .with_precision(3)               // Precision for numerical cols
-                .with_sign(Sign::Plus))          // Sign for numerical cols
-            .with_min_width(10)                  // Minimum column width
-            .with_max_width(15)                  // Maximum column width
-            .with_horz_align(HorzAlign::Right)   // Horizontal alignment in cell
-            .with_vert_align(VertAlign::Center), // Vertical alignment in cell
+            .with_header("Header")              // Header text for the column
+            .with_footer("Footer")              // Footer text for the column
+            .with_display_fmt(DisplayFmt::new() // Formatting for cell values
+                .with_precision(3)              // Precision for numerical cols
+                .with_sign(Sign::Plus))         // Sign for numerical cols
+            .with_min_width(10)                 // Minimum column width
+            .with_max_width(15)                 // Maximum column width
+            .with_horz_align(HorzAlign::Right)  // Horizontal alignment in cell
+            .with_vert_align(VertAlign::Center) // Vertical alignment in cell
+            .with_dynamic_width_quantile(0.9)   // Ignore wide outlier cells
+            .with_dynamic_width_weight(2.0),    // Avoid shrinking this column
         // ... other rows will use default formatting (`ColumnDesc::new()`).
     ];
         
@@ -52,6 +54,9 @@ You will usually want to extend this pattern by providing additional configurati
         .with_column_selection(&[0, 2, 4, 2])
         // We can sort the rows by choosing a list of columns to order by:
         .with_column_order(&[2, 1])
+        // Try to ensure the table will not exceed the given width. Columns can
+        // be made narrower to fit, but never narrower than their min_width.
+        .with_max_table_width(100)
         // Finishing the builder will calculate column widths and materialize
         // the ordering.
         .finish();

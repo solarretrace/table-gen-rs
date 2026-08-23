@@ -368,7 +368,7 @@ COLUMN 0            COLUMN 1   COLUMN 2 COLUMN 3             COLUMN 4   COLUMN 5
 
 		let mut table = Table::new_builder(data, MinimalRenderer::new())
 			.with_column_descs(&col_descs)
-			.with_table_width(15)
+			.with_max_table_width(15)
 			.finish();
 
 		let mut out: Vec<u8> = Vec::new();

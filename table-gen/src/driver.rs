@@ -34,7 +34,7 @@ pub struct TableBuilder<'a, S, T> {
 	/// The default `ColumnDesc`.
 	default_col_desc: ColumnDesc<'a>,
 	/// The maximum table width.
-	table_width: Option<usize>,
+	max_table_width: Option<usize>,
 }
 
 impl<'a, R, S, T> TableBuilder<'a, S, T>
@@ -53,7 +53,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 				.with_features(renderer.features()),
 			renderer,
 			default_col_desc: ColumnDesc::new(),
-			table_width: None,
+			max_table_width: None,
 		}
 	}
 
@@ -100,10 +100,10 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 
 	/// Sets the maximum table width and returns the `TableBuilder`.
 	#[must_use]
-	pub fn with_table_width<O>(mut self, table_width: O) -> Self 
+	pub fn with_max_table_width<O>(mut self, max_table_width: O) -> Self 
 		where O: Into<Option<usize>>
 	{
-		self.table_width = table_width.into();
+		self.max_table_width = max_table_width.into();
 		self
 	}
 
@@ -115,7 +115,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 			self.inner,
 			self.renderer,
 			self.default_col_desc,
-			self.table_width)
+			self.max_table_width)
 	}
 }
 
@@ -167,10 +167,10 @@ impl<'a, R, T> Table<'a, R, T>
 		source: Collate<'a, S>,
 		renderer: T,
 		default_col_desc: ColumnDesc<'a>,
-		table_width: Option<usize>) -> Self
+		max_table_width: Option<usize>) -> Self
 		where S: Iterator<Item=R>
 	{
-		let inner = Aggregate::new(source, &default_col_desc, table_width);
+		let inner = Aggregate::new(source, &default_col_desc, max_table_width);
 		Self {
 			inner,
 			renderer,

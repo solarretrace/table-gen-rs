@@ -47,7 +47,7 @@ impl<'a, R> Aggregate<'a, R>
 	pub (in crate) fn new<S, T>(
 		inner: T,
 		default_col_desc: &ColumnDesc<'_>,
-		table_width: Option<usize>)
+		max_table_width: Option<usize>)
 		-> Self
 		where
 			T: Into<Split<'a, R, S>>,
@@ -200,7 +200,7 @@ impl<'a, R> Aggregate<'a, R>
 			col_descs,
 			default_col_desc,
 			&quant_widths,
-			table_width);
+			max_table_width);
 
 		Self {
 			rows,
@@ -255,9 +255,9 @@ impl<'a, R> Aggregate<'a, R>
 		col_descs: &[ColumnDesc<'_>],
 		default_col_desc: &ColumnDesc<'_>,
 		quant_widths: &[usize],
-		table_width: Option<usize>)
+		max_table_width: Option<usize>)
 	{
-		let Some(max_width) = table_width else {
+		let Some(max_width) = max_table_width else {
 			// Reduce column widths to quantile widths if possible.
 			for (idx, w) in col_widths.iter_mut().enumerate() {
 				let col_desc = col_descs.get(idx).unwrap_or(default_col_desc);
