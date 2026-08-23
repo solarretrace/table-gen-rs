@@ -208,32 +208,6 @@ impl DisplayFmt {
 	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html#precision)
 	/// for details.
 	#[must_use]
-	pub fn with_precision_option(mut self, precision: Option<usize>)
-		-> Self 
-	{
-		self.precision = precision;
-		self
-	}
-
-	/// Sets the sign and returns the `DisplayFmt`.
-	///
-	/// Indicates that the cell value should be formatted with the given sign.
-	/// See the 
-	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.htmlsign0)
-	/// for details.
-	#[must_use]
-	pub fn with_sign_option(mut self, sign: Option<Sign>) -> Self {
-		self.sign = sign;
-		self
-	}
-
-	/// Sets the precision and returns the `DisplayFmt`.
-	///
-	/// Indicates that the cell value should be formatted with the given
-	/// precision. See the 
-	/// [std library formatting specification](https://doc.rust-lang.org/std/fmt/index.html#precision)
-	/// for details.
-	#[must_use]
 	pub fn with_precision<T>(mut self, precision: T) -> Self 
 		where T: Into<Option<usize>>
 	{
