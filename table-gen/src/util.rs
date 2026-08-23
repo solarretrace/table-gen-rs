@@ -231,11 +231,11 @@ pub fn unicode_grapheme_aware_truncation(
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// unicode_display_width
+// QuantileEstimator
 ////////////////////////////////////////////////////////////////////////////////
 /// Streaming P² quantile estimator.
 #[derive(Debug, Clone)]
-pub struct QuantileEstimator {
+pub struct QuantileEstimator<const EXACT: usize> {
 	/// The quantile to estimate.
 	quantile: f64,
 	/// A buffer for the initial observations.
@@ -250,8 +250,7 @@ pub struct QuantileEstimator {
 	q: [f64; 5],
 }
 
-impl QuantileEstimator {
-	const VALUE_BUFFER_LEN: usize = 5;
+impl<const EXACT: usize> QuantileEstimator<EXACT> {
 
 	/// Constructs a new `QuantileEstimator` for the given quantile.
 	///
@@ -263,7 +262,7 @@ impl QuantileEstimator {
 			"quantile must be in (0, 1)");
 		Self {
 			quantile,
-			init: Vec::with_capacity(Self::VALUE_BUFFER_LEN),
+			init: Vec::with_capacity(EXACT),
 			n: [0.0; 5],
 			np: [0.0; 5],
 			dn: [
@@ -280,7 +279,7 @@ impl QuantileEstimator {
 	/// Adjusts the estimation to account for a single observed value.
 	pub fn observe(&mut self, value: f64) {
 		// Buffer values if fewer than 5 observations have been made.
-		if self.init.len() < Self::VALUE_BUFFER_LEN {
+		if self.init.len() < EXACT {
 			self.init.push(value);
 			// Early exit if we're only doing degenerate min/max tracking.
 			if self.quantile == 0.0 && self.init[0] > value {
@@ -292,7 +291,7 @@ impl QuantileEstimator {
 				return;
 			}
 			// Initialize the estimator arrays if 5 observations have been made.
-			if self.init.len() == Self::VALUE_BUFFER_LEN {
+			if self.init.len() == EXACT {
 				self.init.sort_by(|a, b| a.partial_cmp(b).unwrap());
 				self.q = <[f64; 5]>::try_from(&self.init[..])
 					.expect("copy Vec into array");
@@ -378,8 +377,8 @@ impl QuantileEstimator {
 		}
 
 		// Do sort and positioning if we've seen fewer than 5 values:
-		if self.init.len() < Self::VALUE_BUFFER_LEN {
-			let mut values = <[f64; Self::VALUE_BUFFER_LEN]>::try_from(
+		if self.init.len() < EXACT {
+			let mut values = <[f64; EXACT]>::try_from(
 					&self.init[..])
 				.expect("copy Vec into array");
 			values.sort_by(|a, b| a.partial_cmp(b).unwrap());
