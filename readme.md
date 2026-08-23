@@ -5,61 +5,65 @@
 
 The basic usage is as follows:
 
-    use table_gen_core::Table;
-    use table_gen_render::MinimalRenderer;
-    
-    // Choose a Renderer implementation:
-    let mut renderer = MinimalRenderer::new();
-    
-    // Define our data source via IntoIterator<item=R> where R: Row
-    let data = vec![/* rows */]
-    
-    // Define where to write the table to
-    let mut out = std::io::stdout();
+```rust
+use table_gen_core::Table;
+use table_gen_render::MinimalRenderer;
 
-    // Prepare the table.
-    let mut table = Table::new_builder(data, &mut renderer)
-        .finish();
-    
-    let res = table.render(&mut out);
+// Choose a Renderer implementation:
+let mut renderer = MinimalRenderer::new();
+
+// Define our data source via IntoIterator<item=R> where R: Row
+let data = vec![/* rows */]
+
+// Define where to write the table to
+let mut out = std::io::stdout();
+
+// Prepare the table.
+let mut table = Table::new_builder(data, &mut renderer)
+    .finish();
+
+let res = table.render(&mut out);
+```
 
 You will usually want to extend this pattern by providing additional configuration for the table output. These can be specified before calling `finish` on the builder:
 
-    // We can provide metadata for each column. The `ColumnDesc`s are provided
-    // in order of the output index:
-    let column_descs = vec![
-        ColumnDesc::new()
-            .with_header("Header")              // Header text for the column
-            .with_footer("Footer")              // Footer text for the column
-            .with_display_fmt(DisplayFmt::new() // Formatting for cell values
-                .with_precision(3)              // Precision for numerical cols
-                .with_sign(Sign::Plus))         // Sign for numerical cols
-            .with_min_width(10)                 // Minimum column width
-            .with_max_width(15)                 // Maximum column width
-            .with_horz_align(HorzAlign::Right)  // Horizontal alignment in cell
-            .with_vert_align(VertAlign::Center) // Vertical alignment in cell
-            .with_dynamic_width_quantile(0.9)   // Ignore wide outlier cells
-            .with_dynamic_width_weight(2.0),    // Avoid shrinking this column
-        // ... other rows will use default formatting (`ColumnDesc::new()`).
-    ];
-        
-    // Prepare the table. The renderer is provided up front to provide its own
-    // output requirements to the table driver.
-    let mut table = Table::new_builder(data, &mut renderer)
-        // We can specify the default column metadata:
-        .with_default_column_desc(ColumnDesc::new()) 
-        .with_column_descs(column_descs)
-        // We can render only a subset of columns, choose the order, and even
-        // render columns multiple times:
-        .with_column_selection(&[0, 2, 4, 2])
-        // We can sort the rows by choosing a list of columns to order by:
-        .with_column_order(&[2, 1])
-        // Try to ensure the table will not exceed the given width. Columns can
-        // be made narrower to fit, but never narrower than their min_width.
-        .with_max_table_width(100)
-        // Finishing the builder will calculate column widths and materialize
-        // the ordering.
-        .finish();
+```rust
+// We can provide metadata for each column. The `ColumnDesc`s are provided
+// in order of the output index:
+let column_descs = vec![
+    ColumnDesc::new()
+        .with_header("Header")              // Header text for the column
+        .with_footer("Footer")              // Footer text for the column
+        .with_display_fmt(DisplayFmt::new() // Formatting for cell values
+            .with_precision(3)              // Precision for numerical cols
+            .with_sign(Sign::Plus))         // Sign for numerical cols
+        .with_min_width(10)                 // Minimum column width
+        .with_max_width(15)                 // Maximum column width
+        .with_horz_align(HorzAlign::Right)  // Horizontal alignment in cell
+        .with_vert_align(VertAlign::Center) // Vertical alignment in cell
+        .with_dynamic_width_quantile(0.9)   // Ignore wide outlier cells
+        .with_dynamic_width_weight(2.0),    // Avoid shrinking this column
+    // ... other rows will use default formatting (`ColumnDesc::new()`).
+];
+    
+// Prepare the table. The renderer is provided up front to provide its own
+// output requirements to the table driver.
+let mut table = Table::new_builder(data, &mut renderer)
+    // We can specify the default column metadata:
+    .with_default_column_desc(ColumnDesc::new()) 
+    .with_column_descs(column_descs)
+    // We can render only a subset of columns, choose the order, and even
+    // render columns multiple times:
+    .with_column_selection(&[0, 2, 4, 2])
+    // We can sort the rows by choosing a list of columns to order by:
+    .with_column_order(&[2, 1])
+    // Try to ensure the table will not exceed the given width. Columns can
+    // be made narrower to fit, but never narrower than their min_width.
+    .with_max_table_width(100)
+    // Finishing the builder will calculate column widths and materialize
+    // the ordering.
+    .finish();
+```
 
 ## Architecture
 
