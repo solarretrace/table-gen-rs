@@ -33,6 +33,8 @@ pub struct TableBuilder<'a, S, T> {
 	renderer: T,
 	/// The default `ColumnDesc`.
 	default_col_desc: ColumnDesc<'a>,
+	/// The maximum table width.
+	table_width: Option<usize>,
 }
 
 impl<'a, R, S, T> TableBuilder<'a, S, T>
@@ -51,19 +53,18 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 				.with_features(renderer.features()),
 			renderer,
 			default_col_desc: ColumnDesc::new(),
+			table_width: None,
 		}
 	}
 
-	/// Prepares the table builder with the given columns selected for output in
-	/// the given order.
+	/// Sets the output column selection and returns the `TableBuilder`.
 	#[must_use]
 	pub fn with_column_selection(mut self, col_select: &'a [usize]) -> Self {
 		self.inner = self.inner.with_column_selection(col_select);
 		self
 	}
 
-	/// Prepares the table builder such that only the given rows will be
-	/// rendered.
+	/// Sets th output row selection and returns the `TableBuilder`.
 	#[must_use]
 	pub fn with_row_selection<B>(mut self, row_select: B) -> Self 
 		where B: RangeBounds<usize>
@@ -72,7 +73,8 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 		self
 	}
 
-	/// Prepares the table builder with the given column output specifications.
+	/// Sets the column descriptors for each column and returns the
+	/// `TableBuilder`.
 	#[must_use]
 	pub fn with_column_descs(mut self, col_descs: &'a [ColumnDesc<'a>]) -> Self
 	{
@@ -80,8 +82,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 		self
 	}
 
-	/// Prepares the table builder with the given default column output
-	/// specification.
+	/// Sets the default column descriptor and returns the `TableBuilder`.
 	#[must_use]
 	pub fn with_default_col_desc(mut self, default_col_desc: ColumnDesc<'a>)
 		-> Self
@@ -90,10 +91,19 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 		self
 	}
 
-	/// Prepares the table builder with the given output column orderings.
+	/// Sets the sort columns and returns the `TableBuilder`.
 	#[must_use]
 	pub fn with_sort_columns(mut self, col_order: &'a [ColumnOrd]) -> Self {
 		self.inner = self.inner.with_sort_columns(col_order);
+		self
+	}
+
+	/// Sets the maximum table width and returns the `TableBuilder`.
+	#[must_use]
+	pub fn with_table_width<O>(mut self, table_width: O) -> Self 
+		where O: Into<Option<usize>>
+	{
+		self.table_width = table_width.into();
 		self
 	}
 
@@ -101,7 +111,11 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 	/// rendering.
 	#[must_use]
 	pub fn finish(self) -> Table<'a, R, T> {
-		Table::new(self.inner, self.default_col_desc, self.renderer)
+		Table::new(
+			self.inner,
+			self.renderer,
+			self.default_col_desc,
+			self.table_width)
 	}
 }
 
@@ -151,11 +165,12 @@ impl<'a, R, T> Table<'a, R, T>
 	#[must_use]
 	pub (in crate) fn new<S>(
 		source: Collate<'a, S>,
+		renderer: T,
 		default_col_desc: ColumnDesc<'a>,
-		renderer: T) -> Self
+		table_width: Option<usize>) -> Self
 		where S: Iterator<Item=R>
 	{
-		let inner = Aggregate::new(source, &default_col_desc);
+		let inner = Aggregate::new(source, &default_col_desc, table_width);
 		Self {
 			inner,
 			renderer,

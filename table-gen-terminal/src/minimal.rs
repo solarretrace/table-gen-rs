@@ -151,7 +151,6 @@ F0
 ");
 	}
 	
-	
 	#[test]
 	fn align_odd() {
 		let data: Vec<[&str; 2]> = vec![
@@ -337,7 +336,7 @@ N <-1-> <-2-> <-3->
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		println!("{}", out);
+		//println!("{}", out);
 
 		assert_eq!(out, "\
 i64                    f64         bool left-aligned             bool …t-aligned
@@ -350,6 +349,38 @@ values (wide)        values      values strings                 again    strings
                                         line column              true …ne column
 15                   +0.000       false A single line column    false …ne column
 COLUMN 0            COLUMN 1   COLUMN 2 COLUMN 3             COLUMN 4   COLUMN 5
+");
+	}
+
+	#[test]
+	fn constrained() {
+		let data: Vec<(&str,)> = vec![
+			("short",),
+			("looooooooooooooong",),
+			("veeeeeeeeeeeeeeeeery looooooooooooooong",),
+		];
+		
+		let col_descs = vec![
+			ColumnDesc::new()
+				.with_header("<------1------>")
+				.with_horz_align(HorzAlign::Left),
+		];
+
+		let mut table = Table::new_builder(data, MinimalRenderer::new())
+			.with_column_descs(&col_descs)
+			.with_table_width(15)
+			.finish();
+
+		let mut out: Vec<u8> = Vec::new();
+		assert!(table.render(&mut out).is_ok());
+		let out = String::from_utf8(out).unwrap();
+		//println!("{}", out);
+
+		assert_eq!(out, "\
+<------1------>
+short          
+looooooooooooo…
+veeeeeeeeeeeee…
 ");
 	}
 }

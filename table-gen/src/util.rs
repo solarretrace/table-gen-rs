@@ -377,7 +377,7 @@ impl<const EXACT: usize> QuantileEstimator<EXACT> {
 	/// have been made.
 	pub fn estimate(&self) -> f64 {
 		// Degenerate min/max value is tracked in self.init[0]:
-		if self.quantile == 0.0 || self.quantile == 1.0 {
+		if self.quantile <= 0.0 || self.quantile >= 1.0 {
 			return self.init[0];
 		}
 

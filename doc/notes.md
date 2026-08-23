@@ -60,7 +60,6 @@
 	- Support custom line wrapping
 	- Support extra width in aggregator
 	- Support custom formatting
-+ Support full table width constraints
 + Support outer border elision in terminal renderers
 + Support independent header/footer alignment
 + Implement parallelism
