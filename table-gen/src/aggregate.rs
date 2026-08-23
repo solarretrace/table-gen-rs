@@ -110,6 +110,7 @@ impl<'a, R> Aggregate<'a, R>
 			None => Vec::new(),
 		};
 
+		// Prepare quantile estimators observing the current widths.
 		let mut col_width_quantile_estimates = col_widths.iter().enumerate()
 			.map(|(idx, w)| {
 				let col_desc = col_descs.get(idx).unwrap_or(default_col_desc);
@@ -121,11 +122,12 @@ impl<'a, R> Aggregate<'a, R>
 				qe
 			})
 			.collect::<Vec<_>>();
+
 		let mut max_row_len = 0;
 		let mut rows = Vec::new();
 		// Do column aggregations.
 		for (n, row) in inner.into_iter().enumerate() {
-			// TODO: Do aggregation for all rows.
+			// TODO: Do custom aggregation for all rows.
 
 			// Do aggregation for output rows.
 			if row_select.contains(&n) {
@@ -273,10 +275,6 @@ impl<'a, R> Aggregate<'a, R>
 		// Table has not overflowed the max, no need to do anything.
 		if overflow == 0 { return; }
 
-		// First, we reduce the column widths to their quantile widths. This
-		// will prioritize shedding low-density width. Second, we reduce the
-		// column widths to their minimum widths. We start with some setup.
-
 		// Compute the absolute column weights.
 		let weight_total: f64 = (0..col_widths.len())
 			.map(|idx| {
@@ -299,8 +297,11 @@ impl<'a, R> Aggregate<'a, R>
 			})
 			.collect();
 
+		// 1. We reduce the column widths to their quantile widths. This will
+		// prioritize shedding low-density space.
+
 		// Compute how much total quant space we must consume.
-		let mut total_quant: usize = col_widths.iter().enumerate()
+		let total_quant: usize = col_widths.iter().enumerate()
 			.map(|(idx, w)| w.saturating_sub(quant_widths[idx]))
 			.sum();
 		if overflow >= total_quant {
@@ -310,27 +311,19 @@ impl<'a, R> Aggregate<'a, R>
 			}
 			overflow -= total_quant;
 		} else {
-			total_quant = overflow;
-			// Use a water-fill algorithm to distribute total_quant of reduction
-			// according to the abs weights.
-			let mut clamped = HashSet::new();
-			while total_quant > 0 {
-				for (idx, col_width) in col_widths.iter_mut().enumerate() {
-					if clamped.contains(&idx) { continue; }
-					let fair_amt: f64 = abs_weights[idx] * total_quant as f64;
-					let fair_amt = fair_amt.round() as usize;
-					let max = col_width.saturating_sub(quant_widths[idx]);
-					let diff = std::cmp::min(max, fair_amt);
-					*col_width -= diff;
-					total_quant -= diff;
-					overflow -= diff;
-					if diff == 0 { let _ = clamped.insert(idx); }
-				}
-			}
+			// Distribute `overflow` amount of width reduction by weight.
+			overflow -= distribute_by_weight(
+				col_widths,
+				&abs_weights[..],
+				|idx| col_descs.get(idx).unwrap_or(default_col_desc).min_width,
+				overflow);
 		}
+		if overflow == 0 { return; }
+
+		// 2. We reduce the column widths to their min widths.
 
 		// Compute how much total min space we must consume.
-		let mut total_min: usize = col_widths.iter().enumerate()
+		let total_min: usize = col_widths.iter().enumerate()
 			.map(|(idx, w)| {
 				let col_desc = col_descs.get(idx).unwrap_or(default_col_desc);
 				w.saturating_sub(col_desc.min_width)
@@ -344,30 +337,47 @@ impl<'a, R> Aggregate<'a, R>
 			}
 			overflow -= total_min;
 		} else {
-			total_min = overflow;
-			// Use a water-fill algorithm to distribute total_min of reduction
-			// according to the abs weights.
-			let mut clamped = HashSet::new();
-			while total_min > 0 {
-				for (idx, col_width) in col_widths.iter_mut().enumerate() {
-					if clamped.contains(&idx) { continue; }
-					let col_desc = col_descs.get(idx)
-						.unwrap_or(default_col_desc);
-					let fair_amt: f64 = abs_weights[idx] * total_min as f64;
-					let fair_amt = fair_amt.round() as usize;
-					let max = col_width.saturating_sub(col_desc.min_width);
-					let diff = std::cmp::min(max, fair_amt);
-					*col_width -= diff;
-					total_min -= diff;
-					overflow -= diff;
-					if diff == 0 { let _ = clamped.insert(idx); }
-				}
-			}
+			// Distribute `overflow` amount of width reduction by weight.
+			overflow -= distribute_by_weight(
+				col_widths,
+				&abs_weights[..],
+				|idx| col_descs.get(idx).unwrap_or(default_col_desc).min_width,
+				overflow);
 		}
+		if overflow == 0 { return; }
 
-		if overflow > 0 {
-			println!("table width contraint not satisfied");
-		}
+		
+		println!("table width contraints not satisfied");
 	}
 }
 
+/// Distrubutes column width reductions across each column by weight.
+///
+/// The `allocate` parameter determines the total amount of reduction to apply.
+/// The `min_col_width_fn` should return the minimum width of the column indexed
+/// by its argument.
+fn distribute_by_weight<F>(
+	widths: &mut [usize],
+	weights: &[f64],
+	min_col_width_fn: F,
+	mut allocate: usize)
+	-> usize
+	where F: Fn(usize) -> usize
+{
+	let mut total_allocated = 0;
+	let mut clamped = HashSet::new();
+	while allocate > 0 {
+		for (idx, width) in widths.iter_mut().enumerate() {
+			if clamped.contains(&idx) { continue; }
+			let fair_amt: f64 = weights[idx] * allocate as f64;
+			let fair_amt = fair_amt.round() as usize;
+			let max = width.saturating_sub((min_col_width_fn)(idx));
+			let diff = std::cmp::min(max, fair_amt);
+			*width -= diff;
+			allocate -= diff;
+			total_allocated += diff;
+			if diff == 0 { let _ = clamped.insert(idx); }
+		}
+	}
+	total_allocated
+}
