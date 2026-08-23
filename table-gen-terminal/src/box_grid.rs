@@ -332,28 +332,6 @@ impl Renderer for BoxGridRenderer {
 		writeln!(out)
 	}
 
-	fn write_data_cell_line<W>(
-		&mut self,
-		out: &mut W,
-		_ctx: &RenderContext<'_>,
-		cell: &CellContext<'_>)
-		-> std::io::Result<()>
-		where W: std::io::Write
-	{
-		let mut pad = cell.padding();
-		pad += self.extra_width as usize;
-		let (l_pad, r_pad) = match cell.desc.horz_align {
-			HorzAlign::Left   => (0,     pad),
-			HorzAlign::Center => (pad/2, pad.div_ceil(2)),
-			HorzAlign::Right  => (pad,   0),
-		};
-		
-		for _ in 0..l_pad { write!(out, " ")?; }
-		write!(out, "{}", cell.text)?;
-		for _ in 0..r_pad { write!(out, " ")?; }
-		Ok(())
-	}
-
 	fn write_data_cell_line_start<W>(
 		&mut self,
 		out: &mut W,
