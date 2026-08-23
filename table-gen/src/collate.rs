@@ -193,7 +193,7 @@ impl<R> Row for CollateRow<'_, R>
 // ColumnDesc
 ////////////////////////////////////////////////////////////////////////////////
 /// Provides formatting and metadata for a table column.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy)]
 pub struct ColumnDesc<'a> {
 	/// The column header text.
 	pub header: &'a str,
@@ -205,6 +205,11 @@ pub struct ColumnDesc<'a> {
 	pub min_width: usize,
 	/// The maximum width of the column.
 	pub max_width: usize,
+	/// The quantile of the widest cell values to ignore for computing dynamic
+	/// column widths.
+	pub dynamic_width_quantile: f64,
+	/// The relative weight of the column in allocating width under constraint.
+	pub dynamic_width_weight: f64,
 	/// The horizontal alignment of text in the column.
 	pub horz_align: HorzAlign,
 	/// The vertical alignment of text in the column.
@@ -227,6 +232,8 @@ impl<'a> ColumnDesc<'a> {
 			display_fmt: DisplayFmt::new(),
 			min_width: 0,
 			max_width: usize::MAX,
+			dynamic_width_quantile: 1.0,
+			dynamic_width_weight: 1.0,
 			horz_align: HorzAlign::Left,
 			vert_align: VertAlign::Top,
 		}
@@ -274,6 +281,33 @@ impl<'a> ColumnDesc<'a> {
 		self.max_width = max_width;
 		self
 	}
+
+	/// Sets the quantile of the widest cell values to ignore for computing
+	/// dynamic column widths and returns the `ColumnDesc`.
+	///
+	/// I.e., a value of `0.9` means that approximately the longest 10% of
+	/// column values will be ignored for purposes of computing column width.
+	#[must_use]
+	pub fn with_dynamic_width_quantile(mut self, dynamic_width_quantile: f64)
+		-> Self
+	{
+		self.dynamic_width_quantile = dynamic_width_quantile;
+		self
+	}
+
+	/// Sets the relative weight of the column when computing dynamic column
+	/// widths and returns the `ColumnDesc`.
+	///
+	/// The default weight is 1.0. If columns need to have their width reduced,
+	/// columns with higher weight will have less width removed.
+	#[must_use]
+	pub fn with_dynamic_width_weight(mut self, dynamic_width_weight: f64)
+		-> Self
+	{
+		self.dynamic_width_weight = dynamic_width_weight;
+		self
+	}
+	
 	
 	/// Sets the horizontal text alignment and returns the `ColumnDesc`.
 	#[must_use]
@@ -287,6 +321,17 @@ impl<'a> ColumnDesc<'a> {
 	pub fn with_vert_align(mut self, vert_align: VertAlign) -> Self {
 		self.vert_align = vert_align;
 		self
+	}
+
+	/// Returns `true` if the column width is fully constrained.
+	pub fn is_fixed_width(&self) -> bool {
+		self.min_width >= self.max_width
+	}
+
+	/// Clamps the given value between the min and max width allowed for the
+	/// column.
+	pub fn clamp_to_valid_width(&self, value: usize) -> usize {
+		value.clamp(self.min_width, self.max_width)
 	}
 }
 
