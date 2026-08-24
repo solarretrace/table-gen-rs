@@ -1,5 +1,5 @@
 
-# `table-gen` Table generator library 
+# `table-gen` -- Table generator library 
 
 ## Usage
 
@@ -7,13 +7,13 @@ The basic usage is as follows:
 
 ```rust
 use table_gen_core::Table;
-use table_gen_render::MinimalRenderer;
+use table_gen_terminal::MinimalRenderer;
 
 // Choose a Renderer implementation:
 let mut renderer = MinimalRenderer::new();
 
 // Define our data source via IntoIterator<item=R> where R: Row
-let data = vec![/* rows */]
+let data = vec![/* rows */];
 
 // Define where to write the table to
 let mut out = std::io::stdout();
@@ -35,22 +35,22 @@ let column_defs = vec![
         .with_header("Header")              // Header text for the column
         .with_footer("Footer")              // Footer text for the column
         .with_display_fmt(DisplayFmt::new() // Formatting for cell values
-            .with_precision(3)              // Precision for numerical cols
-            .with_sign(Sign::Plus))         // Sign for numerical cols
+            .with_precision(3)              // Precision for numerical columns
+            .with_sign(Sign::Plus))         // Sign for numerical columns
         .with_min_width(10)                 // Minimum column width
         .with_max_width(15)                 // Maximum column width
         .with_horz_align(HorzAlign::Right)  // Horizontal alignment in cell
         .with_vert_align(VertAlign::Center) // Vertical alignment in cell
-        .with_dynamic_width_quantile(0.9)   // Ignore wide outlier cells
-        .with_dynamic_width_weight(2.0),    // Avoid shrinking this column
+        .with_dynamic_width_quantile(0.9)   // Ignore widest outlier cells
+        .with_dynamic_width_weight(2.0),    // Try to avoid narrowing the column
     // ... other rows will use default formatting (`ColumnDef::new()`).
 ];
 
 // We can provide a multicolumn sort specification:
 let sort_columns = vec![
-    ColumnOrd::new(2)           // Sort on index 2
+    ColumnOrd::new(2)           // Sort on index 2 of the output
         .with_reversed_order(), // Reverse the sort ordering
-    ColumnOrd::new(1)           // Then sort on index 1
+    ColumnOrd::new(1)           // Then sort on index 1 of the output
         .with_formatted_order() // Order by column text, not value
         .with_none_lt_order(),  // Compare `None` values as less than others.
 ];
@@ -58,17 +58,29 @@ let sort_columns = vec![
 // Prepare the table. The renderer is provided up front to provide its own
 // output requirements to the table driver.
 let mut table = Table::new_builder(data, &mut renderer)
+
     // We can specify the default column metadata:
     .with_default_column_def(ColumnDef::new()) 
     .with_column_defs(&column_defs)
+
     // We can render only a subset of columns, choose the order, and even
     // render columns multiple times:
     .with_column_selection(&[0, 2, 4, 2])
+    
     // We can sort the rows by choosing a list of columns to order by:
     .with_sort_columns(&sort_columns)
-    // Try to ensure the table will not exceed the given width. Columns can
-    // be made narrower to fit, but never narrower than their min_width.
+    
+    // Row subselect via range. This will render only these rows after sorting.
+    .with_row_selection(5..15)
+    
+    // We can set width constraints for the table, but individual columns will
+    // never exceed their minimum or maximum width.
+    .with_min_table_width(10)
     .with_max_table_width(100)
+    
+    // Diagnostic messages can be received via closure:
+    .with_diagnositic_sink_fn(|msg| println!("{}", msg))
+    
     // Finishing the builder will calculate column widths and materialize
     // the ordering.
     .finish();
