@@ -180,3 +180,148 @@ pub enum VertAlign {
     /// Align to the bottom of the cell.
     Bottom,
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+// ColumnDefs
+////////////////////////////////////////////////////////////////////////////////
+pub (in crate) struct ColumnDefs<'a, 'b> {
+    default_column_def: &'a ColumnDef<'b>,
+    column_defs: &'a [ColumnDef<'b>],
+    extra_column_width: usize,
+}
+
+impl<'a, 'b> ColumnDefs<'a, 'b> 
+    where 'b: 'a
+{
+    #[must_use]
+    pub (in crate) fn new(
+        default_column_def: &'a ColumnDef<'b>,
+        column_defs: &'a [ColumnDef<'b>],
+        extra_column_width: usize)
+        -> Self
+    {
+        Self {
+            default_column_def,
+            column_defs,
+            extra_column_width,
+        }
+    }
+
+    #[must_use]
+    pub (in crate) fn into_parts(self)
+        -> (&'a ColumnDef<'b>, &'a [ColumnDef<'b>], usize)
+    {
+        (
+            self.default_column_def,
+            self.column_defs,
+            self.extra_column_width,
+        )
+    }
+
+    /// The column header text.
+    #[must_use]
+    pub (in crate) fn header(&self, idx: usize) -> &'b str {
+        self.column_defs
+            .get(idx)
+            .unwrap_or(self.default_column_def)
+            .header
+    }
+
+    /// The column footer text.
+    #[must_use]
+    pub (in crate) fn footer(&self, idx: usize) -> &'b str {
+        self.column_defs
+            .get(idx)
+            .unwrap_or(self.default_column_def)
+            .footer
+    }
+
+    /// The `DisplayFmt` to use for cells in this column.
+    #[must_use]
+    pub (in crate) fn display_fmt(&self, idx: usize) -> DisplayFmt {
+        self.column_defs
+            .get(idx)
+            .unwrap_or(self.default_column_def)
+            .display_fmt
+    }
+
+    /// The minimum width of the column.
+    #[must_use]
+    pub (in crate) fn min_width(&self, idx: usize) -> usize {
+        let w = self.column_defs
+            .get(idx)
+            .unwrap_or(self.default_column_def)
+            .min_width;
+        self.extra_column_width.saturating_add(w)
+    }
+
+    /// The maximum width of the column.
+    #[must_use]
+    pub (in crate) fn max_width(&self, idx: usize) -> usize {
+        let w = self.column_defs
+            .get(idx)
+            .unwrap_or(self.default_column_def)
+            .max_width;
+
+        self.extra_column_width.saturating_add(w)
+    }
+
+    /// The  quantile of the widest cell values to ignore for computing dynamic
+    /// column widths.
+    #[must_use]
+    pub (in crate) fn dynamic_width_quantile(&self, idx: usize) -> f64 {
+        self.column_defs
+            .get(idx)
+            .unwrap_or(self.default_column_def)
+            .dynamic_width_quantile
+    }
+
+    /// The relative weight of the column in allocating width under constraint.
+    #[must_use]
+    pub (in crate) fn dynamic_width_weight(&self, idx: usize) -> f64 {
+        self.column_defs
+            .get(idx)
+            .unwrap_or(self.default_column_def)
+            .dynamic_width_weight
+    }
+
+    /// The horizontal alignment of text in the column.
+    #[must_use]
+    pub (in crate) fn horz_align(&self, idx: usize) -> HorzAlign {
+        self.column_defs
+            .get(idx)
+            .unwrap_or(self.default_column_def)
+            .horz_align
+    }
+
+    /// The vertical alignment of text in the column.
+    #[must_use]
+    pub (in crate) fn vert_align(&self, idx: usize) -> VertAlign {
+        self.column_defs
+            .get(idx)
+            .unwrap_or(self.default_column_def)
+            .vert_align
+    }
+
+    /// Returns `true` if the column width is fully constrained.
+    #[must_use]
+    pub (in crate) fn is_fixed_width(&self, idx: usize) -> bool {
+        self.column_defs
+            .get(idx)
+            .unwrap_or(self.default_column_def)
+            .is_fixed_width()
+    }
+
+    /// Clamps the given value between the min and max width allowed for the
+    /// column.
+    #[must_use]
+    pub (in crate) fn clamp_to_valid_width(&self, idx: usize, value: usize)
+        -> usize
+    {
+        self.column_defs
+            .get(idx)
+            .unwrap_or(self.default_column_def)
+            .clamp_to_valid_width(value)
+    }
+}

@@ -25,6 +25,7 @@ pub mod util;
 // Internal exports.
 pub (in crate) use aggregate::Aggregate;
 pub (in crate) use collate::Collate;
+pub (in crate) use column::ColumnDefs;
 pub (in crate) use collate::CollateRow;
 pub (in crate) use format::Format;
 pub (in crate) use format::FormatRow;
