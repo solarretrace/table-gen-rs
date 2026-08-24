@@ -8,6 +8,7 @@
 // Internal modules.
 mod aggregate;
 mod collate;
+mod column;
 mod context;
 mod diagnostic;
 mod driver;
@@ -33,9 +34,9 @@ pub (in crate) use split::SplitRow;
 pub (in crate) use split::TextRow;
 
 // Public exports.
-pub use collate::ColumnDef;
-pub use collate::HorzAlign;
-pub use collate::VertAlign;
+pub use column::ColumnDef;
+pub use column::HorzAlign;
+pub use column::VertAlign;
 pub use context::CellContext;
 pub use context::RenderContext;
 pub use diagnostic::Diagnostic;
