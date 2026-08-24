@@ -7,7 +7,7 @@
 
 // Internal library imports.
 use crate::Cell;
-use crate::ColumnDef;
+use crate::ColumnDefs;
 use crate::ColumnOrd;
 use crate::Features;
 use crate::Row;
@@ -32,7 +32,7 @@ pub (in crate) struct Collate<'a, S> {
 	/// The table output rows.
 	row_select: (Bound<usize>, Bound<usize>),
 	/// The column output specifications.
-	column_defs: &'a [ColumnDef<'a>],
+	column_defs: ColumnDefs<'a>,
 	/// The sort parameters for columns, in order of sort priority.
 	col_order: &'a [ColumnOrd],
 	/// The supported rendering features.
@@ -62,7 +62,7 @@ impl<'a, R, S> Collate<'a, S>
 			inner,
 			col_select: &[],
 			row_select: (Bound::Included(0), Bound::Unbounded),
-			column_defs: &[],
+			column_defs: ColumnDefs::new(),
 			col_order: &[],
 			features: Features::default(),
 		}
@@ -97,17 +97,6 @@ impl<'a, R, S> Collate<'a, S>
 		self
 	}
 
-	/// Sets the column descriptors and returns the `Collate`.
-	#[must_use]
-	pub (in crate) fn with_column_defs(
-		mut self,
-		column_defs: &'a [ColumnDef<'a>])
-		-> Self
-	{
-		self.column_defs = column_defs;
-		self
-	}
-
 	/// Sets the column order and returns the `Collate`.
 	#[must_use]
 	pub (in crate) fn with_sort_columns(mut self, col_order: &'a [ColumnOrd])
@@ -129,19 +118,25 @@ impl<'a, R, S> Collate<'a, S>
 		&mut self.features
 	}
 
-	/// The row selection bounds.
+	/// Returns a reference to the row selection bounds.
 	#[must_use]
 	pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
 		&self.row_select
 	}
 
-	/// The column output specifications.
+	/// Returns a reference to the column definitions.
 	#[must_use]
-	pub (in crate) fn column_defs(&self) -> &'a [ColumnDef<'a>] {
-		self.column_defs
+	pub (in crate) fn column_defs(&self) -> &ColumnDefs<'a> {
+		&self.column_defs
 	}
 
-	/// The sort parameters for columns, in order of sort priority.
+	/// Returns a mutable reference to the column definitions.
+	#[must_use]
+	pub (in crate) fn column_defs_mut(&mut self) -> &mut ColumnDefs<'a> {
+		&mut self.column_defs
+	}
+
+	/// Returns a reference to the column orderings, in order of sort priority.
 	#[must_use]
 	pub (in crate) fn column_order(&self) -> &'a [ColumnOrd] {
 		self.col_order

@@ -5,11 +5,10 @@
 //! Table generator cell formatting module.
 ////////////////////////////////////////////////////////////////////////////////
 
-
 // Internal library imports.
 use crate::Cell;
 use crate::Collate;
-use crate::ColumnDef;
+use crate::ColumnDefs;
 use crate::Features;
 use crate::Format;
 use crate::FormatRow;
@@ -100,16 +99,22 @@ impl<'a, R, S> Split<'a, R, S>
 		self.inner.features_mut()
 	}
 
-	/// The row selection bounds.
+	/// Returns a reference to the row selection bounds.
 	#[must_use]
 	pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
 		self.inner.row_selection()
 	}
 
-	/// The column output specifications.
+	/// Returns a reference to the column definitions.
 	#[must_use]
-	pub (in crate) fn column_defs(&self) -> &'a [ColumnDef<'a>] {
+	pub (in crate) fn column_defs(&self) -> &ColumnDefs<'a> {
 		self.inner.column_defs()
+	}
+
+	/// Returns a mutable reference to the column definitions.
+	#[must_use]
+	pub (in crate) fn column_defs_mut(&mut self) -> &mut ColumnDefs<'a> {
+		self.inner.column_defs_mut()
 	}
 }
 

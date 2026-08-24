@@ -48,7 +48,7 @@ impl<'a, R> Aggregate<'a, R>
 	#[must_use]
 	pub (in crate) fn new<S, T>(
 		inner: T,
-		default_column_def: ColumnDef<'a>,
+		column_default_def: ColumnDef<'a>,
 		min_table_width: usize,
 		max_table_width: usize,
 		diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
@@ -59,6 +59,9 @@ impl<'a, R> Aggregate<'a, R>
 			R: Row
 	{
 		let mut inner = inner.into();
+		let extra_column_width = inner.features().extra_column_width;
+		*inner.column_defs_mut().column_default_mut() = column_default_def;
+		*inner.column_defs_mut().extra_column_width_mut() = extra_column_width;
 		let str_width_fn = inner.features().str_width_fn;
 		let width_contribution_fn = inner.features_mut()
 			.width_contribution_fn
@@ -68,7 +71,7 @@ impl<'a, R> Aggregate<'a, R>
 
 		// Build the header row.
 		let mut header_used = false;
-		let header_cells: Vec<&str> = inner.column_defs().iter()
+		let header_cells: Vec<&str> = inner.column_defs().columns().iter()
 			.map(|column_def| column_def.header)
 			.inspect(|c| header_used |= !c.is_empty())
 			.collect();
@@ -77,19 +80,15 @@ impl<'a, R> Aggregate<'a, R>
 			.map(TextRow::new);
 		// Build the footer row.
 		let mut footer_used = false;
-		let footer_cells: Vec<&str> = inner.column_defs().iter()
+		let footer_cells: Vec<&str> = inner.column_defs().columns().iter()
 			.map(|column_def| column_def.footer)
 			.inspect(|c| footer_used |= !c.is_empty())
 			.collect();
 		let mut footer_row = footer_used
 			.then_some(footer_cells)
 			.map(TextRow::new);
-
-		let extra_column_width = inner.features().extra_column_width;
-		let column_defs = ColumnDefs::new(
-			default_column_def,
-			inner.column_defs(),
-			extra_column_width);
+			
+		let column_defs = inner.column_defs().clone();
 
 		// Compute initial column widths from header/footer rows if available.
 		let mut col_widths: Vec<usize> = match str_width_fn {

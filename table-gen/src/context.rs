@@ -16,7 +16,7 @@ use crate::ColumnDef;
 #[derive(Debug, Clone, Copy)]
 pub struct RenderContext<'a> {
 	/// The default `ColumnDef` for the table.
-	pub default_column_def: &'a ColumnDef<'a>,
+	pub column_default_def: &'a ColumnDef<'a>,
 	/// The `ColumnDef`s, in column order.
 	pub column_defs: &'a [ColumnDef<'a>],
 	/// The column widths, in column order.
@@ -77,7 +77,7 @@ impl RenderContext<'_> {
 				.all(|column_def| column_def.header.is_empty())
 			&& self.column_count() <= self.column_defs.len()
 			|| ( self.column_count() > self.column_defs.len() 
-				&& self.default_column_def.header.is_empty())
+				&& self.column_default_def.header.is_empty())
 	}
 
 	/// Returns `true` if there are no footers to render.
@@ -89,7 +89,7 @@ impl RenderContext<'_> {
 				.all(|column_def| column_def.footer.is_empty())
 			&& self.column_count() <= self.column_defs.len()
 			|| ( self.column_count() > self.column_defs.len() 
-				&& self.default_column_def.footer.is_empty())
+				&& self.column_default_def.footer.is_empty())
 	}
 }
 
