@@ -420,7 +420,7 @@ impl Renderer for BoxGridRenderer {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use table_gen::ColumnDesc;
+	use table_gen::ColumnDef;
 	use table_gen::ColumnOrd;
 	use table_gen::HorzAlign;
 	use table_gen::Table;
@@ -484,20 +484,20 @@ mod test {
 			(-8000,),
 		];
 
-		let col_descs = vec![
-			ColumnDesc::new()
+		let column_defs = vec![
+			ColumnDef::new()
 				.with_header("Right")
 				.with_horz_align(HorzAlign::Right),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Left")
 				.with_horz_align(HorzAlign::Left),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Center")
 				.with_horz_align(HorzAlign::Center),
 		];
 
 		let mut table = Table::new_builder(data, BoxGridRenderer::new())
-			.with_column_descs(&col_descs)
+			.with_column_defs(&column_defs)
 			.with_column_selection(&[0, 0, 0])
 			.finish();
 
@@ -530,17 +530,17 @@ mod test {
 			(-8000,),
 		];
 
-		let col_descs = vec![
-			ColumnDesc::new()
+		let column_defs = vec![
+			ColumnDef::new()
 				.with_horz_align(HorzAlign::Right),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_horz_align(HorzAlign::Left),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_horz_align(HorzAlign::Center),
 		];
 
 		let mut table = Table::new_builder(data, BoxGridRenderer::new())
-			.with_column_descs(&col_descs)
+			.with_column_defs(&column_defs)
 			.with_column_selection(&[0, 0, 0])
 			.finish();
 
@@ -571,23 +571,23 @@ mod test {
 				5.0, "Here's another one. Note\nthe blank line between\nrows"),
 		];
 
-		let col_descs = vec![
-			ColumnDesc::new()
+		let column_defs = vec![
+			ColumnDef::new()
 				.with_header("Centered\nHeader")
 				.with_horz_align(HorzAlign::Center),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Left\nAligned")
 				.with_horz_align(HorzAlign::Left),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Right\nAligned")
 				.with_horz_align(HorzAlign::Right),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Left\nAligned")
 				.with_horz_align(HorzAlign::Left),
 		];
 
 		let mut table = Table::new_builder(data, BoxGridRenderer::new())
-			.with_column_descs(&col_descs)
+			.with_column_defs(&column_defs)
 			.finish();
 
 		let mut out: Vec<u8> = Vec::new();
@@ -620,17 +620,17 @@ mod test {
 				5.0, "Here's another one. Note\nthe blank line between\nrows"),
 		];
 
-		let col_descs = vec![
-			ColumnDesc::new()
+		let column_defs = vec![
+			ColumnDef::new()
 				.with_header("Centered\nHeader")
 				.with_horz_align(HorzAlign::Center),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Left\nAligned")
 				.with_horz_align(HorzAlign::Left),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Right\nAligned")
 				.with_horz_align(HorzAlign::Right),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Left\nAligned")
 				.with_horz_align(HorzAlign::Left),
 		];
@@ -646,7 +646,7 @@ mod test {
 					div_sep: LineShape::HeavyDash2.into(),
 					round_corners: true,
 				}))
-			.with_column_descs(&col_descs)
+			.with_column_defs(&column_defs)
 			.finish();
 
 		let mut out: Vec<u8> = Vec::new();

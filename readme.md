@@ -28,10 +28,10 @@ let res = table.render(&mut out);
 You will usually want to extend this pattern by providing additional configuration for the table output. These can be specified before calling `finish` on the builder:
 
 ```rust
-// We can provide metadata for each column. The `ColumnDesc`s are provided
+// We can provide metadata for each column. The `ColumnDef`s are provided
 // in order of the output index:
-let column_descs = vec![
-    ColumnDesc::new()
+let column_defs = vec![
+    ColumnDef::new()
         .with_header("Header")              // Header text for the column
         .with_footer("Footer")              // Footer text for the column
         .with_display_fmt(DisplayFmt::new() // Formatting for cell values
@@ -43,7 +43,7 @@ let column_descs = vec![
         .with_vert_align(VertAlign::Center) // Vertical alignment in cell
         .with_dynamic_width_quantile(0.9)   // Ignore wide outlier cells
         .with_dynamic_width_weight(2.0),    // Avoid shrinking this column
-    // ... other rows will use default formatting (`ColumnDesc::new()`).
+    // ... other rows will use default formatting (`ColumnDef::new()`).
 ];
 
 // We can provide a multicolumn sort specification:
@@ -59,8 +59,8 @@ let sort_columns = vec![
 // output requirements to the table driver.
 let mut table = Table::new_builder(data, &mut renderer)
     // We can specify the default column metadata:
-    .with_default_column_desc(ColumnDesc::new()) 
-    .with_column_descs(&column_descs)
+    .with_default_column_def(ColumnDef::new()) 
+    .with_column_defs(&column_defs)
     // We can render only a subset of columns, choose the order, and even
     // render columns multiple times:
     .with_column_selection(&[0, 2, 4, 2])

@@ -32,7 +32,7 @@ pub (in crate) struct Collate<'a, S> {
 	/// The table output rows.
 	row_select: (Bound<usize>, Bound<usize>),
 	/// The column output specifications.
-	col_descs: &'a [ColumnDesc<'a>],
+	column_defs: &'a [ColumnDef<'a>],
 	/// The sort parameters for columns, in order of sort priority.
 	col_order: &'a [ColumnOrd],
 	/// The supported rendering features.
@@ -62,7 +62,7 @@ impl<'a, R, S> Collate<'a, S>
 			inner,
 			col_select: &[],
 			row_select: (Bound::Included(0), Bound::Unbounded),
-			col_descs: &[],
+			column_defs: &[],
 			col_order: &[],
 			features: Features::default(),
 		}
@@ -99,12 +99,12 @@ impl<'a, R, S> Collate<'a, S>
 
 	/// Sets the column descriptors and returns the `Collate`.
 	#[must_use]
-	pub (in crate) fn with_column_descs(
+	pub (in crate) fn with_column_defs(
 		mut self,
-		col_descs: &'a [ColumnDesc<'a>])
+		column_defs: &'a [ColumnDef<'a>])
 		-> Self
 	{
-		self.col_descs = col_descs;
+		self.column_defs = column_defs;
 		self
 	}
 
@@ -137,8 +137,8 @@ impl<'a, R, S> Collate<'a, S>
 
 	/// The column output specifications.
 	#[must_use]
-	pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
-		self.col_descs
+	pub (in crate) fn column_defs(&self) -> &'a [ColumnDef<'a>] {
+		self.column_defs
 	}
 
 	/// The sort parameters for columns, in order of sort priority.
@@ -197,11 +197,11 @@ impl<R> Row for CollateRow<'_, R>
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// ColumnDesc
+// ColumnDef
 ////////////////////////////////////////////////////////////////////////////////
 /// Provides formatting and metadata for a table column.
 #[derive(Debug, Clone, Copy)]
-pub struct ColumnDesc<'a> {
+pub struct ColumnDef<'a> {
 	/// The column header text.
 	pub header: &'a str,
 	/// The column footer text.
@@ -223,14 +223,14 @@ pub struct ColumnDesc<'a> {
 	pub vert_align: VertAlign,
 }
 
-impl Default for ColumnDesc<'_> {
+impl Default for ColumnDef<'_> {
 	fn default() -> Self {
 		Self::new()
 	}
 }
 
-impl<'a> ColumnDesc<'a> {
-	/// Constructs a new `ColumnDesc` with a default value.
+impl<'a> ColumnDef<'a> {
+	/// Constructs a new `ColumnDef` with a default value.
 	#[must_use]
 	pub fn new() -> Self {
 		Self {
@@ -246,28 +246,28 @@ impl<'a> ColumnDesc<'a> {
 		}
 	}
 	
-	/// Sets the header text and returns the `ColumnDesc`.
+	/// Sets the header text and returns the `ColumnDef`.
 	#[must_use]
 	pub fn with_header(mut self, header: &'a str) -> Self {
 		self.header = header;
 		self
 	}
 	
-	/// Sets the footer text and returns the `ColumnDesc`.
+	/// Sets the footer text and returns the `ColumnDef`.
 	#[must_use]
 	pub fn with_footer(mut self, footer: &'a str) -> Self {
 		self.footer = footer;
 		self
 	}
 	
-	/// Sets the `DisplayFmt` and returns the `ColumnDesc`.
+	/// Sets the `DisplayFmt` and returns the `ColumnDef`.
 	#[must_use]
 	pub fn with_display_fmt(mut self, display_fmt: DisplayFmt) -> Self {
 		self.display_fmt = display_fmt;
 		self
 	}
 	
-	/// Sets the minimum and maximum column widths and returns the `ColumnDesc`.
+	/// Sets the minimum and maximum column widths and returns the `ColumnDef`.
 	#[must_use]
 	pub fn with_width(mut self, width: usize) -> Self {
 		self.min_width = width;
@@ -275,14 +275,14 @@ impl<'a> ColumnDesc<'a> {
 		self
 	}
 	
-	/// Sets the minimum column widths and returns the `ColumnDesc`.
+	/// Sets the minimum column widths and returns the `ColumnDef`.
 	#[must_use]
 	pub fn with_min_width(mut self, min_width: usize) -> Self {
 		self.min_width = min_width;
 		self
 	}
 	
-	/// Sets the maximum column widths and returns the `ColumnDesc`.
+	/// Sets the maximum column widths and returns the `ColumnDef`.
 	#[must_use]
 	pub fn with_max_width(mut self, max_width: usize) -> Self {
 		self.max_width = max_width;
@@ -290,7 +290,7 @@ impl<'a> ColumnDesc<'a> {
 	}
 
 	/// Sets the quantile of the widest cell values to ignore for computing
-	/// dynamic column widths and returns the `ColumnDesc`.
+	/// dynamic column widths and returns the `ColumnDef`.
 	///
 	/// I.e., a value of `0.9` means that approximately the longest 10% of
 	/// column values will be ignored for purposes of computing column width.
@@ -303,7 +303,7 @@ impl<'a> ColumnDesc<'a> {
 	}
 
 	/// Sets the relative weight of the column when computing dynamic column
-	/// widths and returns the `ColumnDesc`.
+	/// widths and returns the `ColumnDef`.
 	///
 	/// The default weight is 1.0. If columns need to have their width reduced,
 	/// columns with higher weight will have less width removed.
@@ -316,14 +316,14 @@ impl<'a> ColumnDesc<'a> {
 	}
 	
 	
-	/// Sets the horizontal text alignment and returns the `ColumnDesc`.
+	/// Sets the horizontal text alignment and returns the `ColumnDef`.
 	#[must_use]
 	pub fn with_horz_align(mut self, horz_align: HorzAlign) -> Self {
 		self.horz_align = horz_align;
 		self
 	}
 	
-	/// Sets the vertical text alignment and returns the `ColumnDesc`.
+	/// Sets the vertical text alignment and returns the `ColumnDef`.
 	#[must_use]
 	pub fn with_vert_align(mut self, vert_align: VertAlign) -> Self {
 		self.vert_align = vert_align;

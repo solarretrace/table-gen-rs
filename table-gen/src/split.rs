@@ -9,7 +9,7 @@
 // Internal library imports.
 use crate::Cell;
 use crate::Collate;
-use crate::ColumnDesc;
+use crate::ColumnDef;
 use crate::Features;
 use crate::Format;
 use crate::FormatRow;
@@ -108,8 +108,8 @@ impl<'a, R, S> Split<'a, R, S>
 
 	/// The column output specifications.
 	#[must_use]
-	pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
-		self.inner.column_descs()
+	pub (in crate) fn column_defs(&self) -> &'a [ColumnDef<'a>] {
+		self.inner.column_defs()
 	}
 }
 

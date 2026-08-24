@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Internal library imports.
-use crate::ColumnDesc;
+use crate::ColumnDef;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -15,10 +15,10 @@ use crate::ColumnDesc;
 /// Contextual information provided to `Renderer` method calls.
 #[derive(Debug, Clone, Copy)]
 pub struct RenderContext<'a> {
-	/// The default `ColumnDesc` for the table.
-	pub default_col_desc: &'a ColumnDesc<'a>,
-	/// The `ColumnDesc`s, in column order.
-	pub col_descs: &'a [ColumnDesc<'a>],
+	/// The default `ColumnDef` for the table.
+	pub default_column_def: &'a ColumnDef<'a>,
+	/// The `ColumnDef`s, in column order.
+	pub column_defs: &'a [ColumnDef<'a>],
 	/// The column widths, in column order.
 	pub col_widths: &'a [usize],
 	/// The number of rows in the table.
@@ -71,25 +71,25 @@ impl RenderContext<'_> {
 	/// Returns `true` if there are no headers to render.
 	#[must_use]
 	pub fn is_headerless(&self) -> bool {
-		self.col_descs
+		self.column_defs
 				.iter()
 				.take(self.column_count())
-				.all(|col_desc| col_desc.header.is_empty())
-			&& self.column_count() <= self.col_descs.len()
-			|| ( self.column_count() > self.col_descs.len() 
-				&& self.default_col_desc.header.is_empty())
+				.all(|column_def| column_def.header.is_empty())
+			&& self.column_count() <= self.column_defs.len()
+			|| ( self.column_count() > self.column_defs.len() 
+				&& self.default_column_def.header.is_empty())
 	}
 
 	/// Returns `true` if there are no footers to render.
 	#[must_use]
 	pub fn is_footerless(&self) -> bool {
-		self.col_descs
+		self.column_defs
 				.iter()
 				.take(self.column_count())
-				.all(|col_desc| col_desc.footer.is_empty())
-			&& self.column_count() <= self.col_descs.len()
-			|| ( self.column_count() > self.col_descs.len() 
-				&& self.default_col_desc.footer.is_empty())
+				.all(|column_def| column_def.footer.is_empty())
+			&& self.column_count() <= self.column_defs.len()
+			|| ( self.column_count() > self.column_defs.len() 
+				&& self.default_column_def.footer.is_empty())
 	}
 }
 
@@ -107,8 +107,8 @@ pub struct CellContext<'a> {
 	pub text_width: Option<usize>,
 	/// The width of the cell.
 	pub cell_width: usize,
-	/// The `ColumnDesc` associated with the cell's column.
-	pub desc: &'a ColumnDesc<'a>,
+	/// The `ColumnDef` associated with the cell's column.
+	pub desc: &'a ColumnDef<'a>,
 }
 
 impl CellContext<'_> {

@@ -9,7 +9,7 @@
 use crate::Cell;
 use crate::Collate;
 use crate::CollateRow;
-use crate::ColumnDesc;
+use crate::ColumnDef;
 use crate::ColumnOrd;
 use crate::Features;
 use crate::Row;
@@ -85,8 +85,8 @@ impl<'a, R, S> Format<'a, S>
 
 	/// The column output specifications.
 	#[must_use]
-	pub (in crate) fn column_descs(&self) -> &'a [ColumnDesc<'a>] {
-		self.inner.column_descs()
+	pub (in crate) fn column_defs(&self) -> &'a [ColumnDef<'a>] {
+		self.inner.column_defs()
 	}
 
 	/// The sort parameters for columns, in order of sort priority.
@@ -107,7 +107,7 @@ impl<'a, R, S> Iterator for Format<'a, S>
 			.next()
 			.map(|collate_row| FormatRow::new(
 				collate_row,
-				self.inner.column_descs(),
+				self.inner.column_defs(),
 				self.features().post_format_fn))
 	}
 }
@@ -122,7 +122,7 @@ pub (in crate) struct FormatRow<'a, R> {
 	/// The row to format.
 	inner: CollateRow<'a, R>,
 	/// The column output specifications,
-	col_descs: &'a [ColumnDesc<'a>],
+	column_defs: &'a [ColumnDef<'a>],
 	/// The cached cell texts.
 	cache: Vec<OnceCell<Box<str>>>,
 	/// Function to apply post-processing to formatted cell text.
@@ -145,18 +145,18 @@ impl<'a, R> FormatRow<'a, R>
 	where R: Row,
 {
 	/// Constructs a new `FormatRow` over the given `CollateRow` and
-	/// `ColumnDesc`s.
+	/// `ColumnDef`s.
 	#[must_use]
 	pub (in crate) fn new(
 		inner: CollateRow<'a, R>,
-		col_descs: &'a [ColumnDesc<'a>],
+		column_defs: &'a [ColumnDef<'a>],
 		post_format_fn: fn(String) -> String)
 		-> Self
 	{
 		let cache = vec![OnceCell::new(); inner.len()];
 		Self {
 			inner,
-			col_descs,
+			column_defs,
 			cache,
 			post_format_fn
 		}
@@ -167,7 +167,7 @@ impl<'a, R> FormatRow<'a, R>
 	pub (in crate) fn text(&self, col_idx: usize) -> &str {
 		self.cache[col_idx].get_or_init(|| match self.inner.cell(col_idx) {
 			Some(cell) => {
-				(self.post_format_fn)(self.col_descs
+				(self.post_format_fn)(self.column_defs
 						.get(col_idx)
 						.map_or_else(
 							DisplayFmt::default,

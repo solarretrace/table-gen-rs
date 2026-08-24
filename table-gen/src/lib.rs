@@ -33,7 +33,7 @@ pub (in crate) use split::SplitRow;
 pub (in crate) use split::TextRow;
 
 // Public exports.
-pub use collate::ColumnDesc;
+pub use collate::ColumnDef;
 pub use collate::HorzAlign;
 pub use collate::VertAlign;
 pub use context::CellContext;

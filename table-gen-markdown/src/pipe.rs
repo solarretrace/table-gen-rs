@@ -218,7 +218,7 @@ impl Renderer for MarkdownPipeRenderer {
 		let im = if header_pipes { pm } else { "+" }; // internal div marker
 		
 		for (col, col_width) in ctx.col_widths.iter().copied().enumerate() {
-			let cur_align = ctx.col_descs.get(col).map(|d| d.horz_align);
+			let cur_align = ctx.column_defs.get(col).map(|d| d.horz_align);
 			if col == 0 {
 				let r = if matches!(cur_align, Some(Right|Center)) {
 					am
@@ -231,7 +231,7 @@ impl Renderer for MarkdownPipeRenderer {
 
 			let (l, r) = match (
 				cur_align,
-				ctx.col_descs.get(col + 1).map(|d| d.horz_align))
+				ctx.column_defs.get(col + 1).map(|d| d.horz_align))
 			{
 				(Some(Right|Center), Some(Left|Center)) => (am, am),
 				(Some(Right|Center), _)                 => (am, dm),
@@ -284,7 +284,7 @@ impl Renderer for MarkdownPipeRenderer {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use table_gen::ColumnDesc;
+	use table_gen::ColumnDef;
 	use table_gen::ColumnOrd;
 	use table_gen::Table;
 
@@ -343,20 +343,20 @@ mod test {
 			(-8000,),
 		];
 
-		let col_descs = vec![
-			ColumnDesc::new()
+		let column_defs = vec![
+			ColumnDef::new()
 				.with_header("Right")
 				.with_horz_align(HorzAlign::Right),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Left")
 				.with_horz_align(HorzAlign::Left),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Center")
 				.with_horz_align(HorzAlign::Center),
 		];
 
 		let mut table = Table::new_builder(data, MarkdownPipeRenderer::new())
-			.with_column_descs(&col_descs)
+			.with_column_defs(&column_defs)
 			.with_column_selection(&[0, 0, 0])
 			.finish();
 
@@ -384,14 +384,14 @@ mod test {
 			(-8000,),
 		];
 
-		let col_descs = vec![
-			ColumnDesc::new()
+		let column_defs = vec![
+			ColumnDef::new()
 				.with_header("Right")
 				.with_horz_align(HorzAlign::Right),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Left")
 				.with_horz_align(HorzAlign::Left),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Center")
 				.with_horz_align(HorzAlign::Center),
 		];
@@ -399,7 +399,7 @@ mod test {
 		let mut table = Table::new_builder(data, MarkdownPipeRenderer::new()
 				.with_alignment_markers(false)
 				.with_header_div_pipes(false))
-			.with_column_descs(&col_descs)
+			.with_column_defs(&column_defs)
 			.with_column_selection(&[0, 0, 0])
 			.finish();
 
@@ -427,17 +427,17 @@ mod test {
 			(-8000,),
 		];
 
-		let col_descs = vec![
-			ColumnDesc::new()
+		let column_defs = vec![
+			ColumnDef::new()
 				.with_horz_align(HorzAlign::Right),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_horz_align(HorzAlign::Left),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_horz_align(HorzAlign::Center),
 		];
 
 		let mut table = Table::new_builder(data, MarkdownPipeRenderer::new())
-			.with_column_descs(&col_descs)
+			.with_column_defs(&column_defs)
 			.with_column_selection(&[0, 0, 0])
 			.finish();
 
@@ -465,23 +465,23 @@ mod test {
 				5.0, "Here's another one. Note\nthe blank line between\nrows"),
 		];
 
-		let col_descs = vec![
-			ColumnDesc::new()
+		let column_defs = vec![
+			ColumnDef::new()
 				.with_header("Centered\nHeader")
 				.with_horz_align(HorzAlign::Center),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Left\nAligned")
 				.with_horz_align(HorzAlign::Left),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Right\nAligned")
 				.with_horz_align(HorzAlign::Right),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Left\nAligned")
 				.with_horz_align(HorzAlign::Left),
 		];
 
 		let mut table = Table::new_builder(data, MarkdownPipeRenderer::new())
-			.with_column_descs(&col_descs)
+			.with_column_defs(&column_defs)
 			.finish();
 
 		let mut out: Vec<u8> = Vec::new();
@@ -507,14 +507,14 @@ mod test {
 			(-8000,),
 		];
 
-		let col_descs = vec![
-			ColumnDesc::new()
+		let column_defs = vec![
+			ColumnDef::new()
 				.with_header("Right")
 				.with_horz_align(HorzAlign::Right),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Left")
 				.with_horz_align(HorzAlign::Left),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Center")
 				.with_horz_align(HorzAlign::Center),
 		];
@@ -523,7 +523,7 @@ mod test {
 				.with_padded_trailing_column(false)
 				.with_alignment_markers(false)
 				.with_header_div_pipes(false))
-			.with_column_descs(&col_descs)
+			.with_column_defs(&column_defs)
 			.with_column_selection(&[0, 0, 0])
 			.finish();
 
@@ -551,18 +551,18 @@ mod test {
 			(-8000,),
 		];
 
-		let col_descs = vec![
-			ColumnDesc::new()
+		let column_defs = vec![
+			ColumnDef::new()
 				.with_horz_align(HorzAlign::Right),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_horz_align(HorzAlign::Left),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_horz_align(HorzAlign::Center),
 		];
 
 		let mut table = Table::new_builder(data, MarkdownPipeRenderer::new()
 				.with_padded_trailing_column(false))
-			.with_column_descs(&col_descs)
+			.with_column_defs(&column_defs)
 			.with_column_selection(&[0, 0, 0])
 			.finish();
 
@@ -590,24 +590,24 @@ mod test {
 				5.0, "Here's another one. Note\nthe blank line between\nrows"),
 		];
 
-		let col_descs = vec![
-			ColumnDesc::new()
+		let column_defs = vec![
+			ColumnDef::new()
 				.with_header("Centered\nHeader")
 				.with_horz_align(HorzAlign::Center),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Left\nAligned")
 				.with_horz_align(HorzAlign::Left),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Right\nAligned")
 				.with_horz_align(HorzAlign::Right),
-			ColumnDesc::new()
+			ColumnDef::new()
 				.with_header("Left\nAligned")
 				.with_horz_align(HorzAlign::Left),
 		];
 
 		let mut table = Table::new_builder(data, MarkdownPipeRenderer::new()
 				.with_padded_trailing_column(false))
-			.with_column_descs(&col_descs)
+			.with_column_defs(&column_defs)
 			.finish();
 
 		let mut out: Vec<u8> = Vec::new();

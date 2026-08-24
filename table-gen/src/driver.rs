@@ -12,7 +12,7 @@ use crate::Collate;
 use crate::Aggregate;
 use crate::TextRow;
 use crate::SplitRow;
-use crate::ColumnDesc;
+use crate::ColumnDef;
 use crate::ColumnOrd;
 use crate::RenderContext;
 use crate::CellContext;
@@ -32,8 +32,8 @@ pub struct TableBuilder<'a, S, T> {
 	inner: Collate<'a, S>,
 	/// The table renderer.
 	renderer: T,
-	/// The default `ColumnDesc`.
-	default_col_desc: ColumnDesc<'a>,
+	/// The default `ColumnDef`.
+	default_column_def: ColumnDef<'a>,
 	/// The minimum table width.
 	min_table_width: usize,
 	/// The maximum table width.
@@ -57,7 +57,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 		Self {
 			inner: Collate::new(source.into_iter()).with_features(features),
 			renderer,
-			default_col_desc: ColumnDesc::new(),
+			default_column_def: ColumnDef::new(),
 			min_table_width: 0,
 			max_table_width: usize::MAX,
 			diagnostic_sink_fn: Box::new(|_| {/* Do nothing. */})
@@ -83,18 +83,18 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 	/// Sets the column descriptors for each column and returns the
 	/// `TableBuilder`.
 	#[must_use]
-	pub fn with_column_descs(mut self, col_descs: &'a [ColumnDesc<'a>]) -> Self
+	pub fn with_column_defs(mut self, column_defs: &'a [ColumnDef<'a>]) -> Self
 	{
-		self.inner = self.inner.with_column_descs(col_descs);
+		self.inner = self.inner.with_column_defs(column_defs);
 		self
 	}
 
 	/// Sets the default column descriptor and returns the `TableBuilder`.
 	#[must_use]
-	pub fn with_default_col_desc(mut self, default_col_desc: ColumnDesc<'a>)
+	pub fn with_default_column_def(mut self, default_column_def: ColumnDef<'a>)
 		-> Self
 	{
-		self.default_col_desc = default_col_desc;
+		self.default_column_def = default_column_def;
 		self
 	}
 
@@ -137,7 +137,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 		Table::new(
 			self.inner,
 			self.renderer,
-			self.default_col_desc,
+			self.default_column_def,
 			self.diagnostic_sink_fn,
 			self.min_table_width,
 			self.max_table_width)
@@ -166,8 +166,8 @@ pub struct Table<'a, R, T> {
 	inner: Aggregate<'a, R>,
 	/// The table renderer.
 	renderer: T,
-	/// The default `ColumnDesc`.
-	default_col_desc: ColumnDesc<'a>,
+	/// The default `ColumnDef`.
+	default_column_def: ColumnDef<'a>,
 	/// The diagnostic sink function.
 	diagnostic_sink_fn: Box<dyn FnMut(Diagnostic) + 'static>,
 }
@@ -193,7 +193,7 @@ impl<'a, R, T> Table<'a, R, T>
 	pub (in crate) fn new<S>(
 		source: Collate<'a, S>,
 		renderer: T,
-		default_col_desc: ColumnDesc<'a>,
+		default_column_def: ColumnDef<'a>,
 		mut diagnostic_sink_fn: Box<dyn FnMut(Diagnostic) + 'static>,
 		min_table_width: usize,
 		max_table_width: usize) -> Self
@@ -201,14 +201,14 @@ impl<'a, R, T> Table<'a, R, T>
 	{
 		let inner = Aggregate::new(
 			source,
-			&default_col_desc,
+			&default_column_def,
 			min_table_width,
 			max_table_width,
 			&mut diagnostic_sink_fn);
 		Self {
 			inner,
 			renderer,
-			default_col_desc,
+			default_column_def,
 			diagnostic_sink_fn,
 		}
 	}
@@ -227,8 +227,8 @@ impl<'a, R, T> Table<'a, R, T>
 		let str_width_fn = self.inner.str_width_fn();
 		let rows = self.inner.rows();
 		let mut ctx = RenderContext {
-			default_col_desc: &self.default_col_desc,
-			col_descs: self.inner.column_descs(),
+			default_column_def: &self.default_column_def,
+			column_defs: self.inner.column_defs(),
 			col_widths: self.inner.col_widths(),
 			row_count: rows.len(),
 			row: None,
@@ -301,9 +301,9 @@ impl<'a, R, T> Table<'a, R, T>
 					renderer.write_header_cell_start(out, ctx)?;
 				}
 
-				let desc = ctx.col_descs
+				let desc = ctx.column_defs
 					.get(col_idx)
-					.unwrap_or(ctx.default_col_desc);
+					.unwrap_or(ctx.default_column_def);
 				let text = row.line_vert_aligned(
 					col_idx,
 					line_idx,
@@ -351,9 +351,9 @@ impl<'a, R, T> Table<'a, R, T>
 					renderer.write_data_cell_start(out, ctx)?;
 				}
 
-				let desc = ctx.col_descs
+				let desc = ctx.column_defs
 					.get(col_idx)
-					.unwrap_or(ctx.default_col_desc);
+					.unwrap_or(ctx.default_column_def);
 				let text = row.line_vert_aligned(
 					col_idx,
 					line_idx,
@@ -401,9 +401,9 @@ impl<'a, R, T> Table<'a, R, T>
 					renderer.write_footer_cell_start(out, ctx)?;
 				}
 
-				let desc = ctx.col_descs
+				let desc = ctx.column_defs
 					.get(col_idx)
-					.unwrap_or(ctx.default_col_desc);
+					.unwrap_or(ctx.default_column_def);
 				let text = row.line_vert_aligned(
 					col_idx,
 					line_idx,
