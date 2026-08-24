@@ -201,7 +201,7 @@ impl<'a, R, T> Table<'a, R, T>
 	{
 		let inner = Aggregate::new(
 			source,
-			&default_column_def,
+			default_column_def.clone(),
 			min_table_width,
 			max_table_width,
 			&mut diagnostic_sink_fn);

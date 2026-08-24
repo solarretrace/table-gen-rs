@@ -7,6 +7,7 @@
 
 // Internal library imports.
 use crate::ColumnDef;
+use crate::ColumnDefs;
 use crate::Diagnostic;
 use crate::Row;
 use crate::Split;
@@ -47,7 +48,7 @@ impl<'a, R> Aggregate<'a, R>
 	#[must_use]
 	pub (in crate) fn new<S, T>(
 		inner: T,
-		default_column_def: &ColumnDef<'_>,
+		default_column_def: ColumnDef<'a>,
 		min_table_width: usize,
 		max_table_width: usize,
 		diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
@@ -59,17 +60,15 @@ impl<'a, R> Aggregate<'a, R>
 	{
 		let mut inner = inner.into();
 		let str_width_fn = inner.features().str_width_fn;
-		let extra_column_width = inner.features().extra_column_width;
 		let width_contribution_fn = inner.features_mut()
 			.width_contribution_fn
 			.take()
 			.unwrap_or_else(|| Box::new(|_| 0));
 		let row_select = *inner.row_selection();
-		let column_defs = inner.column_defs();
 
 		// Build the header row.
 		let mut header_used = false;
-		let header_cells: Vec<&str> = column_defs.iter()
+		let header_cells: Vec<&str> = inner.column_defs().iter()
 			.map(|column_def| column_def.header)
 			.inspect(|c| header_used |= !c.is_empty())
 			.collect();
@@ -78,13 +77,19 @@ impl<'a, R> Aggregate<'a, R>
 			.map(TextRow::new);
 		// Build the footer row.
 		let mut footer_used = false;
-		let footer_cells: Vec<&str> = column_defs.iter()
+		let footer_cells: Vec<&str> = inner.column_defs().iter()
 			.map(|column_def| column_def.footer)
 			.inspect(|c| footer_used |= !c.is_empty())
 			.collect();
 		let mut footer_row = footer_used
 			.then_some(footer_cells)
 			.map(TextRow::new);
+
+		let extra_column_width = inner.features().extra_column_width;
+		let column_defs = ColumnDefs::new(
+			default_column_def,
+			inner.column_defs(),
+			extra_column_width);
 
 		// Compute initial column widths from header/footer rows if available.
 		let mut col_widths: Vec<usize> = match str_width_fn {
@@ -95,11 +100,11 @@ impl<'a, R> Aggregate<'a, R>
 						h.lines(idx)
 							.map(str_width)
 							.max()
-							.unwrap_or(column_defs[idx].min_width),
+							.unwrap_or(column_defs.min_width(idx)),
 						f.lines(idx)
 							.map(str_width)
 							.max()
-							.unwrap_or(column_defs[idx].min_width)))
+							.unwrap_or(column_defs.min_width(idx))))
 					.collect(),
 
 				(Some(r), None)    |
@@ -108,11 +113,11 @@ impl<'a, R> Aggregate<'a, R>
 						.lines(idx)
 						.map(str_width)
 						.max()
-						.unwrap_or(column_defs[idx].min_width))
+						.unwrap_or(column_defs.min_width(idx)))
 					.collect(),
 
 				_ => (0..column_defs.len())
-					.map(|idx| column_defs[idx].min_width)
+					.map(|idx| column_defs.min_width(idx))
 					.collect(),
 			},
 			None => Vec::new(),
@@ -121,9 +126,8 @@ impl<'a, R> Aggregate<'a, R>
 		// Prepare quantile estimators observing the current widths.
 		let mut col_width_quantile_estimates = col_widths.iter().enumerate()
 			.map(|(idx, w)| {
-				let column_def = column_defs.get(idx).unwrap_or(default_column_def);
 				let mut qe = QuantileEstimator::<10>::new(
-					column_def.dynamic_width_quantile);
+					column_defs.dynamic_width_quantile(idx));
 				qe.observe(f64::try_from(u32::try_from(*w)
 					.unwrap_or(u32::MAX))
 						.unwrap());
@@ -145,11 +149,6 @@ impl<'a, R> Aggregate<'a, R>
 				// Expand the column widths if needed.
 				if let Some(str_width) = str_width_fn {
 					for idx in 0..row.len() {
-						// Get the ColumnDef for this index.
-						let column_def = column_defs
-							.get(idx)
-							.unwrap_or(default_column_def);
-
 						// Expand widths arrays if past the end of the 
 						// header/footer.
 						if idx >= col_widths.len() {
@@ -157,13 +156,13 @@ impl<'a, R> Aggregate<'a, R>
 						}
 						if idx >= col_width_quantile_estimates.len() {
 							col_width_quantile_estimates
-								.push(QuantileEstimator::<10>::new(column_def
-									.dynamic_width_quantile));
+								.push(QuantileEstimator::<10>::new(column_defs
+									.dynamic_width_quantile(idx)));
 						}
 
-						if column_def.is_fixed_width() {
+						if column_defs.is_fixed_width(idx) {
 							// The col width is fixed, so set it.
-							col_widths[idx] = column_def.max_width;
+							col_widths[idx] = column_defs.max_width(idx);
 							continue;
 						} 
 
@@ -182,13 +181,13 @@ impl<'a, R> Aggregate<'a, R>
 						// The cell width is at least as wide as the
 						// min_width.
 						let cell_width = std::cmp::max(
-							column_def.min_width,
+							column_defs.min_width(idx),
 							cell_width);
 						// If the cell widens the current width, do so, but
 						// do not exceed the maximum allowed.
 						col_widths[idx] = std::cmp::min(
 							std::cmp::max(cell_width, col_widths[idx]),
-							column_def.max_width);
+							column_defs.max_width(idx));
 					}
 				}
 
@@ -221,8 +220,7 @@ impl<'a, R> Aggregate<'a, R>
 			.collect();
 		Self::distribute_column_widths(
 			&mut col_widths,
-			column_defs,
-			default_column_def,
+			&column_defs,
 			&quant_widths,
 			min_table_width,
 			max_table_width,
@@ -231,7 +229,7 @@ impl<'a, R> Aggregate<'a, R>
 
 		Self {
 			rows,
-			column_defs,
+			column_defs: column_defs.into_parts().1,
 			str_width_fn,
 			col_widths,
 			header_row,
@@ -279,8 +277,7 @@ impl<'a, R> Aggregate<'a, R>
 	/// Distributes column widths according to table max and balancing rules.
 	fn distribute_column_widths(
 		col_widths: &mut [usize],
-		column_defs: &[ColumnDef<'_>],
-		default_column_def: &ColumnDef<'_>,
+		column_defs: &ColumnDefs<'_>,
 		quant_widths: &[usize],
 		min_table_width: usize,
 		max_table_width: usize,
@@ -296,21 +293,19 @@ impl<'a, R> Aggregate<'a, R>
 		// Compute the absolute column weights.
 		let weight_total: f64 = (0..col_widths.len())
 			.map(|idx| {
-				let column_def = column_defs.get(idx).unwrap_or(default_column_def);
-				if column_def.is_fixed_width() {
+				if column_defs.is_fixed_width(idx) {
 					0.0
 				} else {
-					column_def.dynamic_width_weight
+					column_defs.dynamic_width_weight(idx)
 				}
 			})
 			.sum();
 		let abs_weights: Vec<f64> = (0..col_widths.len())
 			.map(|idx| {
-				let column_def = column_defs.get(idx).unwrap_or(default_column_def);
-				if column_def.is_fixed_width() {
+				if column_defs.is_fixed_width(idx) {
 					0.0
 				} else {
-					column_def.dynamic_width_weight / weight_total
+					column_defs.dynamic_width_weight(idx) / weight_total
 				}
 			})
 			.collect();
@@ -333,7 +328,7 @@ impl<'a, R> Aggregate<'a, R>
 			overflow -= distribute_by_weight(
 				col_widths,
 				&abs_weights[..],
-				|idx| column_defs.get(idx).unwrap_or(default_column_def).min_width,
+				|idx| column_defs.min_width(idx),
 				overflow);
 		}
 		if overflow == 0 { return; }
@@ -343,16 +338,12 @@ impl<'a, R> Aggregate<'a, R>
 
 		// Compute how much total min space we must consume.
 		let total_min: usize = col_widths.iter().enumerate()
-			.map(|(idx, w)| {
-				let column_def = column_defs.get(idx).unwrap_or(default_column_def);
-				w.saturating_sub(column_def.min_width)
-			})
+			.map(|(idx, w)| w.saturating_sub(column_defs.min_width(idx)))
 			.sum();
 		if overflow >= total_min {
 			// Do full min reduction, since we must consume it all.
 			for (idx, col_width) in col_widths.iter_mut().enumerate() {
-				let column_def = column_defs.get(idx).unwrap_or(default_column_def);
-				*col_width = column_def.min_width
+				*col_width = column_defs.min_width(idx)
 			}
 			overflow -= total_min;
 		} else {
@@ -360,7 +351,7 @@ impl<'a, R> Aggregate<'a, R>
 			overflow -= distribute_by_weight(
 				col_widths,
 				&abs_weights[..],
-				|idx| column_defs.get(idx).unwrap_or(default_column_def).min_width,
+				|idx| column_defs.min_width(idx),
 				overflow);
 		}
 		if overflow == 0 { return; }

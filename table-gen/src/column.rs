@@ -185,19 +185,17 @@ pub enum VertAlign {
 ////////////////////////////////////////////////////////////////////////////////
 // ColumnDefs
 ////////////////////////////////////////////////////////////////////////////////
-pub (in crate) struct ColumnDefs<'a, 'b> {
-    default_column_def: &'a ColumnDef<'b>,
-    column_defs: &'a [ColumnDef<'b>],
+pub (in crate) struct ColumnDefs<'a> {
+    default_column_def: ColumnDef<'a>,
+    column_defs: &'a [ColumnDef<'a>],
     extra_column_width: usize,
 }
 
-impl<'a, 'b> ColumnDefs<'a, 'b> 
-    where 'b: 'a
-{
+impl<'a> ColumnDefs<'a>  {
     #[must_use]
     pub (in crate) fn new(
-        default_column_def: &'a ColumnDef<'b>,
-        column_defs: &'a [ColumnDef<'b>],
+        default_column_def: ColumnDef<'a>,
+        column_defs: &'a [ColumnDef<'a>],
         extra_column_width: usize)
         -> Self
     {
@@ -210,7 +208,7 @@ impl<'a, 'b> ColumnDefs<'a, 'b>
 
     #[must_use]
     pub (in crate) fn into_parts(self)
-        -> (&'a ColumnDef<'b>, &'a [ColumnDef<'b>], usize)
+        -> (ColumnDef<'a>, &'a [ColumnDef<'a>], usize)
     {
         (
             self.default_column_def,
@@ -219,21 +217,27 @@ impl<'a, 'b> ColumnDefs<'a, 'b>
         )
     }
 
+    /// The number of non-default `ColumnDef`s defined.
+    #[must_use]
+    pub (in crate) fn len(&self) -> usize {
+        self.column_defs.len()
+    }
+
     /// The column header text.
     #[must_use]
-    pub (in crate) fn header(&self, idx: usize) -> &'b str {
+    pub (in crate) fn header(&self, idx: usize) -> &'a str {
         self.column_defs
             .get(idx)
-            .unwrap_or(self.default_column_def)
+            .unwrap_or(&self.default_column_def)
             .header
     }
 
     /// The column footer text.
     #[must_use]
-    pub (in crate) fn footer(&self, idx: usize) -> &'b str {
+    pub (in crate) fn footer(&self, idx: usize) -> &'a str {
         self.column_defs
             .get(idx)
-            .unwrap_or(self.default_column_def)
+            .unwrap_or(&self.default_column_def)
             .footer
     }
 
@@ -242,7 +246,7 @@ impl<'a, 'b> ColumnDefs<'a, 'b>
     pub (in crate) fn display_fmt(&self, idx: usize) -> DisplayFmt {
         self.column_defs
             .get(idx)
-            .unwrap_or(self.default_column_def)
+            .unwrap_or(&self.default_column_def)
             .display_fmt
     }
 
@@ -251,7 +255,7 @@ impl<'a, 'b> ColumnDefs<'a, 'b>
     pub (in crate) fn min_width(&self, idx: usize) -> usize {
         let w = self.column_defs
             .get(idx)
-            .unwrap_or(self.default_column_def)
+            .unwrap_or(&self.default_column_def)
             .min_width;
         self.extra_column_width.saturating_add(w)
     }
@@ -261,7 +265,7 @@ impl<'a, 'b> ColumnDefs<'a, 'b>
     pub (in crate) fn max_width(&self, idx: usize) -> usize {
         let w = self.column_defs
             .get(idx)
-            .unwrap_or(self.default_column_def)
+            .unwrap_or(&self.default_column_def)
             .max_width;
 
         self.extra_column_width.saturating_add(w)
@@ -273,7 +277,7 @@ impl<'a, 'b> ColumnDefs<'a, 'b>
     pub (in crate) fn dynamic_width_quantile(&self, idx: usize) -> f64 {
         self.column_defs
             .get(idx)
-            .unwrap_or(self.default_column_def)
+            .unwrap_or(&self.default_column_def)
             .dynamic_width_quantile
     }
 
@@ -282,7 +286,7 @@ impl<'a, 'b> ColumnDefs<'a, 'b>
     pub (in crate) fn dynamic_width_weight(&self, idx: usize) -> f64 {
         self.column_defs
             .get(idx)
-            .unwrap_or(self.default_column_def)
+            .unwrap_or(&self.default_column_def)
             .dynamic_width_weight
     }
 
@@ -291,7 +295,7 @@ impl<'a, 'b> ColumnDefs<'a, 'b>
     pub (in crate) fn horz_align(&self, idx: usize) -> HorzAlign {
         self.column_defs
             .get(idx)
-            .unwrap_or(self.default_column_def)
+            .unwrap_or(&self.default_column_def)
             .horz_align
     }
 
@@ -300,7 +304,7 @@ impl<'a, 'b> ColumnDefs<'a, 'b>
     pub (in crate) fn vert_align(&self, idx: usize) -> VertAlign {
         self.column_defs
             .get(idx)
-            .unwrap_or(self.default_column_def)
+            .unwrap_or(&self.default_column_def)
             .vert_align
     }
 
@@ -309,7 +313,7 @@ impl<'a, 'b> ColumnDefs<'a, 'b>
     pub (in crate) fn is_fixed_width(&self, idx: usize) -> bool {
         self.column_defs
             .get(idx)
-            .unwrap_or(self.default_column_def)
+            .unwrap_or(&self.default_column_def)
             .is_fixed_width()
     }
 
@@ -321,7 +325,7 @@ impl<'a, 'b> ColumnDefs<'a, 'b>
     {
         self.column_defs
             .get(idx)
-            .unwrap_or(self.default_column_def)
+            .unwrap_or(&self.default_column_def)
             .clamp_to_valid_width(value)
     }
 }
