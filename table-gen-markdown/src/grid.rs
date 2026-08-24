@@ -22,8 +22,6 @@ use table_gen::Renderer;
 pub struct MarkdownGridRenderer {
 	/// The amount of space to allocate between columns.
 	column_padding: u8,
-	/// The amount of extra space to allocate within columns.
-	extra_width: u8,
 }
 
 impl Default for MarkdownGridRenderer {
@@ -38,7 +36,6 @@ impl MarkdownGridRenderer {
 	pub fn new() -> Self {
 		Self {
 			column_padding: 0,
-			extra_width: 0,
 		}
 	}
 
@@ -46,13 +43,6 @@ impl MarkdownGridRenderer {
 	#[must_use]
 	pub fn with_column_padding(mut self, column_padding: u8) -> Self {
 		self.column_padding = column_padding;
-		self
-	}
-
-	/// Sets the extra column width and returns the `MarkdownGridRenderer`.
-	#[must_use]
-	pub fn with_extra_width(mut self, extra_width: u8) -> Self {
-		self.extra_width = extra_width;
 		self
 	}
 
@@ -64,7 +54,6 @@ impl MarkdownGridRenderer {
 		self.write_column_sep(out, HorzAlign::Left, "+", line)?;
 		for (col, col_width) in ctx.col_widths.iter().copied().enumerate() {
 			for _ in 0..col_width { write!(out, "{}", line)?; }
-			for _ in 0..self.extra_width { write!(out, "{}", line)?; }
 			if col + 1 == ctx.column_count() { break; }
 			self.write_column_sep(out, HorzAlign::Center, "+", line)?;
 		}
@@ -117,8 +106,7 @@ impl Renderer for MarkdownGridRenderer {
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let mut pad = cell.padding();
-		pad += self.extra_width as usize;
+		let pad = cell.padding();
 		let (l_pad, r_pad) = match cell.desc.horz_align {
 			HorzAlign::Left   => (0,     pad),
 			HorzAlign::Center => (pad/2, pad.div_ceil(2)),

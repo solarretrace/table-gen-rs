@@ -48,7 +48,8 @@ impl<'a, R> Aggregate<'a, R>
 	pub (in crate) fn new<S, T>(
 		inner: T,
 		default_col_desc: &ColumnDesc<'_>,
-		max_table_width: Option<usize>,
+		min_table_width: usize,
+		max_table_width: usize,
 		diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
 		-> Self
 		where
@@ -56,8 +57,13 @@ impl<'a, R> Aggregate<'a, R>
 			S: Iterator<Item=R>,
 			R: Row
 	{
-		let inner = inner.into();
+		let mut inner = inner.into();
 		let str_width_fn = inner.features().str_width_fn;
+		let extra_column_width = inner.features().extra_column_width;
+		let width_contribution_fn = inner.features_mut()
+			.width_contribution_fn
+			.take()
+			.unwrap_or_else(|| Box::new(|_| 0));
 		let row_select = *inner.row_selection();
 		let col_descs = inner.column_descs();
 
@@ -190,11 +196,25 @@ impl<'a, R> Aggregate<'a, R>
 			}
 		}
 		
+		// Ensure header and footer rows have enough columns to span the table.
 		header_row = header_row.map(|r| r.with_len(max_row_len));
 		footer_row = footer_row.map(|r| r.with_len(max_row_len));
 
+		// Add extra column width.
+		for w in col_widths.iter_mut() { *w += extra_column_width; }
+
+		// Adjust table constraints for the renderer padding, which cannot be
+		// allocated away.
+		let r_width = (width_contribution_fn)(max_row_len);
+		// if r_width > min_table_width {}
+		// if r_width > max_table_width {}
+		let min_table_width = min_table_width.saturating_sub(r_width);
+		let max_table_width = max_table_width.saturating_sub(r_width);
+
+
 		// Compute final column width distribution from constraints and
 		// estimates.
+		println!("natural {:?}", col_widths);
 		let quant_widths: Vec<usize> = col_width_quantile_estimates
 			.into_iter()
 			.map(|e| e.estimate().round() as usize )
@@ -204,8 +224,10 @@ impl<'a, R> Aggregate<'a, R>
 			col_descs,
 			default_col_desc,
 			&quant_widths,
+			min_table_width,
 			max_table_width,
 			diagnostic_sink_fn);
+		println!("distributed {:?}", col_widths);
 
 		Self {
 			rows,
@@ -260,21 +282,13 @@ impl<'a, R> Aggregate<'a, R>
 		col_descs: &[ColumnDesc<'_>],
 		default_col_desc: &ColumnDesc<'_>,
 		quant_widths: &[usize],
-		max_table_width: Option<usize>,
+		min_table_width: usize,
+		max_table_width: usize,
 		diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
 	{
-		let Some(max_width) = max_table_width else {
-			// Reduce column widths to quantile widths if possible.
-			for (idx, w) in col_widths.iter_mut().enumerate() {
-				let col_desc = col_descs.get(idx).unwrap_or(default_col_desc);
-				*w = col_desc.clamp_to_valid_width(quant_widths[idx]);
-			}
-			return;
-		};
-
 		// Get the total amount of space to reduce by.
 		let total: usize = col_widths.iter().sum();
-		let mut overflow = total.saturating_sub(max_width);
+		let mut overflow = total.saturating_sub(max_table_width);
 
 		// Table has not overflowed the max, no need to do anything.
 		if overflow == 0 { return; }
@@ -323,6 +337,7 @@ impl<'a, R> Aggregate<'a, R>
 				overflow);
 		}
 		if overflow == 0 { return; }
+		println!("quant {:?}", col_widths);
 
 		// 2. We reduce the column widths to their min widths.
 
@@ -349,6 +364,7 @@ impl<'a, R> Aggregate<'a, R>
 				overflow);
 		}
 		if overflow == 0 { return; }
+		println!("min {:?}", col_widths);
 
 		(diagnostic_sink_fn)(Diagnostic::TableWidthConstraintUnsatisfied);
 	}
@@ -370,6 +386,7 @@ fn distribute_by_weight<F>(
 	let mut total_allocated = 0;
 	let mut clamped = HashSet::new();
 	while allocate > 0 {
+		println!("allocate {:?}, clamped {:?}, widths {:?}", allocate, clamped, widths);
 		for (idx, width) in widths.iter_mut().enumerate() {
 			if clamped.contains(&idx) { continue; }
 			let fair_amt: f64 = weights[idx] * allocate as f64;
@@ -381,6 +398,7 @@ fn distribute_by_weight<F>(
 			total_allocated += diff;
 			if diff == 0 { let _ = clamped.insert(idx); }
 		}
+		if clamped.len() == widths.len() { break; }
 	}
 	total_allocated
 }

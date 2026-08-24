@@ -88,10 +88,16 @@ impl<'a, R, S> Split<'a, R, S>
 		}
 	}
 
-	/// Returns the supported features for the renderer.
+	/// Returns a reference to the supported features for the renderer.
 	#[must_use]
 	pub (in crate) fn features(&self) -> &Features {
 		self.inner.features()
+	}
+
+	/// Returns a mutable reference to the supported features for the renderer.
+	#[must_use]
+	pub (in crate) fn features_mut(&mut self) -> &mut Features {
+		self.inner.features_mut()
 	}
 
 	/// The row selection bounds.

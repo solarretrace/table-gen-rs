@@ -26,6 +26,8 @@ use std::vec::IntoIter;
 // Sort
 ////////////////////////////////////////////////////////////////////////////////
 /// Table cell column sorter.
+#[allow(missing_copy_implementations)]
+#[allow(missing_debug_implementations)]
 pub (in crate) struct Sort<'a, R, S> {
 	/// The table data source.
 	inner: Format<'a, S>,
@@ -79,10 +81,16 @@ impl<'a, R, S> Sort<'a, R, S>
 		}
 	}
 
-	/// Returns the supported features for the renderer.
+	/// Returns a reference to the supported features for the renderer.
 	#[must_use]
 	pub (in crate) fn features(&self) -> &Features {
 		self.inner.features()
+	}
+
+	/// Returns a mutable reference to the supported features for the renderer.
+	#[must_use]
+	pub (in crate) fn features_mut(&mut self) -> &mut Features {
+		self.inner.features_mut()
 	}
 	
 	/// The row selection bounds.

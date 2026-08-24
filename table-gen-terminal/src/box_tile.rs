@@ -7,18 +7,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Internal library imports.
-use crate::LineStyle;
 use crate::LineShape;
+use crate::LineStyle;
 use crate::Style;
 
 // Workspace library imports.
 use table_gen::CellContext;
 use table_gen::Features;
-use table_gen::HorzAlign;
 use table_gen::RenderContext;
 use table_gen::Renderer;
-use table_gen::util::TruncateState;
-use table_gen::util::unicode_grapheme_aware_truncation;
+use table_gen::util::write_cell_formatted;
 
 // Standard library imports.
 use std::fmt::Display;
@@ -125,7 +123,7 @@ pub struct BoxTileRenderer {
     /// The amount of space to allocate between columns.
     column_padding: u8,
     /// The amount of extra space to allocate within columns.
-    extra_width: u8,
+    extra_column_width: u8,
     /// The `BoxTileStyle` to render with.
     style: BoxTileStyle,
 }
@@ -142,7 +140,7 @@ impl BoxTileRenderer {
     pub fn new() -> Self {
         Self {
             column_padding: 0,
-            extra_width: 0,
+            extra_column_width: 0,
             style: BoxTileStyle::new(),
         }
     }
@@ -154,10 +152,10 @@ impl BoxTileRenderer {
         self
     }
 
-    /// Sets the extra column width and returns the `BoxTileRenderer`.
+    /// Sets the extra column width and returns the `MarkdownGridRenderer`.
     #[must_use]
-    pub fn with_extra_width(mut self, extra_width: u8) -> Self {
-        self.extra_width = extra_width;
+    pub fn with_extra_column_width(mut self, extra_column_width: u8) -> Self {
+        self.extra_column_width = extra_column_width;
         self
     }
 
@@ -189,7 +187,6 @@ impl BoxTileRenderer {
         for (col, col_width) in ctx.col_widths.iter().copied().enumerate() {
             for _ in 0..col_width { write!(out, "{}", horz)?; }
             for _ in 0..pad { write!(out, "{}", horz)?; }
-            for _ in 0..self.extra_width { write!(out, "{}", horz)?; }
             write!(out, "{}", right)?;
             if col + 1 == ctx.column_count() { break; }
             write!(out, "{}", left)?;
@@ -225,7 +222,33 @@ impl BoxTileRenderer {
 
 impl Renderer for BoxTileRenderer {
     fn features(&self) -> Features {
+        let padding: usize = self.column_padding.into();
         Features::default()
+            .with_extra_column_width(self.extra_column_width.into())
+            .with_width_contribution_fn(Box::new(move |col_count| {
+                col_count * padding
+            }))
+    }
+
+    fn write_data_cell_line<W>(
+        &mut self,
+        out: &mut W,
+        _ctx: &RenderContext<'_>,
+        cell: &CellContext<'_>)
+        -> std::io::Result<()>
+        where W: std::io::Write
+    {
+        let Some(text_width) = cell.text_width else {
+            return write!(out, "{}", cell.text);
+        };
+        write_cell_formatted(
+            out,
+            cell.text,
+            text_width,
+            cell.cell_width,
+            cell.desc.horz_align,
+            "…",
+            self.column_padding.into())
     }
 
     fn write_header_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
@@ -407,6 +430,7 @@ mod test {
     use super::*;
     use table_gen::ColumnDesc;
     use table_gen::ColumnOrd;
+    use table_gen::HorzAlign;
     use table_gen::Table;
 
     #[test]

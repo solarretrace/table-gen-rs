@@ -34,8 +34,10 @@ pub struct TableBuilder<'a, S, T> {
 	renderer: T,
 	/// The default `ColumnDesc`.
 	default_col_desc: ColumnDesc<'a>,
+	/// The minimum table width.
+	min_table_width: usize,
 	/// The maximum table width.
-	max_table_width: Option<usize>,
+	max_table_width: usize,
 	/// The diagnostic sink function.
 	diagnostic_sink_fn: Box<dyn FnMut(Diagnostic) + 'static>,
 }
@@ -51,12 +53,13 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 	pub fn new<I>(source: I, renderer: T) -> Self
 		where I: IntoIterator<Item=R, IntoIter=S>
 	{
+		let features = renderer.features();
 		Self {
-			inner: Collate::new(source.into_iter())
-				.with_features(renderer.features()),
+			inner: Collate::new(source.into_iter()).with_features(features),
 			renderer,
 			default_col_desc: ColumnDesc::new(),
-			max_table_width: None,
+			min_table_width: 0,
+			max_table_width: usize::MAX,
 			diagnostic_sink_fn: Box::new(|_| {/* Do nothing. */})
 		}
 	}
@@ -102,12 +105,17 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 		self
 	}
 
+	/// Sets the minimum table width and returns the `TableBuilder`.
+	#[must_use]
+	pub fn with_min_table_width(mut self, min_table_width: usize) -> Self {
+		self.min_table_width = min_table_width;
+		self
+	}
+
 	/// Sets the maximum table width and returns the `TableBuilder`.
 	#[must_use]
-	pub fn with_max_table_width<O>(mut self, max_table_width: O) -> Self 
-		where O: Into<Option<usize>>
-	{
-		self.max_table_width = max_table_width.into();
+	pub fn with_max_table_width(mut self, max_table_width: usize) -> Self {
+		self.max_table_width = max_table_width;
 		self
 	}
 
@@ -124,11 +132,14 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 	/// rendering.
 	#[must_use]
 	pub fn finish(self) -> Table<'a, R, T> {
+		assert!(self.min_table_width <= self.max_table_width,
+			"invalid table width constraints: max < min");
 		Table::new(
 			self.inner,
 			self.renderer,
 			self.default_col_desc,
 			self.diagnostic_sink_fn,
+			self.min_table_width,
 			self.max_table_width)
 	}
 }
@@ -184,12 +195,14 @@ impl<'a, R, T> Table<'a, R, T>
 		renderer: T,
 		default_col_desc: ColumnDesc<'a>,
 		mut diagnostic_sink_fn: Box<dyn FnMut(Diagnostic) + 'static>,
-		max_table_width: Option<usize>) -> Self
+		min_table_width: usize,
+		max_table_width: usize) -> Self
 		where S: Iterator<Item=R>
 	{
 		let inner = Aggregate::new(
 			source,
 			&default_col_desc,
+			min_table_width,
 			max_table_width,
 			&mut diagnostic_sink_fn);
 		Self {

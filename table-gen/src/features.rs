@@ -15,7 +15,7 @@ use crate::util::unicode_display_width;
 /// `Renderer` feature settings. Provides customized behavior for the table
 /// renderer driver to support renderer-specific requirements.
 #[allow(missing_copy_implementations)]
-#[derive(Debug, Clone)]
+#[allow(missing_debug_implementations)]
 pub struct Features {
     /// Function to use for calculating column widths. A `None` value means
     /// column widths should not be calculated
@@ -23,6 +23,13 @@ pub struct Features {
 
     /// Function to apply post-processing to formatted cell text.
     pub post_format_fn: fn(String) -> String,
+
+    /// Function for computing the table width contribution of the renderer. It
+    /// will be provided the number of columns being rendered.
+    pub width_contribution_fn: Option<Box<dyn Fn(usize) -> usize>>,
+
+    /// Extra width to pad all columns.
+    pub extra_column_width: usize,
 }
 
 impl Default for Features {
@@ -38,6 +45,9 @@ impl Features {
         Self {
             str_width_fn: Some(unicode_display_width),
             post_format_fn: std::convert::identity,
+            width_contribution_fn: Some(
+                Box::new(Self::interspersed_space_width)),
+            extra_column_width: 0,
         }
     }
 
@@ -71,6 +81,27 @@ impl Features {
         self
     }
 
+    /// Sets the function to use for computing the irreducable portion of the
+    /// table width. This should match to total all border widths across the
+    /// provided number of rows.
+    #[must_use]
+    pub fn with_width_contribution_fn(
+        mut self,
+        width_contribution_fn: Box<dyn Fn(usize) -> usize>)
+        -> Self
+    {
+        self.width_contribution_fn = Some(width_contribution_fn);
+        self
+    }
+
+    /// Sets the extra column width for each table column.
+    #[must_use]
+    pub fn with_extra_column_width(mut self, extra_column_width: usize) -> Self
+    {
+        self.extra_column_width = extra_column_width;
+        self
+    }
+
     /// Replaces line break chars ("\r\n", "\r", "\n") in the given `String`
     /// with spaces.
     #[must_use]
@@ -90,5 +121,9 @@ impl Features {
             }
         }
         out
+    }
+
+    fn interspersed_space_width(col_count: usize) -> usize {
+        col_count.saturating_sub(1)
     }
 }

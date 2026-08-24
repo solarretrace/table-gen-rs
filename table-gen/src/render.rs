@@ -8,10 +8,8 @@
 // Internal library imports.
 use crate::CellContext;
 use crate::Features;
-use crate::HorzAlign;
 use crate::RenderContext;
-use crate::util::TruncateState;
-use crate::util::unicode_grapheme_aware_truncation;
+use crate::util::write_cell_formatted;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -46,37 +44,14 @@ pub trait Renderer {
 		let Some(text_width) = cell.text_width else {
 			return write!(out, "{}", cell.text);
 		};
-		let align = cell.desc.horz_align;
-		let cell_width = cell.cell_width;
-		let ellipses_space = if align == HorzAlign::Center { 2 } else { 1 };
-
-		let (text, state) = if text_width > cell_width {
-			unicode_grapheme_aware_truncation(
-				cell.text,
-				text_width,
-				cell_width.saturating_sub(ellipses_space),
-				cell.desc.horz_align)
-		} else {
-			(cell.text, TruncateState::Neither(text_width))
-		};
-
-		// Compute cell padding.
-		let pad = cell.cell_width.saturating_sub(state.width());
-		let (mut l_pad, mut r_pad) = match align {
-			HorzAlign::Left   => (0,     pad),
-			HorzAlign::Center => (pad/2, pad.div_ceil(2)),
-			HorzAlign::Right  => (pad,   0),
-		};
-		if state.left_truncated() { l_pad = l_pad.saturating_sub(1); }
-		if state.right_truncated() { r_pad = r_pad.saturating_sub(1); }
-
-		
-		for _ in 0..l_pad { write!(out, " ")?; }
-		if state.left_truncated() { write!(out, "…")?; }
-		write!(out, "{}", text)?;
-		if state.right_truncated() { write!(out, "…")?; }
-		for _ in 0..r_pad { write!(out, " ")?; }
-		Ok(())
+		write_cell_formatted(
+			out,
+			cell.text,
+			text_width,
+			cell.cell_width,
+			cell.desc.horz_align,
+			"…",
+			0)
 	}
 
 	/// Hook for writing single cell's line in a header row.

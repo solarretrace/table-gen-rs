@@ -14,6 +14,8 @@ use std::fmt::Display;
 /// A diagnostic message.
 #[derive(Debug, Clone, Copy)]
 pub enum Diagnostic {
+    /// The table was not able to be made narrow enough to satisfy a max width
+    /// constraint.
     TableWidthConstraintUnsatisfied,
 }
 

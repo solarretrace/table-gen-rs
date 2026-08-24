@@ -22,7 +22,8 @@ use std::ops::Bound;
 ////////////////////////////////////////////////////////////////////////////////
 /// Table collater. Responsible for specifiying column ordering, headers,
 /// footers, and defaults.
-#[derive(Debug, Clone)]
+#[allow(missing_copy_implementations)]
+#[allow(missing_debug_implementations)]
 pub (in crate) struct Collate<'a, S> {
 	/// The table data source.
 	inner: S,
@@ -116,10 +117,16 @@ impl<'a, R, S> Collate<'a, S>
 		self
 	}
 
-	/// Returns the supported features for the renderer.
+	/// Returns a reference to the supported features for the renderer.
 	#[must_use]
 	pub (in crate) fn features(&self) -> &Features {
 		&self.features
+	}
+
+	/// Returns a mutable reference to the supported features for the renderer.
+	#[must_use]
+	pub (in crate) fn features_mut(&mut self) -> &mut Features {
+		&mut self.features
 	}
 
 	/// The row selection bounds.

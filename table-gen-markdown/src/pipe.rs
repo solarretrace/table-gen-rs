@@ -49,7 +49,7 @@ pub struct MarkdownPipeRenderer {
 	/// The amount of space to allocate between columns.
 	column_padding: u8,
 	/// The amount of extra space to allocate within columns.
-	extra_width: u8,
+	extra_column_width: u8,
 	/// Style flags.
 	flags: Flags,
 }
@@ -66,7 +66,7 @@ impl MarkdownPipeRenderer {
 	pub fn new() -> Self {
 		Self {
 			column_padding: 0,
-			extra_width: 0,
+			extra_column_width: 0,
 			flags: Flags::DEFAULT,
 		}
 	}
@@ -80,8 +80,8 @@ impl MarkdownPipeRenderer {
 
 	/// Sets the extra column width and returns the `MarkdownPipeRenderer`.
 	#[must_use]
-	pub fn with_extra_width(mut self, extra_width: u8) -> Self {
-		self.extra_width = extra_width;
+	pub fn with_extra_column_width(mut self, extra_column_width: u8) -> Self {
+		self.extra_column_width = extra_column_width;
 		self
 	}
 
@@ -126,7 +126,6 @@ impl MarkdownPipeRenderer {
 				|| col + 1 < ctx.column_count()
 			{
 				for _ in 0..col_width { write!(out, " ")?; }
-				for _ in 0..self.extra_width { write!(out, " ")?; }
 			} 
 			if col + 1 == ctx.column_count() { break; }
 			self.write_column_sep(out, HorzAlign::Center, "|", " ", " ", " ")?;
@@ -170,6 +169,7 @@ impl Renderer for MarkdownPipeRenderer {
 	fn features(&self) -> Features {
 		Features::default()
 			.with_post_format_fn(Features::remove_line_breaks)
+			.with_extra_column_width(self.extra_column_width.into())
 	}
 
 	fn write_data_cell_line<W>(
@@ -180,8 +180,7 @@ impl Renderer for MarkdownPipeRenderer {
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let mut pad = cell.padding();
-		pad += self.extra_width as usize;
+		let pad = cell.padding();
 		let (l_pad, r_pad) = match cell.desc.horz_align {
 			HorzAlign::Left   => (0,     pad),
 			HorzAlign::Center => (pad/2, pad.div_ceil(2)),
@@ -229,7 +228,6 @@ impl Renderer for MarkdownPipeRenderer {
 				self.write_column_sep(out, Left, pm, dm, " ", r)?;
 			}
 			for _ in 0..col_width { write!(out, "{}", dm)?; }
-			for _ in 0..self.extra_width { write!(out, "{}", dm)?; }
 
 			let (l, r) = match (
 				cur_align,

@@ -32,6 +32,55 @@ pub fn unicode_display_width(text: &str) -> usize {
 	width(text).try_into().expect("unpack string width u64 into usize")
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// write_formatted_cell
+////////////////////////////////////////////////////////////////////////////////
+/// Writes text to the given output writer with the provided formatting.
+pub fn write_cell_formatted<W>(
+	out: &mut W,
+	text: &str,
+	text_width: usize,
+	cell_width: usize,
+	horz_align: HorzAlign,
+	trunc_str: &str,
+	extra_pad: usize)
+	-> std::io::Result<()>
+	where W: std::io::Write
+{
+	let trunc_str_width = unicode_display_width(trunc_str);
+	let mut trunc_space = if horz_align == HorzAlign::Center { 2 } else { 1 };
+	trunc_space *= trunc_str_width;
+
+	let (text, state) = if text_width > cell_width {
+		unicode_grapheme_aware_truncation(
+			text,
+			text_width,
+			cell_width.saturating_sub(trunc_space),
+			horz_align)
+	} else {
+		(text, TruncateState::Neither(text_width))
+	};
+
+	// Compute cell padding.
+	let pad = extra_pad + cell_width.saturating_sub(state.width());
+	let (mut l_pad, mut r_pad) = match horz_align {
+		HorzAlign::Left   => (0,     pad),
+		HorzAlign::Center => (pad/2, pad.div_ceil(2)),
+		HorzAlign::Right  => (pad,   0),
+	};
+	if state.left_truncated() { l_pad = l_pad.saturating_sub(1); }
+	if state.right_truncated() { r_pad = r_pad.saturating_sub(1); }
+
+	
+	for _ in 0..l_pad { write!(out, " ")?; }
+	if state.left_truncated() { write!(out, "{}", trunc_str)?; }
+	write!(out, "{}", text)?;
+	if state.right_truncated() { write!(out, "{}", trunc_str)?; }
+	for _ in 0..r_pad { write!(out, " ")?; }
+	Ok(())
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // TruncateState
 ////////////////////////////////////////////////////////////////////////////////

@@ -24,7 +24,8 @@ use std::ops::Bound;
 // Format
 ////////////////////////////////////////////////////////////////////////////////
 /// Table cell formatter. Responsible for generating text for cells.
-#[derive(Debug, Clone)]
+#[allow(missing_copy_implementations)]
+#[allow(missing_debug_implementations)]
 pub (in crate) struct Format<'a, S> {
 	/// The table data source.
 	inner: Collate<'a, S>,
@@ -64,10 +65,16 @@ impl<'a, R, S> Format<'a, S>
 		}
 	}
 
-	/// Returns the supported features for the renderer.
+	/// Returns a reference to the supported features for the renderer.
 	#[must_use]
 	pub (in crate) fn features(&self) -> &Features {
 		self.inner.features()
+	}
+
+	/// Returns a mutable reference to the supported features for the renderer.
+	#[must_use]
+	pub (in crate) fn features_mut(&mut self) -> &mut Features {
+		self.inner.features_mut()
 	}
 
 	/// The row selection bounds.

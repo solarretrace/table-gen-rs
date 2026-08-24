@@ -23,7 +23,7 @@ pub struct MarkdownSimpleRenderer {
 	/// The amount of space to allocate between columns.
 	column_padding: u8,
 	/// The amount of extra space to allocate within columns.
-	extra_width: u8,
+	extra_column_width: u8,
 	/// Indicates that the last column should be padded on the right.
 	pad_trailing_column: bool,
 }
@@ -40,7 +40,7 @@ impl MarkdownSimpleRenderer {
 	pub fn new() -> Self {
 		Self {
 			column_padding: 0,
-			extra_width: 2,
+			extra_column_width: 2,
 			pad_trailing_column: true,
 		}
 	}
@@ -54,8 +54,8 @@ impl MarkdownSimpleRenderer {
 
 	/// Sets the extra column width and returns the `MarkdownSimpleRenderer`.
 	#[must_use]
-	pub fn with_extra_width(mut self, extra_width: u8) -> Self {
-		self.extra_width = extra_width;
+	pub fn with_extra_column_width(mut self, extra_column_width: u8) -> Self {
+		self.extra_column_width = extra_column_width;
 		self
 	}
 
@@ -75,6 +75,7 @@ impl MarkdownSimpleRenderer {
 impl Renderer for MarkdownSimpleRenderer {
 	fn features(&self) -> Features {
 		Features::default()
+			.with_extra_column_width(self.extra_column_width.into())
 	}
 
 	fn write_data_cell_line<W>(
@@ -85,8 +86,7 @@ impl Renderer for MarkdownSimpleRenderer {
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let mut pad = cell.padding();
-		pad += self.extra_width as usize;
+		let pad = cell.padding();
 		let (l_pad, r_pad) = match cell.desc.horz_align {
 			HorzAlign::Left   => (0,     pad),
 			HorzAlign::Center => (pad/2, pad.div_ceil(2)),
@@ -120,7 +120,6 @@ impl Renderer for MarkdownSimpleRenderer {
 		if ctx.is_empty() { return Ok(()) }
 		for (col, col_width) in ctx.col_widths.iter().copied().enumerate() {
 			for _ in 0..col_width { write!(out, "-")?; }
-			for _ in 0..self.extra_width { write!(out, "-")?; }
 			if col + 1 == ctx.column_count() { break; }
 			for _ in 0..self.column_padding { write!(out, " ")?; }
 			write!(out, " ")?;
