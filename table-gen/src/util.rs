@@ -430,11 +430,9 @@ impl<const EXACT: usize> QuantileEstimator<EXACT> {
 			return self.init[0];
 		}
 
-		// Do sort and positioning if we've seen fewer than 5 values:
+		// Do sort and positioning if we've seen fewer than EXACT values:
 		if self.init.len() < EXACT {
-			let mut values = <[f64; EXACT]>::try_from(
-					&self.init[..])
-				.expect("copy Vec into array");
+			let mut values = self.init.clone();
 			values.sort_by(f64::total_cmp);
 			let idx = ((values.len() as f64 - 1.0) * self.quantile)
 				.round() as usize;
