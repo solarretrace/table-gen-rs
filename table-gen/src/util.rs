@@ -51,6 +51,7 @@ pub fn write_cell_formatted<W>(
 	let mut trunc_space = if horz_align == HorzAlign::Center { 2 } else { 1 };
 	trunc_space *= trunc_str_width;
 
+	// Perform truncation.
 	let (text, state) = if text_width > cell_width {
 		unicode_grapheme_aware_truncation(
 			text,
@@ -71,7 +72,7 @@ pub fn write_cell_formatted<W>(
 	if state.left_truncated() { l_pad = l_pad.saturating_sub(1); }
 	if state.right_truncated() { r_pad = r_pad.saturating_sub(1); }
 
-	
+	// Write padding, truncation strings, and text.
 	for _ in 0..l_pad { write!(out, " ")?; }
 	if state.left_truncated() { write!(out, "{}", trunc_str)?; }
 	write!(out, "{}", text)?;
