@@ -55,11 +55,9 @@
 
 # Implementation tasks:
 
-+ Add text_width to CellContext & fn padding.
 + Implement Features:
 	- Support custom line wrapping
-	- Support extra width in aggregator
-	- Support custom formatting
+	- Support text coloring
 + Support outer border elision in terminal renderers
 + Support independent header/footer alignment
 + Implement parallelism

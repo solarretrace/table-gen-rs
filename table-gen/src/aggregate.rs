@@ -384,8 +384,9 @@ fn distribute_by_weight<F>(
 		let current_allocate = allocate;
 		println!("allocate {:?}, clamped {:?}, widths {:?}",
 			allocate, clamped, widths);
+		let mut residual: f64 = 0.0;
 		for (idx, width) in widths.iter_mut().enumerate() {
-			let fair_raw: f64 = weight_mult * weights[idx] * current_allocate as f64;
+			let fair_raw: f64 = weight_mult * weights[idx] * current_allocate as f64 + residual;
 			if clamped.contains(&idx) {
 				continue; 
 			}
@@ -394,12 +395,13 @@ fn distribute_by_weight<F>(
 				weight_mult * weights[idx]);
 			
 			let max = width.saturating_sub((min_col_width_fn)(idx));
-			let diff = std::cmp::min(max, fair);
+			let diff = std::cmp::min(std::cmp::min(max, fair), allocate);
 			*width -= diff;
 			allocate -= diff;
 			total_allocated += diff;
 			if diff == 0 {
 				clamped_weight += weights[idx];
+				residual += fair_raw.fract();
 				let _ = clamped.insert(idx);
 			}
 		}

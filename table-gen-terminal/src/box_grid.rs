@@ -670,4 +670,107 @@ mod test {
 ╰──────────┸─────────┸─────────┸──────────────────────────╯
 ");
 	}
+
+	#[test]
+	fn cicero() {
+		let data: Vec<[&str; 4]> = vec![
+			[
+				"Sed ut perspiciatis",
+				"unde omnis iste natus error",
+				"sit voluptatem accusantium",
+				"doloremque laudantium, totam rem aperiam,",
+			],
+			[
+				"eaque ipsa quae",
+				"ab illo inventore veritatis et",
+				"quasi architecto beatae",
+				"vitae dicta sunt explicabo. Nemo enim ipsam",
+			],
+			[
+				"voluptatem quia voluptas",
+				"sit aspernatur aut odit aut",
+				"fugit, sed",
+				"quia consequuntur magni dolores eos qui ratione",
+			],
+			[
+				"voluptatem sequi nesciunt",
+				"Neque porro quisquam est,",
+				"qui dolorem ipsum",
+				"quia dolor sit amet, consectetur, adipisci",
+			],
+			[
+				"velit, sed",
+				"quia non numquam eius modi",
+				"tempora incidunt ut",
+				"labore et dolore magnam aliquam quaerat voluptatem. Ut",
+			],
+			[
+				"enim ad minima",
+				"veniam, quis nostrum exercitationem",
+				"ullam corporis suscipit",
+				"laboriosam, nisi ut aliquid ex ea",
+			],
+			[
+				"commodi consequatur?",
+				"Quis autem vel eum iure",
+				"reprehenderit qui in",
+				"ea voluptate velit esse quam nihil molestiae",
+			],
+			[
+				"consequatur, vel",
+				"illum qui dolorem eum fugiat",
+				"quo voluptas nulla",
+				"pariatur?",
+			],
+		];
+		
+		let column_defs = vec![
+			ColumnDef::new()
+				.with_header("COLUMN A")
+				.with_footer("COLUMN A"),
+			ColumnDef::new()
+				.with_header("COLUMN B")
+				.with_footer("COLUMN B"),
+			ColumnDef::new()
+				.with_header("COLUMN C")
+				.with_footer("COLUMN C"),
+			ColumnDef::new()
+				.with_header("COLUMN D")
+				.with_footer("COLUMN D"),
+		];
+
+		let mut table = Table::new_builder(data, BoxGridRenderer::new())
+			.with_column_defs(&column_defs)
+			.with_max_table_width(80)
+			.finish();
+
+		let mut out: Vec<u8> = Vec::new();
+		assert!(table.render(&mut out).is_ok());
+		let out = String::from_utf8(out).unwrap();
+		//println!("{}", out);
+
+		assert_eq!(out, "\
+┌─────────┬──────────────────┬──────────┬──────────────────────────────────────┐
+│ COLUMN… ┆ COLUMN B         ┆ COLUMN C ┆ COLUMN D                             │
+╞═════════╪══════════════════╪══════════╪══════════════════════════════════════╡
+│ Sed ut… ┆ unde omnis iste… ┆ sit vol… ┆ doloremque laudantium, totam rem ap… │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ eaque … ┆ ab illo invento… ┆ quasi a… ┆ vitae dicta sunt explicabo. Nemo en… │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ volupt… ┆ sit aspernatur … ┆ fugit, … ┆ quia consequuntur magni dolores eos… │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ volupt… ┆ Neque porro qui… ┆ qui dol… ┆ quia dolor sit amet, consectetur, a… │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ velit,… ┆ quia non numqua… ┆ tempora… ┆ labore et dolore magnam aliquam qua… │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ enim a… ┆ veniam, quis no… ┆ ullam c… ┆ laboriosam, nisi ut aliquid ex ea    │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ commod… ┆ Quis autem vel … ┆ reprehe… ┆ ea voluptate velit esse quam nihil … │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ conseq… ┆ illum qui dolor… ┆ quo vol… ┆ pariatur?                            │
+╞═════════╪══════════════════╪══════════╪══════════════════════════════════════╡
+│ COLUMN… ┆ COLUMN B         ┆ COLUMN C ┆ COLUMN D                             │
+└─────────┴──────────────────┴──────────┴──────────────────────────────────────┘
+");
+	}
 }
