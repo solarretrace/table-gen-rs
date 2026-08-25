@@ -5,13 +5,16 @@
 //! A table renderer that renders tables in the pandoc-markdown 'grid' style.
 ////////////////////////////////////////////////////////////////////////////////
 
+// Internal library imports.
+use crate::TrailingWsTrimWriter;
+
 // Workspace library imports.
 use table_gen::CellContext;
 use table_gen::Features;
 use table_gen::HorzAlign;
 use table_gen::RenderContext;
 use table_gen::Renderer;
-
+use table_gen::util::write_cell_formatted;
 
 // External library imports.
 use bitflags::bitflags;
@@ -65,7 +68,7 @@ impl MarkdownPipeRenderer {
 	#[must_use]
 	pub fn new() -> Self {
 		Self {
-			column_padding: 0,
+			column_padding: 1,
 			extra_column_width: 0,
 			flags: Flags::DEFAULT,
 		}
@@ -74,7 +77,7 @@ impl MarkdownPipeRenderer {
 	/// Sets the column padding and returns the `MarkdownPipeRenderer`.
 	#[must_use]
 	pub fn with_column_padding(mut self, column_padding: u8) -> Self {
-		self.column_padding = column_padding;
+		self.column_padding = std::cmp::max(column_padding, 1);
 		self
 	}
 
@@ -149,7 +152,7 @@ impl MarkdownPipeRenderer {
 		debug_assert!(inner_left.len() < 2);
 		debug_assert_eq!(inner_left.len(), inner_right.len());
 		let inner_pad = u8::try_from(inner_left.len()).unwrap();
-		let mut pad = std::cmp::max(self.column_padding / 2, inner_pad * 2) / 2;
+		let mut pad = std::cmp::max(self.column_padding, inner_pad);
 		pad -= inner_pad;
 
 		if bias != HorzAlign::Left {
@@ -167,9 +170,16 @@ impl MarkdownPipeRenderer {
 
 impl Renderer for MarkdownPipeRenderer {
 	fn features(&self) -> Features {
+		let padding: usize = self.column_padding.into();
 		Features::default()
 			.with_post_format_fn(Features::remove_line_breaks)
 			.with_extra_column_width(self.extra_column_width.into())
+			.with_width_contribution_fn(Box::new(move |col_count| {
+				// Width of dividers
+				col_count + 1
+				// Width of cell padding
+				+ (col_count * padding * 2)
+			}))
 	}
 
 	fn write_data_cell_line<W>(
@@ -180,21 +190,36 @@ impl Renderer for MarkdownPipeRenderer {
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let pad = cell.padding();
-		let (l_pad, r_pad) = match cell.desc.horz_align {
-			HorzAlign::Left   => (0,     pad),
-			HorzAlign::Center => (pad/2, pad.div_ceil(2)),
-			HorzAlign::Right  => (pad,   0),
+		let Some(text_width) = cell.text_width else {
+			return write!(out, "{}", cell.text);
 		};
-		
-		for _ in 0..l_pad { write!(out, " ")?; }
-		write!(out, "{}", cell.text)?;
-		if self.flags.contains(Flags::PAD_TRAILING_COLUMN) 
-			|| !ctx.is_last_column()
+		if ctx.is_last_column() 
+			&& cell.desc.horz_align != HorzAlign::Right
+			&& !self.flags.contains(Flags::PAD_TRAILING_COLUMN)
 		{
-			for _ in 0..r_pad { write!(out, " ")?; }
+			// We need to prevent writing trailing whitespace on the last
+			// column.
+			let mut writer = TrailingWsTrimWriter::new(out);
+			write_cell_formatted(
+				&mut writer,
+				cell.text,
+				text_width,
+				cell.cell_width,
+				cell.desc.horz_align,
+				"…")?;
+			// Discard pending whitespace writes, since they will write if we
+			// drop the writer without writing a newline.
+			writer.clear_pending();
+			Ok(())
+		} else {
+			write_cell_formatted(
+				out,
+				cell.text,
+				text_width,
+				cell.cell_width,
+				cell.desc.horz_align,
+				"…")
 		}
-		Ok(())
 	}
 
 	fn write_data_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)

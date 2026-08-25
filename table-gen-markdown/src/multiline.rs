@@ -6,12 +6,16 @@
 //! style.
 ////////////////////////////////////////////////////////////////////////////////
 
+// Internal library imports.
+use crate::TrailingWsTrimWriter;
+
 // Workspace library imports.
 use table_gen::CellContext;
 use table_gen::Features;
 use table_gen::HorzAlign;
 use table_gen::RenderContext;
 use table_gen::Renderer;
+use table_gen::util::write_cell_formatted;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,19 +106,36 @@ impl Renderer for MarkdownMultilineRenderer {
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let pad = cell.padding();
-		let (l_pad, r_pad) = match cell.desc.horz_align {
-			HorzAlign::Left   => (0,     pad),
-			HorzAlign::Center => (pad/2, pad.div_ceil(2)),
-			HorzAlign::Right  => (pad,   0),
+		let Some(text_width) = cell.text_width else {
+			return write!(out, "{}", cell.text);
 		};
-		
-		for _ in 0..l_pad { write!(out, " ")?; }
-		write!(out, "{}", cell.text)?;
-		if self.pad_trailing_column || !ctx.is_last_column() {
-			for _ in 0..r_pad { write!(out, " ")?; }
+		if ctx.is_last_column() 
+			&& cell.desc.horz_align != HorzAlign::Right
+			&& !self.pad_trailing_column
+		{
+			// We need to prevent writing trailing whitespace on the last
+			// column.
+			let mut writer = TrailingWsTrimWriter::new(out);
+			write_cell_formatted(
+				&mut writer,
+				cell.text,
+				text_width,
+				cell.cell_width,
+				cell.desc.horz_align,
+				"…")?;
+			// Discard pending whitespace writes, since they will write if we
+			// drop the writer without writing a newline.
+			writer.clear_pending();
+			Ok(())
+		} else {
+			write_cell_formatted(
+				out,
+				cell.text,
+				text_width,
+				cell.cell_width,
+				cell.desc.horz_align,
+				"…")
 		}
-		Ok(())
 	}
 
 	fn write_header_cell_line_end<W>(

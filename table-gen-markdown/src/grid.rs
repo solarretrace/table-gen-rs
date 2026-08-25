@@ -5,12 +5,16 @@
 //! A table renderer that renders tables in the pandoc-markdown 'grid' style.
 ////////////////////////////////////////////////////////////////////////////////
 
+// Internal library imports.
+use crate::TrailingWsTrimWriter;
+
 // Workspace library imports.
 use table_gen::CellContext;
 use table_gen::Features;
 use table_gen::HorzAlign;
 use table_gen::RenderContext;
 use table_gen::Renderer;
+use table_gen::util::write_cell_formatted;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,14 +39,14 @@ impl MarkdownGridRenderer {
 	#[must_use]
 	pub fn new() -> Self {
 		Self {
-			column_padding: 0,
+			column_padding: 1,
 		}
 	}
 
 	/// Sets the column padding and returns the `MarkdownGridRenderer`.
 	#[must_use]
 	pub fn with_column_padding(mut self, column_padding: u8) -> Self {
-		self.column_padding = column_padding;
+		self.column_padding = std::cmp::max(column_padding, 1);
 		self
 	}
 
@@ -71,7 +75,7 @@ impl MarkdownGridRenderer {
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let pad = std::cmp::max(self.column_padding / 2, 2) / 2;
+		let pad = self.column_padding;
 
 		if bias != HorzAlign::Left {
 			for _ in 0..pad { write!(out, "{}", outer)?; }
@@ -86,7 +90,14 @@ impl MarkdownGridRenderer {
 
 impl Renderer for MarkdownGridRenderer {
 	fn features(&self) -> Features {
+		let padding: usize = self.column_padding.into();
 		Features::default()
+			.with_width_contribution_fn(Box::new(move |col_count| {
+				// Width of dividers
+				col_count + 1
+				// Width of cell padding
+				+ (col_count * padding * 2)
+			}))
 	}
 
 	fn write_header_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
@@ -101,22 +112,21 @@ impl Renderer for MarkdownGridRenderer {
 	fn write_data_cell_line<W>(
 		&mut self,
 		out: &mut W,
-		_ctx: &RenderContext<'_>,
+		ctx: &RenderContext<'_>,
 		cell: &CellContext<'_>)
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let pad = cell.padding();
-		let (l_pad, r_pad) = match cell.desc.horz_align {
-			HorzAlign::Left   => (0,     pad),
-			HorzAlign::Center => (pad/2, pad.div_ceil(2)),
-			HorzAlign::Right  => (pad,   0),
+		let Some(text_width) = cell.text_width else {
+			return write!(out, "{}", cell.text);
 		};
-		
-		for _ in 0..l_pad { write!(out, " ")?; }
-		write!(out, "{}", cell.text)?;
-		for _ in 0..r_pad { write!(out, " ")?; }
-		Ok(())
+		write_cell_formatted(
+			out,
+			cell.text,
+			text_width,
+			cell.cell_width,
+			cell.desc.horz_align,
+			"…")
 	}
 
 	fn write_data_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
