@@ -129,7 +129,7 @@ impl<'a, R, S> Sort<'a, R, S>
 		let mut res = Ordering::Equal;
 		for ord in col_ord {
 			let text = ord.flags.contains(ColumnOrdFlags::FORMATTED);
-			let rev = ord.flags.contains(ColumnOrdFlags::REVERSE);
+			let reverse = ord.flags.contains(ColumnOrdFlags::REVERSE);
 			let nl = if ord.flags.contains(ColumnOrdFlags::NONE_LESS) {
 				Ordering::Less
 			} else {
@@ -150,7 +150,7 @@ impl<'a, R, S> Sort<'a, R, S>
 					_ => Ordering::Equal,
 				}
 			};
-			if rev { res = res.reverse(); }
+			if reverse { res = res.reverse(); }
 			if res.is_ne() { break; }
 		}
 		res
@@ -173,7 +173,6 @@ impl<'a, R, S> Iterator for Sort<'a, R, S>
 		iter.next()
 	}
 }
-
 
 
 ////////////////////////////////////////////////////////////////////////////////

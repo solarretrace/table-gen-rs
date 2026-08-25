@@ -50,8 +50,7 @@ pub trait Renderer {
 			text_width,
 			cell.cell_width,
 			cell.desc.horz_align,
-			"…",
-			0)
+			"…")
 	}
 
 	/// Hook for writing single cell's line in a header row.

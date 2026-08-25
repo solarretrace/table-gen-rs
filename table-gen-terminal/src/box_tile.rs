@@ -139,7 +139,7 @@ impl BoxTileRenderer {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            column_padding: 0,
+            column_padding: 1,
             extra_column_width: 0,
             style: BoxTileStyle::new(),
         }
@@ -148,7 +148,7 @@ impl BoxTileRenderer {
     /// Sets the column padding and returns the `MarkdownGridRenderer`.
     #[must_use]
     pub fn with_column_padding(mut self, column_padding: u8) -> Self {
-        self.column_padding = column_padding;
+        self.column_padding = std::cmp::max(column_padding, 1);
         self
     }
 
@@ -181,12 +181,12 @@ impl BoxTileRenderer {
             H: Display,
             R: Display,
     {
-        let pad = std::cmp::max(self.column_padding / 2, 2);
+        let pad = self.column_padding;
 
         write!(out, "{}", left)?;
         for (col, col_width) in ctx.col_widths.iter().copied().enumerate() {
             for _ in 0..col_width { write!(out, "{}", horz)?; }
-            for _ in 0..pad { write!(out, "{}", horz)?; }
+            for _ in 0..pad { write!(out, "{}{}", horz, horz)?; }
             write!(out, "{}", right)?;
             if col + 1 == ctx.column_count() { break; }
             write!(out, "{}", left)?;
@@ -199,7 +199,7 @@ impl BoxTileRenderer {
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        let pad = std::cmp::max(self.column_padding / 2, 2) / 2;
+        let pad = self.column_padding;
         
         write!(out, "{}", style.vert())?;
         for _ in 0..pad { write!(out, " ")?; }
@@ -211,7 +211,7 @@ impl BoxTileRenderer {
         -> std::io::Result<()>
         where W: std::io::Write
     {
-        let pad = std::cmp::max(self.column_padding / 2, 2) / 2;
+        let pad = self.column_padding;
 
         for _ in 0..pad { write!(out, " ")?; }
         write!(out, "{}", style.vert())?;
@@ -226,7 +226,10 @@ impl Renderer for BoxTileRenderer {
         Features::default()
             .with_extra_column_width(self.extra_column_width.into())
             .with_width_contribution_fn(Box::new(move |col_count| {
-                col_count * padding
+                // Width of dividers
+                (col_count + 1) 
+                // Width of cell padding
+                + (col_count * padding * 2)
             }))
     }
 
@@ -247,8 +250,7 @@ impl Renderer for BoxTileRenderer {
             text_width,
             cell.cell_width,
             cell.desc.horz_align,
-            "…",
-            self.column_padding.into())
+            "…")
     }
 
     fn write_header_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)

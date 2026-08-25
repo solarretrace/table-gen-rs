@@ -87,7 +87,7 @@ impl<'a, R> Aggregate<'a, R>
 		let mut footer_row = footer_used
 			.then_some(footer_cells)
 			.map(TextRow::new);
-			
+
 		let column_defs = inner.column_defs().clone();
 
 		// Compute initial column widths from header/footer rows if available.
@@ -203,11 +203,12 @@ impl<'a, R> Aggregate<'a, R>
 
 		// Adjust table constraints for the renderer padding, which cannot be
 		// allocated away.
-		let r_width = (width_contribution_fn)(max_row_len);
+		let render_contrib = (width_contribution_fn)(max_row_len);
+		println!("render_contrib = {:?}", render_contrib);
 		// if r_width > min_table_width {}
 		// if r_width > max_table_width {}
-		let min_table_width = min_table_width.saturating_sub(r_width);
-		let max_table_width = max_table_width.saturating_sub(r_width);
+		let min_table_width = min_table_width.saturating_sub(render_contrib);
+		let max_table_width = max_table_width.saturating_sub(render_contrib);
 
 
 		// Compute final column width distribution from constraints and
@@ -374,19 +375,31 @@ fn distribute_by_weight<F>(
 	where F: Fn(usize) -> usize
 {
 	let mut total_allocated = 0;
+	let mut clamped_weight: f64 = 0.0;
 	let mut clamped = HashSet::new();
 	while allocate > 0 {
-		println!("allocate {:?}, clamped {:?}, widths {:?}", allocate, clamped, widths);
+		let weight_mult = (1.0 - clamped_weight).recip();
+		let current_allocate = allocate;
+		println!("allocate {:?}, clamped {:?}, widths {:?}",
+			allocate, clamped, widths);
 		for (idx, width) in widths.iter_mut().enumerate() {
-			if clamped.contains(&idx) { continue; }
-			let fair_amt: f64 = weights[idx] * allocate as f64;
-			let fair_amt = fair_amt.round() as usize;
+			let fair_raw: f64 = weight_mult * weights[idx] * current_allocate as f64;
+			if clamped.contains(&idx) {
+				continue; 
+			}
+			let fair = fair_raw.round() as usize;
+			println!("\t{idx} {fair} ({:.3} = {fair_raw:.3})",
+				weight_mult * weights[idx]);
+			
 			let max = width.saturating_sub((min_col_width_fn)(idx));
-			let diff = std::cmp::min(max, fair_amt);
+			let diff = std::cmp::min(max, fair);
 			*width -= diff;
 			allocate -= diff;
 			total_allocated += diff;
-			if diff == 0 { let _ = clamped.insert(idx); }
+			if diff == 0 {
+				clamped_weight += weights[idx];
+				let _ = clamped.insert(idx);
+			}
 		}
 		if clamped.len() == widths.len() { break; }
 	}

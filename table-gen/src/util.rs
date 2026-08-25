@@ -43,8 +43,7 @@ pub fn write_cell_formatted<W>(
 	text_width: usize,
 	cell_width: usize,
 	horz_align: HorzAlign,
-	trunc_str: &str,
-	extra_pad: usize)
+	trunc_str: &str)
 	-> std::io::Result<()>
 	where W: std::io::Write
 {
@@ -63,7 +62,7 @@ pub fn write_cell_formatted<W>(
 	};
 
 	// Compute cell padding.
-	let pad = extra_pad + cell_width.saturating_sub(state.width());
+	let pad = cell_width.saturating_sub(state.width());
 	let (mut l_pad, mut r_pad) = match horz_align {
 		HorzAlign::Left   => (0,     pad),
 		HorzAlign::Center => (pad/2, pad.div_ceil(2)),
@@ -346,7 +345,7 @@ impl<const EXACT: usize> QuantileEstimator<EXACT> {
 			}
 			// Initialize the estimator arrays if 5 observations have been made.
 			if self.init.len() == EXACT {
-				self.init.sort_by(|a, b| a.partial_cmp(b).unwrap());
+				self.init.sort_by(f64::total_cmp);
 				self.q = <[f64; 5]>::try_from(&self.init[..5])
 					.expect("copy Vec into array");
 				self.n = [1.0, 2.0, 3.0, 4.0, 5.0];
@@ -435,7 +434,7 @@ impl<const EXACT: usize> QuantileEstimator<EXACT> {
 			let mut values = <[f64; EXACT]>::try_from(
 					&self.init[..])
 				.expect("copy Vec into array");
-			values.sort_by(|a, b| a.partial_cmp(b).unwrap());
+			values.sort_by(f64::total_cmp);
 			let idx = ((values.len() as f64 - 1.0) * self.quantile)
 				.round() as usize;
 			return values.get(idx).copied().unwrap_or(0.0);

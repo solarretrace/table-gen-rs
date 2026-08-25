@@ -125,7 +125,7 @@ impl BoxGridStyle {
 #[allow(missing_copy_implementations)]
 #[derive(Debug, Clone)]
 pub struct BoxGridRenderer {
-	/// The amount of space to allocate between columns.
+	/// The amount of space to allocate on each side of column dividers.
 	column_padding: u8,
 	/// The amount of extra space to allocate within columns.
 	extra_column_width: u8,
@@ -144,7 +144,7 @@ impl BoxGridRenderer {
 	#[must_use]
 	pub fn new() -> Self {
 		Self {
-			column_padding: 0,
+			column_padding: 1,
 			extra_column_width: 0,
 			style: BoxGridStyle::new(),
 		}
@@ -153,7 +153,7 @@ impl BoxGridRenderer {
 	/// Sets the column padding and returns the `MarkdownGridRenderer`.
 	#[must_use]
 	pub fn with_column_padding(mut self, column_padding: u8) -> Self {
-		self.column_padding = column_padding;
+		self.column_padding = std::cmp::max(column_padding, 1);
 		self
 	}
 
@@ -188,12 +188,12 @@ impl BoxGridRenderer {
 			C: Display,
 			R: Display,
 	{
-		let pad = std::cmp::max(self.column_padding / 2, 2);
+		let pad = self.column_padding;
 
 		write!(out, "{}", left)?;
 		for (col, col_width) in ctx.col_widths.iter().copied().enumerate() {
 			for _ in 0..col_width { write!(out, "{}", horz)?; }
-			for _ in 0..pad { write!(out, "{}", horz)?; }
+			for _ in 0..pad { write!(out, "{}{}", horz, horz)?; }
 			if col + 1 == ctx.column_count() { break; }
 			write!(out, "{}", cross)?;
 		}
@@ -258,7 +258,7 @@ impl BoxGridRenderer {
 	fn write_column_sep<W>(&self, out: &mut W) -> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let pad = std::cmp::max(self.column_padding / 2, 2) / 2;
+		let pad = self.column_padding;
 
 		for _ in 0..pad { write!(out, " ")?; }
 		write!(out, "{}", self.style.col_sep.vert())?;
@@ -270,7 +270,7 @@ impl BoxGridRenderer {
 	fn write_border_left<W>(&self, out: &mut W) -> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let pad = std::cmp::max(self.column_padding / 2, 2) / 2;
+		let pad = self.column_padding;
 		
 		write!(out, "{}", self.style.border_left.vert())?;
 		for _ in 0..pad { write!(out, " ")?; }
@@ -281,7 +281,7 @@ impl BoxGridRenderer {
 	fn write_border_right<W>(&self, out: &mut W) -> std::io::Result<()>
 		where W: std::io::Write
 	{
-		let pad = std::cmp::max(self.column_padding / 2, 2) / 2;
+		let pad = self.column_padding;
 
 		for _ in 0..pad { write!(out, " ")?; }
 		write!(out, "{}", self.style.border_right.vert())?;
@@ -314,7 +314,10 @@ impl Renderer for BoxGridRenderer {
 		Features::default()
 			.with_extra_column_width(self.extra_column_width.into())
 			.with_width_contribution_fn(Box::new(move |col_count| {
-				col_count * padding
+				// Width of dividers
+				(col_count + 1) 
+				// Width of cell padding
+				+ (col_count * padding * 2)
 			}))
 	}
 
@@ -335,8 +338,7 @@ impl Renderer for BoxGridRenderer {
 			text_width,
 			cell.cell_width,
 			cell.desc.horz_align,
-			"…",
-			self.column_padding.into())
+			"…")
 	}
 
 	fn write_table_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
@@ -504,7 +506,7 @@ mod test {
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		//println!("{}", out);
+		println!("{}", out);
 
 		assert_eq!(out, "\
 ┌───────┬───────┬────────┐
