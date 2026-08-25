@@ -376,7 +376,9 @@ fn distribute_by_weight<F>(
 {
 	let mut total_allocated = 0;
 	let mut clamped_weight: f64 = 0.0;
-	let mut clamped = HashSet::new();
+	let mut clamped: HashSet<usize> = weights.iter().enumerate()
+		.filter_map(|(idx, w)| (*w == 0.0).then(|| idx))
+		.collect();
 	while allocate > 0 {
 		let weight_mult = (1.0 - clamped_weight).recip();
 		let current_allocate = allocate;
