@@ -1,6 +1,8 @@
 
 # `table-gen` -- Table generator library 
 
+A Rust library for generating formatted tables from iterable data sources.
+
 ## Usage
 
 The basic usage is as follows:
