@@ -150,3 +150,180 @@ In total, there are five traits relevant to generating a table:
 
 For most use-cases, it should be very simple to generate a table with access to nothing more than a `Renderer`. A `Row` impl may be required for a custom data types, but the implementation will usually be obvious & trivial.
 
+
+## Examples
+
+### Minimal renderer
+
+`table_gen_terminal::MinimalRenderer`:
+
+```
+COLUMN A  COLUMN B            COLUMN C   COLUMN D                               
+Sed ut p… unde omnis iste na… sit volup… doloremque laudantium, totam rem aperi…
+eaque ip… ab illo inventore … quasi arc… vitae dicta sunt explicabo. Nemo enim …
+voluptat… sit aspernatur aut… fugit, sed quia consequuntur magni dolores eos qu…
+voluptat… Neque porro quisqu… qui dolor… quia dolor sit amet, consectetur, adip…
+velit, s… quia non numquam e… tempora i… labore et dolore magnam aliquam quaera…
+enim ad … veniam, quis nostr… ullam cor… laboriosam, nisi ut aliquid ex ea      
+commodi … Quis autem vel eum… reprehend… ea voluptate velit esse quam nihil mol…
+consequa… illum qui dolorem … quo volup… pariatur?                              
+COLUMN A  COLUMN B            COLUMN C   COLUMN D                               
+```
+
+### Box-drawing grid renderer
+
+`table_gen_terminal::BoxGridRenderer`:
+
+```
+┌─────────┬──────────────────┬──────────┬──────────────────────────────────────┐
+│ COLUMN… ┆ COLUMN B         ┆ COLUMN C ┆ COLUMN D                             │
+╞═════════╪══════════════════╪══════════╪══════════════════════════════════════╡
+│ Sed ut… ┆ unde omnis iste… ┆ sit vol… ┆ doloremque laudantium, totam rem ap… │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ eaque … ┆ ab illo invento… ┆ quasi a… ┆ vitae dicta sunt explicabo. Nemo en… │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ volupt… ┆ sit aspernatur … ┆ fugit, … ┆ quia consequuntur magni dolores eos… │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ volupt… ┆ Neque porro qui… ┆ qui dol… ┆ quia dolor sit amet, consectetur, a… │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ velit,… ┆ quia non numqua… ┆ tempora… ┆ labore et dolore magnam aliquam qua… │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ enim a… ┆ veniam, quis no… ┆ ullam c… ┆ laboriosam, nisi ut aliquid ex ea    │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ commod… ┆ Quis autem vel … ┆ reprehe… ┆ ea voluptate velit esse quam nihil … │
+├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
+│ conseq… ┆ illum qui dolor… ┆ quo vol… ┆ pariatur?                            │
+╞═════════╪══════════════════╪══════════╪══════════════════════════════════════╡
+│ COLUMN… ┆ COLUMN B         ┆ COLUMN C ┆ COLUMN D                             │
+└─────────┴──────────────────┴──────────┴──────────────────────────────────────┘
+```
+
+### Box-drawing tile renderer
+
+`table_gen_terminal::BoxTileRenderer`:
+
+```
+╔════════╗╔══════════════════╗╔═════════╗╔═════════════════════════════════════╗
+║ COLUM… ║║ COLUMN B         ║║ COLUMN… ║║ COLUMN D                            ║
+╚════════╝╚══════════════════╝╚═════════╝╚═════════════════════════════════════╝
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ Sed u… ││ unde omnis iste… ││ sit vo… ││ doloremque laudantium, totam rem a… │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ eaque… ││ ab illo invento… ││ quasi … ││ vitae dicta sunt explicabo. Nemo e… │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ volup… ││ sit aspernatur … ││ fugit,… ││ quia consequuntur magni dolores eo… │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ volup… ││ Neque porro qui… ││ qui do… ││ quia dolor sit amet, consectetur, … │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ velit… ││ quia non numqua… ││ tempor… ││ labore et dolore magnam aliquam qu… │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ enim … ││ veniam, quis no… ││ ullam … ││ laboriosam, nisi ut aliquid ex ea   │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ commo… ││ Quis autem vel … ││ repreh… ││ ea voluptate velit esse quam nihil… │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ conse… ││ illum qui dolor… ││ quo vo… ││ pariatur?                           │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+╔════════╗╔══════════════════╗╔═════════╗╔═════════════════════════════════════╗
+║ COLUM… ║║ COLUMN B         ║║ COLUMN… ║║ COLUMN D                            ║
+╚════════╝╚══════════════════╝╚═════════╝╚═════════════════════════════════════╝
+```
+
+
+### Pandoc 'Simple' Markdown renderer
+
+`table_gen_markdown::MarkdownSimpleRenderer`:
+
+```
+COLUMN A  COLUMN B            COLUMN C   COLUMN D                               
+--------- ------------------- ---------- ---------------------------------------
+Sed ut p… unde omnis iste na… sit volup… doloremque laudantium, totam rem aperi…
+eaque ip… ab illo inventore … quasi arc… vitae dicta sunt explicabo. Nemo enim …
+voluptat… sit aspernatur aut… fugit, sed quia consequuntur magni dolores eos qu…
+voluptat… Neque porro quisqu… qui dolor… quia dolor sit amet, consectetur, adip…
+velit, s… quia non numquam e… tempora i… labore et dolore magnam aliquam quaera…
+enim ad … veniam, quis nostr… ullam cor… laboriosam, nisi ut aliquid ex ea      
+commodi … Quis autem vel eum… reprehend… ea voluptate velit esse quam nihil mol…
+consequa… illum qui dolorem … quo volup… pariatur?                              
+COLUMN A  COLUMN B            COLUMN C   COLUMN D                               
+```
+
+
+### Pandoc 'Pipe' Markdown renderer
+
+`table_gen_markdown::MarkdownSimpleRenderer`:
+
+```
+| COLUMN… | COLUMN B         | COLUMN C | COLUMN D                             |
+|---------|:-----------------|:---------|:-------------------------------------|
+| Sed ut… | unde omnis iste… | sit vol… | doloremque laudantium, totam rem ap… |
+| eaque … | ab illo invento… | quasi a… | vitae dicta sunt explicabo. Nemo en… |
+| volupt… | sit aspernatur … | fugit, … | quia consequuntur magni dolores eos… |
+| volupt… | Neque porro qui… | qui dol… | quia dolor sit amet, consectetur, a… |
+| velit,… | quia non numqua… | tempora… | labore et dolore magnam aliquam qua… |
+| enim a… | veniam, quis no… | ullam c… | laboriosam, nisi ut aliquid ex ea    |
+| commod… | Quis autem vel … | reprehe… | ea voluptate velit esse quam nihil … |
+| conseq… | illum qui dolor… | quo vol… | pariatur?                            |
+| COLUMN… | COLUMN B         | COLUMN C | COLUMN D                             |
+```
+
+### Pandoc 'Multiline' Markdown renderer
+
+`table_gen_markdown::MarkdownMultilineRenderer`:
+
+```
+--------------------------------------------------------------------------------
+COLUMN A  COLUMN B            COLUMN C   COLUMN D                               
+--------- ------------------- ---------- ---------------------------------------
+Sed ut p… unde omnis iste na… sit volup… doloremque laudantium, totam rem aperi…
+
+eaque ip… ab illo inventore … quasi arc… vitae dicta sunt explicabo. Nemo enim …
+
+voluptat… sit aspernatur aut… fugit, sed quia consequuntur magni dolores eos qu…
+
+voluptat… Neque porro quisqu… qui dolor… quia dolor sit amet, consectetur, adip…
+
+velit, s… quia non numquam e… tempora i… labore et dolore magnam aliquam quaera…
+
+enim ad … veniam, quis nostr… ullam cor… laboriosam, nisi ut aliquid ex ea      
+
+commodi … Quis autem vel eum… reprehend… ea voluptate velit esse quam nihil mol…
+
+consequa… illum qui dolorem … quo volup… pariatur?                              
+--------------------------------------------------------------------------------
+
+COLUMN A  COLUMN B            COLUMN C   COLUMN D                               
+```
+
+### Pandoc 'Grid' Markdown renderer
+
+`table_gen_markdown::MarkdownGridRenderer`:
+
+```
++---------+------------------+----------+--------------------------------------+
+| COLUMN… | COLUMN B         | COLUMN C | COLUMN D                             |
++=========+==================+==========+======================================+
+| Sed ut… | unde omnis iste… | sit vol… | doloremque laudantium, totam rem ap… |
++---------+------------------+----------+--------------------------------------+
+| eaque … | ab illo invento… | quasi a… | vitae dicta sunt explicabo. Nemo en… |
++---------+------------------+----------+--------------------------------------+
+| volupt… | sit aspernatur … | fugit, … | quia consequuntur magni dolores eos… |
++---------+------------------+----------+--------------------------------------+
+| volupt… | Neque porro qui… | qui dol… | quia dolor sit amet, consectetur, a… |
++---------+------------------+----------+--------------------------------------+
+| velit,… | quia non numqua… | tempora… | labore et dolore magnam aliquam qua… |
++---------+------------------+----------+--------------------------------------+
+| enim a… | veniam, quis no… | ullam c… | laboriosam, nisi ut aliquid ex ea    |
++---------+------------------+----------+--------------------------------------+
+| commod… | Quis autem vel … | reprehe… | ea voluptate velit esse quam nihil … |
++---------+------------------+----------+--------------------------------------+
+| conseq… | illum qui dolor… | quo vol… | pariatur?                            |
++---------+------------------+----------+--------------------------------------+
+| COLUMN… | COLUMN B         | COLUMN C | COLUMN D                             |
+```
