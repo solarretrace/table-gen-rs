@@ -353,6 +353,30 @@ COLUMN 0            COLUMN 1   COLUMN 2 COLUMN 3             COLUMN 4   COLUMN 5
 	}
 
 	#[test]
+	fn expanded_width_table() {
+		let data: Vec<[usize; 8]> = vec![
+			[2, 3, 4, 5, 6, 7, 8, 9],
+			[22, 43, 54, 85, 96, 907, 8, 19],
+			[23, 35, 46, 58, 69, 709, 8, 19],
+		];
+
+		let mut table = Table::new_builder(data, MinimalRenderer::new())
+			.with_min_table_width(80)
+			.finish();
+
+		let mut out: Vec<u8> = Vec::new();
+		assert!(table.render(&mut out).is_ok());
+		let out = String::from_utf8(out).unwrap();
+		//println!("{}", out);
+
+		assert_eq!(out, "\
+2         3         4          5         6         7          8        9        
+22        43        54         85        96        907        8        19       
+23        35        46         58        69        709        8        19       
+");
+	}
+
+	#[test]
 	fn cicero() {
 		let data: Vec<[&str; 4]> = vec![
 			[
