@@ -26,12 +26,14 @@ use std::collections::HashSet;
 /// Table cell column aggregator.
 #[derive(Debug, Clone)]
 pub (in crate) struct Aggregate<'a, R> {
+	/// The total number of rows in the table.
+	row_count: usize,
 	/// The materialized rows of the table.
 	rows: Vec<SplitRow<'a, R>>,
 	/// The column output specifications.
 	column_defs: &'a [ColumnDef<'a>],
-    /// Function to use for calculating column widths. A `None` value means
-    /// column widths should not be calculated.
+	/// Function to use for calculating column widths. A `None` value means
+	/// column widths should not be calculated.
 	str_width_fn: Option<fn(&str) -> usize>,
 	/// The column widths.
 	col_widths: Vec<usize>,
@@ -204,30 +206,29 @@ impl<'a, R> Aggregate<'a, R>
 		// Adjust table constraints for the renderer padding, which cannot be
 		// allocated away.
 		let render_contrib = (width_contribution_fn)(max_row_len);
-		println!("render_contrib = {:?}", render_contrib);
-		// if r_width > min_table_width {}
-		// if r_width > max_table_width {}
+		// println!("render_contrib = {:?}", render_contrib);
 		let min_table_width = min_table_width.saturating_sub(render_contrib);
 		let max_table_width = max_table_width.saturating_sub(render_contrib);
 
 
 		// Compute final column width distribution from constraints and
 		// estimates.
-		println!("natural {:?}", col_widths);
+		// println!("natural {:?}", col_widths);
 		let quant_widths: Vec<usize> = col_width_quantile_estimates
 			.into_iter()
 			.map(|e| e.estimate().round() as usize )
 			.collect();
-		Self::distribute_column_widths(
+		distribute_column_widths(
 			&mut col_widths,
 			&column_defs,
 			&quant_widths,
 			min_table_width,
 			max_table_width,
 			diagnostic_sink_fn);
-		println!("distributed {:?}", col_widths);
+		// println!("distributed {:?}", col_widths);
 
 		Self {
+			row_count: rows.len(),
 			rows,
 			column_defs: column_defs.into_parts().1,
 			str_width_fn,
@@ -237,198 +238,241 @@ impl<'a, R> Aggregate<'a, R>
 		}
 	}
 
-	/// The rows of the table.
+	/// Returns the row count.
 	#[must_use]
-	pub (in crate) fn rows(&self) -> &[SplitRow<'a, R>] {
-		&self.rows[..]
+	pub (in crate) fn row_count(&self) -> usize {
+		self.row_count
 	}
 
-	/// The column output descriptors.
+	/// Returns an iterator over the rows of the table.
+	#[must_use]
+	pub (in crate) fn rows_iter(&self) -> RowsIter<'a, '_, R> {
+		RowsIter::new(&self.rows[..])
+	}
+
+	/// Returns a slice of the column definitions.
 	#[must_use]
 	pub (in crate) fn column_defs(&self) -> &'a [ColumnDef<'a>] {
 		self.column_defs
 	}
 
-	/// The Function to use for calculating column widths. A `None` value means
-    /// column widths should not be calculated.
-	#[must_use]
-	pub (in crate) fn str_width_fn(&self) -> Option<fn(&str) -> usize> {
-		self.str_width_fn
-	}
-
-	/// The column widths.
+	/// Returns a slice of the column widths.
 	#[must_use]
 	pub (in crate) fn col_widths(&self) -> &[usize] {
 		&self.col_widths
 	}
 
-	/// The header row.
+	/// Returns a reference to the header row.
 	#[must_use]
 	pub (in crate) fn header_row(&self) -> Option<&TextRow<'_>> {
 		self.header_row.as_ref()
 	}
 
-	/// The footer row.
+	/// Returns a reference to the footer row.
 	#[must_use]
 	pub (in crate) fn footer_row(&self) -> Option<&TextRow<'_>> {
 		self.footer_row.as_ref()
 	}
 
-	/// Distributes column widths according to table max and balancing rules.
-	fn distribute_column_widths(
-		col_widths: &mut [usize],
-		column_defs: &ColumnDefs<'_>,
-		quant_widths: &[usize],
-		min_table_width: usize,
-		max_table_width: usize,
-		diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
-	{
-		// Get the total amount of space to reduce by.
-		let total: usize = col_widths.iter().sum();
-		let mut overflow = total.saturating_sub(max_table_width);
-		let mut underflow = min_table_width.saturating_sub(total);
-
-		// Table doesn't require adjustment.
-		if overflow == 0 && underflow == 0 { return; }
-
-		// Compute the absolute column weights.
-		let weight_total: f64 = (0..col_widths.len())
-			.map(|idx| {
-				if column_defs.is_fixed_width(idx) {
-					0.0
-				} else {
-					column_defs.dynamic_width_weight(idx)
-				}
-			})
-			.sum();
-		let abs_weights: Vec<f64> = (0..col_widths.len())
-			.map(|idx| {
-				if column_defs.is_fixed_width(idx) {
-					0.0
-				} else {
-					column_defs.dynamic_width_weight(idx) / weight_total
-				}
-			})
-			.collect();
-
-		if overflow > 0 {
-			Self::narrow_column_widths(
-				col_widths,
-				column_defs,
-				quant_widths,
-				&abs_weights[..],
-				overflow,
-				diagnostic_sink_fn);
-		} else {
-			Self::widen_column_widths(
-				col_widths,
-				column_defs,
-				quant_widths,
-				&abs_weights[..],
-				underflow,
-				diagnostic_sink_fn);
-		}
-	}
-
-	/// Distributes column widths according to table max and balancing rules.
-	fn narrow_column_widths(
-		col_widths: &mut [usize],
-		column_defs: &ColumnDefs<'_>,
-		quant_widths: &[usize],
-		abs_weights: &[f64],
-		mut overflow: usize,
-		diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
-	{
-		// Starting column widths are the 'natural widths' that hold each value.
-
-		// 1. We reduce the column widths to their quantile widths. This will
-		// prioritize shedding low-density space.
-
-		// Compute how much total quant space we must consume.
-		let total_quant: usize = col_widths.iter().enumerate()
-			.map(|(idx, w)| w.saturating_sub(quant_widths[idx]))
-			.sum();
-		if overflow >= total_quant {
-			// Do full quant reduction, since we must consume it all.
-			for (idx, col_width) in col_widths.iter_mut().enumerate() {
-				*col_width = quant_widths[idx]
-			}
-			overflow -= total_quant;
-		} else {
-			// Distribute `overflow` amount of width reduction by weight.
-			overflow -= distribute_by_weight(
-				col_widths,
-				&abs_weights[..],
-				overflow,
-				|idx, w| w.saturating_sub(column_defs.min_width(idx)),
-				|w, diff| *w -= diff);
-		}
-		if overflow == 0 { return; }
-		println!("quant {:?}", col_widths);
-
-		// 2. We reduce the column widths to their min widths.
-
-		// Compute how much total min space we must consume.
-		let total_min: usize = col_widths.iter().enumerate()
-			.map(|(idx, w)| w.saturating_sub(column_defs.min_width(idx)))
-			.sum();
-		if overflow >= total_min {
-			// Do full min reduction, since we must consume it all.
-			for (idx, col_width) in col_widths.iter_mut().enumerate() {
-				*col_width = column_defs.min_width(idx)
-			}
-			overflow -= total_min;
-		} else {
-			// Distribute `overflow` amount of width reduction by weight.
-			overflow -= distribute_by_weight(
-				col_widths,
-				&abs_weights[..],
-				overflow,
-				|idx, w| w.saturating_sub(column_defs.min_width(idx)),
-				|w, diff| *w -= diff);
-		}
-		if overflow != 0 {
-			println!("min {:?}", col_widths);
-			(diagnostic_sink_fn)(Diagnostic::TableWidthConstraintUnsatisfied);
-		}
-	}
-
-	/// Distributes column widths according to table max and balancing rules.
-	fn widen_column_widths(
-		col_widths: &mut [usize],
-		column_defs: &ColumnDefs<'_>,
-		quant_widths: &[usize],
-		abs_weights: &[f64],
-		mut underflow: usize,
-		diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
-	{
-		// Starting column widths are the 'natural widths' that hold each value.
-
-		// 1. We expand the column widths according to their weights, not to
-		// exceed their max widths.
-
-	
-		// Distribute `underflow` amount of width expansion by weight.
-		underflow -= distribute_by_weight(
-			col_widths,
-			&abs_weights[..],
-			underflow,
-			|idx, w| column_defs.max_width(idx).saturating_sub(w),
-			|w, diff| *w += diff);
-		
-		if underflow != 0 {
-			println!("min {:?}", col_widths);
-			(diagnostic_sink_fn)(Diagnostic::TableWidthConstraintUnsatisfied);
-		}
+	/// The Function to use for calculating column widths. A `None` value means
+	/// column widths should not be calculated.
+	#[must_use]
+	pub (in crate) fn str_width_fn(&self) -> Option<fn(&str) -> usize> {
+		self.str_width_fn
 	}
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+// RowsIter
+////////////////////////////////////////////////////////////////////////////////
+pub (in crate) struct RowsIter<'a, 'b, R> {
+	rows: &'b [SplitRow<'a, R>],
+	next: usize,
+}
+
+impl<'a, 'b, R> RowsIter<'a, 'b, R>
+	where 'a: 'b
+{
+	/// Constructs a new `RowsIter` over the given rows.
+	pub (in crate) fn new(rows: &'b [SplitRow<'a, R>]) -> Self {
+		RowsIter { rows, next: 0 }
+	}
+}
+
+impl<'a, 'b, R> Iterator for RowsIter<'a, 'b, R>
+	where 'a: 'b
+{
+	type Item = &'b SplitRow<'a, R>;
+	fn next(&mut self) -> Option<Self::Item> {
+		if self.next >= self.rows.len() { return None; }
+
+		let res = Some(&self.rows[self.next]);
+		self.next += 1;
+		res
+	}
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Column width distribution
+////////////////////////////////////////////////////////////////////////////////
+/// Distributes column widths according to table max and balancing rules.
+fn distribute_column_widths(
+	col_widths: &mut [usize],
+	column_defs: &ColumnDefs<'_>,
+	quant_widths: &[usize],
+	min_table_width: usize,
+	max_table_width: usize,
+	diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
+{
+	// Get the total amount of space to reduce by.
+	let total: usize = col_widths.iter().sum();
+	let overflow = total.saturating_sub(max_table_width);
+	let underflow = min_table_width.saturating_sub(total);
+
+	// Table doesn't require adjustment.
+	if overflow == 0 && underflow == 0 { return; }
+
+	// Compute the absolute column weights.
+	let weight_total: f64 = (0..col_widths.len())
+		.map(|idx| {
+			if column_defs.is_fixed_width(idx) {
+				0.0
+			} else {
+				column_defs.dynamic_width_weight(idx)
+			}
+		})
+		.sum();
+	let abs_weights: Vec<f64> = (0..col_widths.len())
+		.map(|idx| {
+			if column_defs.is_fixed_width(idx) {
+				0.0
+			} else {
+				column_defs.dynamic_width_weight(idx) / weight_total
+			}
+		})
+		.collect();
+
+	// Narrow or widen as needed.
+	if overflow > 0 {
+		narrow_column_widths(
+			col_widths,
+			column_defs,
+			quant_widths,
+			&abs_weights[..],
+			overflow,
+			diagnostic_sink_fn);
+	} else {
+		widen_column_widths(
+			col_widths,
+			column_defs,
+			quant_widths,
+			&abs_weights[..],
+			underflow,
+			diagnostic_sink_fn);
+	}
+}
+
+/// Distributes column widths according to table max and balancing rules.
+fn narrow_column_widths(
+	col_widths: &mut [usize],
+	column_defs: &ColumnDefs<'_>,
+	quant_widths: &[usize],
+	abs_weights: &[f64],
+	mut overflow: usize,
+	diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
+{
+	// Starting column widths are the 'natural widths' that hold each value.
+
+	// 1. We reduce the column widths to their quantile widths. This will
+	// prioritize shedding low-density space.
+
+	// Compute how much total quant space we must consume.
+	let total_quant: usize = col_widths.iter().enumerate()
+		.map(|(idx, w)| w.saturating_sub(quant_widths[idx]))
+		.sum();
+	if overflow >= total_quant {
+		// Do full quant reduction, since we must consume it all.
+		for (idx, col_width) in col_widths.iter_mut().enumerate() {
+			*col_width = quant_widths[idx]
+		}
+		overflow -= total_quant;
+	} else {
+		// Distribute `overflow` amount of width reduction by weight.
+		overflow -= distribute_by_weight(
+			col_widths,
+			&abs_weights[..],
+			overflow,
+			|idx, w| w.saturating_sub(column_defs.min_width(idx)),
+			|w, diff| *w -= diff);
+	}
+	if overflow == 0 { return; }
+	// println!("quant {:?}", col_widths);
+
+	// 2. We reduce the column widths to their min widths.
+
+	// Compute how much total min space we must consume.
+	let total_min: usize = col_widths.iter().enumerate()
+		.map(|(idx, w)| w.saturating_sub(column_defs.min_width(idx)))
+		.sum();
+	if overflow >= total_min {
+		// Do full min reduction, since we must consume it all.
+		for (idx, col_width) in col_widths.iter_mut().enumerate() {
+			*col_width = column_defs.min_width(idx)
+		}
+		overflow -= total_min;
+	} else {
+		// Distribute `overflow` amount of width reduction by weight.
+		overflow -= distribute_by_weight(
+			col_widths,
+			&abs_weights[..],
+			overflow,
+			|idx, w| w.saturating_sub(column_defs.min_width(idx)),
+			|w, diff| *w -= diff);
+	}
+	if overflow != 0 {
+		// println!("min {:?}", col_widths);
+		(diagnostic_sink_fn)(Diagnostic::TableWidthConstraintUnsatisfied);
+	}
+}
+
+/// Distributes column widths according to table max and balancing rules.
+fn widen_column_widths(
+	col_widths: &mut [usize],
+	column_defs: &ColumnDefs<'_>,
+	quant_widths: &[usize],
+	abs_weights: &[f64],
+	mut underflow: usize,
+	diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
+{
+	// Starting column widths are the 'natural widths' that hold each value.
+
+	// 1. We expand the column widths according to their weights, not to
+	// exceed their max widths.
+
+	// Distribute `underflow` amount of width expansion by weight.
+	underflow -= distribute_by_weight(
+		col_widths,
+		&abs_weights[..],
+		underflow,
+		|idx, w| column_defs.max_width(idx).saturating_sub(w),
+		|w, diff| *w += diff);
+
+	if underflow != 0 {
+		// println!("min {:?}", col_widths);
+		(diagnostic_sink_fn)(Diagnostic::TableWidthConstraintUnsatisfied);
+	}
+}
+
 /// Distrubutes column width reductions across each column by weight.
 ///
-/// The `allocate` parameter determines the total amount of reduction to apply.
-/// The `min_col_width_fn` should return the minimum width of the column indexed
-/// by its argument.
+/// The `allocate` parameter determines the total amount of change to apply.
+/// The `col_max_fn` should return the maximum change that may be applied to a
+/// column. It takes the column index and its current width as arguments. The
+/// `alloc_op` parameter determines how to apply the distribution: it takes a 
+/// mutable reference to the current column width and the amount it should
+/// change by.
 fn distribute_by_weight<F, O>(
 	widths: &mut [usize],
 	weights: &[f64],
@@ -448,16 +492,16 @@ fn distribute_by_weight<F, O>(
 	while allocate > 0 {
 		let weight_mult = (1.0 - clamped_weight).recip();
 		let current_allocate = allocate;
-		println!("allocate {:?}, clamped {:?}, widths {:?}",
-			allocate, clamped, widths);
+		// println!("allocate {:?}, clamped {:?}, widths {:?}",
+		// 	allocate, clamped, widths);
 		let mut residual: f64 = 0.0;
 		for (idx, width) in widths.iter_mut().enumerate() {
 			let fair_raw: f64 = weight_mult * weights[idx]
 				* current_allocate as f64 + residual;
 			if clamped.contains(&idx) { continue; }
 			let fair = fair_raw.round() as usize;
-			println!("\t{idx} {fair} ({:.3} = {fair_raw:.3})",
-				weight_mult * weights[idx]);
+			// println!("\t{idx} {fair} ({:.3} = {fair_raw:.3})",
+			// 	weight_mult * weights[idx]);
 			
 			let max = (col_max_fn)(idx, *width);
 			let diff = std::cmp::min(std::cmp::min(max, fair), allocate);

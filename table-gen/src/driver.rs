@@ -225,12 +225,11 @@ impl<'a, R, T> Table<'a, R, T>
 		where W: std::io::Write
 	{
 		let str_width_fn = self.inner.str_width_fn();
-		let rows = self.inner.rows();
 		let mut ctx = RenderContext {
 			column_default_def: &self.column_default_def,
 			column_defs: self.inner.column_defs(),
 			col_widths: self.inner.col_widths(),
-			row_count: rows.len(),
+			row_count: self.inner.row_count(),
 			row: None,
 			col: None,
 			line: None,
@@ -253,7 +252,7 @@ impl<'a, R, T> Table<'a, R, T>
 
 		// Write the data.
 		self.renderer.write_data_start(out, &ctx)?;
-		for (row_idx, row) in rows.iter().enumerate() {
+		for (row_idx, row) in self.inner.rows_iter().enumerate() {
 			ctx.row = Some(row_idx);
 			Self::render_data_row(
 				&mut self.renderer,
