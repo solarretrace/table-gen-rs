@@ -2,134 +2,21 @@
 // This code is dual licenced using the MIT or Apache 2 license.
 // See licence-mit.md and licence-apache.md for details.
 ////////////////////////////////////////////////////////////////////////////////
-//! Table generator cell formatting module.
+//! Table generator row splitting module.
 ////////////////////////////////////////////////////////////////////////////////
 
 // Internal library imports.
 use crate::Cell;
-use crate::Collate;
-use crate::ColumnDefs;
-use crate::Features;
-use crate::Format;
 use crate::FormatRow;
 use crate::Row;
-use crate::Sort;
 use crate::VertAlign;
 
 // External library imports.
 use smallvec::SmallVec;
 
 // Standard library imports.
-use std::ops::Bound;
+use std::cell::OnceCell;
 use std::str::Lines;
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Split
-////////////////////////////////////////////////////////////////////////////////
-/// Table cell line splitter.
-pub (in crate) struct Split<'a, R, S> {
-	/// The table data source.
-	inner: Sort<'a, R, S>,
-}
-
-impl<R, S, I> From<I> for Split<'_, R, S>
-	where
-		R: Row,
-		S: Iterator<Item=R>,
-		I: IntoIterator<Item=R, IntoIter=S>,
-{
-	fn from(inner: I) -> Self {
-		Split::new(inner.into())
-	}
-}
-
-impl<'a, R, S> From<Collate<'a, S>> for Split<'a, R, S>
-	where
-		R: Row,
-		S: Iterator<Item=R>,
-{
-	fn from(inner: Collate<'a, S>) -> Self {
-		Split::new(inner.into())
-	}
-}
-
-impl<'a, R, S> From<Format<'a, S>> for Split<'a, R, S>
-	where
-		R: Row,
-		S: Iterator<Item=R>,
-{
-	fn from(inner: Format<'a, S>) -> Self {
-		Split::new(inner.into())
-	}
-}
-
-impl<'a, R, S> From<Sort<'a, R, S>> for Split<'a, R, S>
-	where
-		R: Row,
-		S: Iterator<Item=R>,
-{
-	fn from(inner: Sort<'a, R, S>) -> Self {
-		Split::new(inner)
-	}
-}
-
-impl<'a, R, S> Split<'a, R, S>
-	where
-		R: Row,
-		S: Iterator<Item=R>,
-{
-	/// Constructs a new `Split` for the given data source.
-	#[must_use]
-	pub (in crate) fn new(inner: Sort<'a, R, S>) -> Self {
-		Self {
-			inner,
-		}
-	}
-
-	/// Returns a reference to the supported features for the renderer.
-	#[must_use]
-	pub (in crate) fn features(&self) -> &Features {
-		self.inner.features()
-	}
-
-	/// Returns a mutable reference to the supported features for the renderer.
-	#[must_use]
-	pub (in crate) fn features_mut(&mut self) -> &mut Features {
-		self.inner.features_mut()
-	}
-
-	/// Returns a reference to the row selection bounds.
-	#[must_use]
-	pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
-		self.inner.row_selection()
-	}
-
-	/// Returns a reference to the column definitions.
-	#[must_use]
-	pub (in crate) fn column_defs(&self) -> &ColumnDefs<'a> {
-		self.inner.column_defs()
-	}
-
-	/// Returns a mutable reference to the column definitions.
-	#[must_use]
-	pub (in crate) fn column_defs_mut(&mut self) -> &mut ColumnDefs<'a> {
-		self.inner.column_defs_mut()
-	}
-}
-
-impl<'a, R, S> Iterator for Split<'a, R, S>
-	where
-		R: Row,
-		S: Iterator<Item=R>,
-{
-	type Item = SplitRow<'a, R>;
-	fn next(&mut self) -> Option<Self::Item> {
-		self.inner
-			.next()
-			.map(|r| SplitRow::new(r))
-	}
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -140,6 +27,8 @@ impl<'a, R, S> Iterator for Split<'a, R, S>
 pub (in crate) struct SplitRow<'a, R> {
 	/// The row to format.
 	inner: FormatRow<'a, R>,
+	/// The cached wrapped cell texts.
+	cache: Vec<OnceCell<Box<str>>>,
 	/// The maximum number of lines in the row.
 	height: usize,
 }
@@ -161,13 +50,33 @@ impl<'a, R> SplitRow<'a, R>
 {
 	/// Returns a new `SplitRow` over the given `FormatRow`.
 	#[must_use]
-	pub (in crate) fn new(inner: FormatRow<'a, R>) -> Self {
-		let height = (0..inner.len())
-			.map(|c| inner.text(c).lines().count())
-			.max()
-			.unwrap_or(0);
+	pub (in crate) fn new(
+		inner: FormatRow<'a, R>,
+		col_widths: &[usize],
+		post_width_format_fn: Option<fn(&str, usize) -> String>)
+		-> Self
+	{
+		let cache = if post_width_format_fn.is_some() {
+			vec![OnceCell::new(); inner.len()]
+		} else {
+			Vec::new()
+		};
+		let mut height = 0;
+		for idx in 0..inner.len() {
+			let text =if let Some(post_width_format_fn) = post_width_format_fn {
+				cache[idx]
+					.get_or_init(|| (post_width_format_fn)(
+							inner.text(idx),
+							col_widths[idx])
+						.into_boxed_str())
+			} else {
+				inner.text(idx)
+			};
+			height = std::cmp::max(height, text.lines().count());
+		}
 		Self {
 			inner,
+			cache,
 			height,
 		}
 	}
@@ -178,10 +87,21 @@ impl<'a, R> SplitRow<'a, R>
 		self.height
 	}
 
-	/// Returns the text of the cell with the given column index.
+	/// Returns the inner text value of the cell with the given column index.
+	#[must_use]
+	pub (in crate) fn text_inner(&self, col_idx: usize) -> &str {
+		self.inner.text(col_idx)
+	}
+
+	/// Returns the post-width-formatted text of the cell with the given column
+	/// index.
 	#[must_use]
 	pub (in crate) fn text(&self, col_idx: usize) -> &str {
-		self.inner.text(col_idx)
+		self.cache
+			.get(col_idx)
+			.and_then(OnceCell::get)
+			.map(std::ops::Deref::deref)
+			.unwrap_or_else(|| self.text_inner(col_idx))
 	}
 
 	/// Returns an iterator over the lines of the cell with the given column

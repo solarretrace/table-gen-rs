@@ -116,14 +116,9 @@ The table-gen library generates a table through the following linear data flow s
       │             cached.
       v
     ╭┈┈┈┈┈┈┈┈┈┈┈╮
-    │ Split     ╞═> Responsible for splitting the cell text into lines.
-    ╰┈┈┈┈┈┈┈┈┈┈┈╯
-      │
-      v
-    ╭┈┈┈┈┈┈┈┈┈┈┈╮
     │ Aggregate ╞═> Runs column-based aggregation on the rows of the table. This
-    ╰┈┈┈┈┈┈┈┈┈┈┈╯   will materialize all non-fixed width columns as it computes
-      │             the required widths for each column.
+    ╰┈┈┈┈┈┈┈┈┈┈┈╯   will compute the required column widths and apply post-width
+      │             formatting such as line wrapping.
       v
     ┌──────────┐
     │ "Driver" ╞═> Drives the table renderer by calling the renderer hooks in

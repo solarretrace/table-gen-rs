@@ -10,7 +10,8 @@ use crate::ColumnDef;
 use crate::ColumnDefs;
 use crate::Diagnostic;
 use crate::Row;
-use crate::Split;
+use crate::FormatRow;
+use crate::Sort;
 use crate::SplitRow;
 use crate::TextRow;
 use crate::util::QuantileEstimator;
@@ -18,6 +19,7 @@ use crate::util::QuantileEstimator;
 // Standard library imports.
 use std::ops::RangeBounds as _;
 use std::collections::HashSet;
+use std::vec::IntoIter;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -29,7 +31,7 @@ pub (in crate) struct Aggregate<'a, R> {
 	/// The total number of rows in the table.
 	row_count: usize,
 	/// The materialized rows of the table.
-	rows: Vec<SplitRow<'a, R>>,
+	rows: IntoIter<FormatRow<'a, R>>,
 	/// The column output specifications.
 	column_defs: &'a [ColumnDef<'a>],
 	/// Function to use for calculating column widths. A `None` value means
@@ -37,6 +39,8 @@ pub (in crate) struct Aggregate<'a, R> {
 	str_width_fn: Option<fn(&str) -> usize>,
 	/// The column widths.
 	col_widths: Vec<usize>,
+	/// Function to apply post-width processing to formatted cell text.
+	post_width_format_fn: Option<fn(&str, usize) -> String>,
 	/// The table header row.
 	header_row: Option<TextRow<'a>>,
 	/// The table footer row.
@@ -56,12 +60,13 @@ impl<'a, R> Aggregate<'a, R>
 		diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
 		-> Self
 		where
-			T: Into<Split<'a, R, S>>,
+			T: Into<Sort<'a, R, S>>,
 			S: Iterator<Item=R>,
 			R: Row
 	{
 		let mut inner = inner.into();
 		let extra_column_width = inner.features().extra_column_width;
+		let post_width_format_fn = inner.features().post_width_format_fn;
 		*inner.column_defs_mut().column_default_mut() = column_default_def;
 		*inner.column_defs_mut().extra_column_width_mut() = extra_column_width;
 		let str_width_fn = inner.features().str_width_fn;
@@ -229,10 +234,11 @@ impl<'a, R> Aggregate<'a, R>
 
 		Self {
 			row_count: rows.len(),
-			rows,
+			rows: rows.into_iter(),
 			column_defs: column_defs.into_parts().1,
 			str_width_fn,
 			col_widths,
+			post_width_format_fn,
 			header_row,
 			footer_row,
 		}
@@ -246,8 +252,11 @@ impl<'a, R> Aggregate<'a, R>
 
 	/// Returns an iterator over the rows of the table.
 	#[must_use]
-	pub (in crate) fn rows_iter(&self) -> RowsIter<'a, '_, R> {
-		RowsIter::new(&self.rows[..])
+	pub (in crate) fn drain_rows(&mut self) -> RowsDrainIter<'a, R> {
+		RowsDrainIter::new(
+			std::mem::take(&mut self.rows),
+			self.col_widths.clone(),
+			self.post_width_format_fn)
 	}
 
 	/// Returns a slice of the column definitions.
@@ -284,32 +293,41 @@ impl<'a, R> Aggregate<'a, R>
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// RowsIter
+// RowsDrainIter
 ////////////////////////////////////////////////////////////////////////////////
-pub (in crate) struct RowsIter<'a, 'b, R> {
-	rows: &'b [SplitRow<'a, R>],
-	next: usize,
+pub (in crate) struct RowsDrainIter<'a, R> {
+	rows: IntoIter<FormatRow<'a, R>>,
+	col_widths: Vec<usize>,
+	post_width_format_fn: Option<fn(&str, usize) -> String>,
 }
 
-impl<'a, 'b, R> RowsIter<'a, 'b, R>
-	where 'a: 'b
+impl<'a, R> RowsDrainIter<'a, R>
+	where R: Row,
 {
-	/// Constructs a new `RowsIter` over the given rows.
-	pub (in crate) fn new(rows: &'b [SplitRow<'a, R>]) -> Self {
-		RowsIter { rows, next: 0 }
+	/// Constructs a new `RowsDrainIter` over the given rows.
+	pub (in crate) fn new(
+		rows: IntoIter<FormatRow<'a, R>>,
+		col_widths: Vec<usize>,
+		post_width_format_fn: Option<fn(&str, usize) -> String>)
+		-> Self
+	{
+		RowsDrainIter {
+			rows,
+			col_widths,
+			post_width_format_fn,
+		}
 	}
 }
 
-impl<'a, 'b, R> Iterator for RowsIter<'a, 'b, R>
-	where 'a: 'b
+impl<'a, R> Iterator for RowsDrainIter<'a, R>
+	where R: Row,
 {
-	type Item = &'b SplitRow<'a, R>;
+	type Item = SplitRow<'a, R>;
 	fn next(&mut self) -> Option<Self::Item> {
-		if self.next >= self.rows.len() { return None; }
-
-		let res = Some(&self.rows[self.next]);
-		self.next += 1;
-		res
+		self.rows.next().map(|row| SplitRow::new(
+			row,
+			&self.col_widths,
+			self.post_width_format_fn))
 	}
 }
 
@@ -367,7 +385,6 @@ fn distribute_column_widths(
 		widen_column_widths(
 			col_widths,
 			column_defs,
-			quant_widths,
 			&abs_weights[..],
 			underflow,
 			diagnostic_sink_fn);
@@ -441,7 +458,6 @@ fn narrow_column_widths(
 fn widen_column_widths(
 	col_widths: &mut [usize],
 	column_defs: &ColumnDefs<'_>,
-	quant_widths: &[usize],
 	abs_weights: &[f64],
 	mut underflow: usize,
 	diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))

@@ -25,7 +25,7 @@ pub struct Features {
 	pub post_display_format_fn: fn(String) -> String,
 
 	/// Function to apply post-width processing to formatted cell text.
-	pub post_width_format_fn: fn(String, usize) -> String,
+	pub post_width_format_fn: Option<fn(&str, usize) -> String>,
 
 	/// Function for computing the table width contribution of the renderer. It
 	/// will be provided the number of columns being rendered.
@@ -48,7 +48,7 @@ impl Features {
 		Self {
 			str_width_fn: Some(unicode_display_width),
 			post_display_format_fn: std::convert::identity,
-			post_width_format_fn: Self::identity_post_width_format,
+			post_width_format_fn: None,
 			width_contribution_fn: Some(
 				Box::new(Self::interspersed_space_width)),
 			extra_column_width: 0,
@@ -129,9 +129,5 @@ impl Features {
 
 	fn interspersed_space_width(col_count: usize) -> usize {
 		col_count.saturating_sub(1)
-	}
-
-	fn identity_post_width_format(s: String, _: usize) -> String {
-		s
 	}
 }

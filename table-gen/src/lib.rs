@@ -30,7 +30,6 @@ pub (in crate) use collate::CollateRow;
 pub (in crate) use format::Format;
 pub (in crate) use format::FormatRow;
 pub (in crate) use sort::Sort;
-pub (in crate) use split::Split;
 pub (in crate) use split::SplitRow;
 pub (in crate) use split::TextRow;
 

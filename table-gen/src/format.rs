@@ -19,6 +19,7 @@ use crate::Row;
 use std::cell::OnceCell;
 use std::fmt::Display;
 use std::ops::Bound;
+use std::str::Lines;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -130,7 +131,7 @@ pub (in crate) struct FormatRow<'a, R> {
 	inner: CollateRow<'a, R>,
 	/// The column output specifications,
 	column_defs: &'a [ColumnDef<'a>],
-	/// The cached cell texts.
+	/// The cached final cell texts.
 	cache: Vec<OnceCell<Box<str>>>,
 	/// Function to apply post-display processing to formatted cell text.
 	post_display_format_fn: fn(String) -> String,
@@ -184,6 +185,12 @@ impl<'a, R> FormatRow<'a, R>
 			},
 			None => String::new().into_boxed_str(),
 		})
+	}
+	
+	/// Returns an iterator over the lines of the cell with the given column
+	/// index.
+	pub (in crate) fn lines(&self, col_idx: usize) -> Lines<'_> {
+		self.text(col_idx).lines()
 	}
 }
 
