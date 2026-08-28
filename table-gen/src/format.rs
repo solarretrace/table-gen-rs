@@ -19,6 +19,7 @@ use crate::Row;
 use std::cell::OnceCell;
 use std::fmt::Display;
 use std::ops::Bound;
+use std::rc::Rc;
 use std::str::Lines;
 
 
@@ -116,7 +117,7 @@ impl<'a, R, S> Iterator for Format<'a, S>
 			.map(|collate_row| FormatRow::new(
 				collate_row,
 				self.inner.column_defs().columns(),
-				self.features().early_format_fn))
+				self.features().early_format_fn.as_ref().map(Rc::clone)))
 	}
 }
 
@@ -125,7 +126,8 @@ impl<'a, R, S> Iterator for Format<'a, S>
 // FormatRow
 ////////////////////////////////////////////////////////////////////////////////
 /// A single table row with collated column selection and ordering.
-#[derive(Debug, Clone)]
+#[allow(missing_copy_implementations)]
+#[allow(missing_debug_implementations)]
 pub (in crate) struct FormatRow<'a, R> {
 	/// The row to format.
 	inner: CollateRow<'a, R>,
@@ -134,7 +136,7 @@ pub (in crate) struct FormatRow<'a, R> {
 	/// The cached final cell texts.
 	cache: Vec<OnceCell<Box<str>>>,
 	/// Function to apply post-display processing to formatted cell text.
-	early_format_fn: fn(String) -> String,
+	early_format_fn: Option<Rc<dyn Fn(String) -> String>>,
 }
 
 impl<R> Row for FormatRow<'_, R>
@@ -158,7 +160,7 @@ impl<'a, R> FormatRow<'a, R>
 	pub (in crate) fn new(
 		inner: CollateRow<'a, R>,
 		column_defs: &'a [ColumnDef<'a>],
-		early_format_fn: fn(String) -> String)
+		early_format_fn: Option<Rc<dyn Fn(String) -> String>>)
 		-> Self
 	{
 		let cache = vec![OnceCell::new(); inner.len()];
@@ -175,13 +177,18 @@ impl<'a, R> FormatRow<'a, R>
 	pub (in crate) fn text(&self, col_idx: usize) -> &str {
 		self.cache[col_idx].get_or_init(|| match self.inner.cell(col_idx) {
 			Some(cell) => {
-				(self.early_format_fn)(self.column_defs
-						.get(col_idx)
-						.map_or_else(
-							DisplayFmt::default,
-							|spec| spec.display_fmt)
-						.apply(cell))
-					.into_boxed_str()
+				let text = self.column_defs
+					.get(col_idx)
+					.map_or_else(
+						DisplayFmt::default,
+						|spec| spec.display_fmt)
+					.apply(cell);
+				if let Some(early_format_fn) = self.early_format_fn.as_ref() {
+					(*early_format_fn)(text)
+						.into_boxed_str()
+				} else {
+					text.into_boxed_str()
+				}
 			},
 			None => String::new().into_boxed_str(),
 		})

@@ -17,8 +17,9 @@ use crate::TextRow;
 use crate::util::QuantileEstimator;
 
 // Standard library imports.
-use std::ops::RangeBounds as _;
 use std::collections::HashSet;
+use std::ops::RangeBounds as _;
+use std::rc::Rc;
 use std::vec::IntoIter;
 
 
@@ -26,7 +27,8 @@ use std::vec::IntoIter;
 // Aggregate
 ////////////////////////////////////////////////////////////////////////////////
 /// Table cell column aggregator.
-#[derive(Debug, Clone)]
+#[allow(missing_copy_implementations)]
+#[allow(missing_debug_implementations)]
 pub (in crate) struct Aggregate<'a, R> {
 	/// The total number of rows in the table.
 	row_count: usize,
@@ -40,7 +42,7 @@ pub (in crate) struct Aggregate<'a, R> {
 	/// The column widths.
 	col_widths: Vec<usize>,
 	/// Function to apply post-width processing to formatted cell text.
-	late_format_fn: Option<fn(&str, usize, usize) -> String>,
+	late_format_fn: Option<Rc<dyn Fn(&str, usize, usize) -> String>>,
 	/// The table header row.
 	header_row: Option<TextRow<'a>>,
 	/// The table footer row.
@@ -66,7 +68,10 @@ impl<'a, R> Aggregate<'a, R>
 	{
 		let mut inner = inner.into();
 		let extra_column_width = inner.features().extra_column_width;
-		let late_format_fn = inner.features().late_format_fn;
+		let late_format_fn = inner.features()
+			.late_format_fn
+			.as_ref()
+			.map(Rc::clone);
 		*inner.column_defs_mut().column_default_mut() = column_default_def;
 		*inner.column_defs_mut().extra_column_width_mut() = extra_column_width;
 		let str_width_fn = inner.features().str_width_fn;
@@ -256,7 +261,7 @@ impl<'a, R> Aggregate<'a, R>
 		RowsDrainIter::new(
 			std::mem::take(&mut self.rows),
 			self.col_widths.clone(),
-			self.late_format_fn)
+			self.late_format_fn.as_ref().map(Rc::clone))
 	}
 
 	/// Returns a slice of the column definitions.
@@ -295,10 +300,12 @@ impl<'a, R> Aggregate<'a, R>
 ////////////////////////////////////////////////////////////////////////////////
 // RowsDrainIter
 ////////////////////////////////////////////////////////////////////////////////
+#[allow(missing_copy_implementations)]
+#[allow(missing_debug_implementations)]
 pub (in crate) struct RowsDrainIter<'a, R> {
 	rows: IntoIter<FormatRow<'a, R>>,
 	col_widths: Vec<usize>,
-	late_format_fn: Option<fn(&str, usize, usize) -> String>,
+	late_format_fn: Option<Rc<dyn Fn(&str, usize, usize) -> String>>,
 }
 
 impl<'a, R> RowsDrainIter<'a, R>
@@ -308,7 +315,7 @@ impl<'a, R> RowsDrainIter<'a, R>
 	pub (in crate) fn new(
 		rows: IntoIter<FormatRow<'a, R>>,
 		col_widths: Vec<usize>,
-		late_format_fn: Option<fn(&str, usize, usize) -> String>)
+		late_format_fn: Option<Rc<dyn Fn(&str, usize, usize) -> String>>)
 		-> Self
 	{
 		RowsDrainIter {
@@ -327,7 +334,7 @@ impl<'a, R> Iterator for RowsDrainIter<'a, R>
 		self.rows.next().map(|row| SplitRow::new(
 			row,
 			&self.col_widths,
-			self.late_format_fn))
+			self.late_format_fn.as_deref()))
 	}
 }
 

@@ -8,6 +8,7 @@
 
 // Internal library imports.
 use crate::TrailingWsTrimWriter;
+use crate::WrapOptions;
 
 // Workspace library imports.
 use table_gen::CellContext;
@@ -16,6 +17,9 @@ use table_gen::HorzAlign;
 use table_gen::RenderContext;
 use table_gen::Renderer;
 use table_gen::util::write_cell_formatted;
+
+// Standard library imports.
+use std::rc::Rc;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,6 +36,8 @@ pub struct MarkdownMultilineRenderer {
 	extra_column_width: u8,
 	/// Indicates that the last column should be padded on the right.
 	pad_trailing_column: bool,
+	/// Indicates that text wrapping should be used.
+	wrap_options: Option<WrapOptions>,
 }
 
 impl Default for MarkdownMultilineRenderer {
@@ -48,6 +54,7 @@ impl MarkdownMultilineRenderer {
 			column_padding: 0,
 			extra_column_width: 2,
 			pad_trailing_column: true,
+			wrap_options: Some(WrapOptions::new()),
 		}
 	}
 
@@ -62,6 +69,15 @@ impl MarkdownMultilineRenderer {
 	#[must_use]
 	pub fn with_extra_column_width(mut self, extra_column_width: u8) -> Self {
 		self.extra_column_width = extra_column_width;
+		self
+	}
+
+	/// Sets the text wrap flag and returns the `MarkdownMultilineRenderer`.
+	#[must_use]
+	pub fn with_wrap_options<O>(mut self, wrap_options: O) -> Self 
+		where O: Into<Option<WrapOptions>>
+	{
+		self.wrap_options = wrap_options.into();
 		self
 	}
 
@@ -80,8 +96,14 @@ impl MarkdownMultilineRenderer {
 
 impl Renderer for MarkdownMultilineRenderer {
 	fn features(&self) -> Features {
-		Features::default()
-			.with_extra_column_width(self.extra_column_width.into())
+		let mut features = Features::default()
+			.with_extra_column_width(self.extra_column_width.into());
+		if let Some(wrap_options) = self.wrap_options.clone() {
+			features = features
+				.with_late_format_fn(Rc::new(move |s, _, w| 
+					textwrap::fill(s, wrap_options.as_options(w))))
+		}
+		features
 	}
 
 	fn write_header_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
@@ -586,7 +608,8 @@ mod test {
 				.with_footer("COLUMN D"),
 		];
 
-		let mut table = Table::new_builder(data, MarkdownMultilineRenderer::new())
+		let mut table = Table::new_builder(data, MarkdownMultilineRenderer::new()
+				.with_wrap_options(None))
 			.with_column_defs(&column_defs)
 			.with_max_table_width(80)
 			.finish();

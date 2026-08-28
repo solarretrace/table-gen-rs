@@ -8,6 +8,8 @@
 // Internal library imports.
 use crate::util::unicode_display_width;
 
+// Standard library imports.
+use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Features
@@ -22,10 +24,10 @@ pub struct Features {
 	pub str_width_fn: Option<fn(&str) -> usize>,
 
 	/// Function to apply processing to formatted cell text before aggregation.
-	pub early_format_fn: fn(String) -> String,
+	pub early_format_fn: Option<Rc<dyn Fn(String) -> String>>,
 
 	/// Function to apply processing to formatted cell text after aggregation.
-	pub late_format_fn: Option<fn(&str, usize, usize) -> String>,
+	pub late_format_fn: Option<Rc<dyn Fn(&str, usize, usize) -> String>>,
 
 	/// Function for computing the table width contribution of the renderer. It
 	/// will be provided the number of columns being rendered.
@@ -47,7 +49,7 @@ impl Features {
 	pub fn new() -> Self {
 		Self {
 			str_width_fn: Some(unicode_display_width),
-			early_format_fn: std::convert::identity,
+			early_format_fn: None,
 			late_format_fn: None,
 			width_contribution_fn: Some(
 				Box::new(Self::interspersed_space_width)),
@@ -78,10 +80,10 @@ impl Features {
 	#[must_use]
 	pub fn with_early_format_fn(
 		mut self,
-		early_format_fn: fn(String) -> String)
+		early_format_fn: Rc<dyn Fn(String) -> String>)
 		-> Self
 	{
-		self.early_format_fn = early_format_fn;
+		self.early_format_fn = Some(early_format_fn);
 		self
 	}
 
@@ -96,7 +98,7 @@ impl Features {
 	#[must_use]
 	pub fn with_late_format_fn(
 		mut self,
-		late_format_fn: fn(&str, usize, usize) -> String)
+		late_format_fn: Rc<dyn Fn(&str, usize, usize) -> String>)
 		-> Self
 	{
 		self.late_format_fn = Some(late_format_fn);

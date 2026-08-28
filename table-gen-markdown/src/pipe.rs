@@ -19,6 +19,9 @@ use table_gen::util::write_cell_formatted;
 // External library imports.
 use bitflags::bitflags;
 
+// Standard library imports.
+use std::rc::Rc;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Flags
@@ -172,7 +175,7 @@ impl Renderer for MarkdownPipeRenderer {
 	fn features(&self) -> Features {
 		let padding: usize = self.column_padding.into();
 		Features::default()
-			.with_early_format_fn(Features::remove_line_breaks)
+			.with_early_format_fn(Rc::new(Features::remove_line_breaks))
 			.with_extra_column_width(self.extra_column_width.into())
 			.with_width_contribution_fn(Box::new(move |col_count| {
 				// Width of dividers

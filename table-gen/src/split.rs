@@ -23,7 +23,8 @@ use std::str::Lines;
 // SplitRow
 ////////////////////////////////////////////////////////////////////////////////
 /// A single table row with line splitting.
-#[derive(Debug, Clone)]
+#[allow(missing_copy_implementations)]
+#[allow(missing_debug_implementations)]
 pub (in crate) struct SplitRow<'a, R> {
 	/// The row to format.
 	inner: FormatRow<'a, R>,
@@ -53,7 +54,7 @@ impl<'a, R> SplitRow<'a, R>
 	pub (in crate) fn new(
 		inner: FormatRow<'a, R>,
 		col_widths: &[usize],
-		late_format_fn: Option<fn(&str, usize, usize) -> String>)
+		late_format_fn: Option<&dyn Fn(&str, usize, usize) -> String>)
 		-> Self
 	{
 		let cache = if late_format_fn.is_some() {
