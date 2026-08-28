@@ -13,6 +13,8 @@ use unicode_segmentation::UnicodeSegmentation as _;
 
 // Re-exports.
 pub use unicode_display_width::width;
+pub use textwrap::fill;
+pub use crate::wrap::*;
 
 
 ////////////////////////////////////////////////////////////////////////////////

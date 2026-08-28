@@ -8,7 +8,6 @@
 
 // Internal library imports.
 use crate::TrailingWsTrimWriter;
-use crate::WrapOptions;
 
 // Workspace library imports.
 use table_gen::CellContext;
@@ -16,6 +15,8 @@ use table_gen::Features;
 use table_gen::HorzAlign;
 use table_gen::RenderContext;
 use table_gen::Renderer;
+use table_gen::util::fill;
+use table_gen::util::WrapOptions;
 use table_gen::util::write_cell_formatted;
 
 // Standard library imports.
@@ -35,7 +36,7 @@ pub struct MarkdownMultilineRenderer {
 	/// The amount of extra space to allocate within columns.
 	extra_column_width: u8,
 	/// Indicates that the last column should be padded on the right.
-	pad_trailing_column: bool,
+	padded_trailing_column: bool,
 	/// Indicates that text wrapping should be used.
 	wrap_options: Option<WrapOptions>,
 }
@@ -53,7 +54,7 @@ impl MarkdownMultilineRenderer {
 		Self {
 			column_padding: 0,
 			extra_column_width: 2,
-			pad_trailing_column: true,
+			padded_trailing_column: true,
 			wrap_options: Some(WrapOptions::new()),
 		}
 	}
@@ -72,24 +73,27 @@ impl MarkdownMultilineRenderer {
 		self
 	}
 
-	/// Sets the text wrap flag and returns the `MarkdownMultilineRenderer`.
-	#[must_use]
-	pub fn with_wrap_options<O>(mut self, wrap_options: O) -> Self 
-		where O: Into<Option<WrapOptions>>
-	{
-		self.wrap_options = wrap_options.into();
-		self
-	}
-
 	/// Sets the flag for adding trailing column padding and returns the
 	/// `MarkdownSimpleRenderer`.
 	#[must_use]
 	pub fn with_padded_trailing_column(
 		mut self,
-		pad_trailing_column: bool)
+		padded_trailing_column: bool)
 		-> Self
 	{
-		self.pad_trailing_column = pad_trailing_column;
+		self.padded_trailing_column = padded_trailing_column;
+		self
+	}
+
+	/// Sets the text wrap options and returns the `MarkdownMultilineRenderer`.
+	///
+	/// Note: this method overrides any value previously specified with
+	/// `with_late_format_fn`.
+	#[must_use]
+	pub fn with_wrap_options<O>(mut self, wrap_options: O) -> Self 
+		where O: Into<Option<WrapOptions>>
+	{
+		self.wrap_options = wrap_options.into();
 		self
 	}
 }
@@ -101,7 +105,7 @@ impl Renderer for MarkdownMultilineRenderer {
 		if let Some(wrap_options) = self.wrap_options.clone() {
 			features = features
 				.with_late_format_fn(Rc::new(move |s, _, w| 
-					textwrap::fill(s, wrap_options.as_options(w))))
+					fill(s, wrap_options.as_options(w))))
 		}
 		features
 	}
@@ -133,7 +137,7 @@ impl Renderer for MarkdownMultilineRenderer {
 		};
 		if ctx.is_last_column() 
 			&& cell.desc.horz_align != HorzAlign::Right
-			&& !self.pad_trailing_column
+			&& !self.padded_trailing_column
 		{
 			// We need to prevent writing trailing whitespace on the last
 			// column.
@@ -617,7 +621,7 @@ mod test {
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		println!("{}", out);
+		//println!("{}", out);
 
 		assert_eq!(out, "\
 --------------------------------------------------------------------------------
@@ -641,6 +645,127 @@ consequa… illum qui dolorem … quo volup… pariatur?
 --------------------------------------------------------------------------------
 
 COLUMN A  COLUMN B            COLUMN C   COLUMN D                               
+");
+	}
+
+	#[test]
+	fn cicero_wrap() {
+		let data: Vec<[&str; 4]> = vec![
+			[
+				"Sed ut perspiciatis",
+				"unde omnis iste natus error",
+				"sit voluptatem accusantium",
+				"doloremque laudantium, totam rem aperiam,",
+			],
+			[
+				"eaque ipsa quae",
+				"ab illo inventore veritatis et",
+				"quasi architecto beatae",
+				"vitae dicta sunt explicabo. Nemo enim ipsam",
+			],
+			[
+				"voluptatem quia voluptas",
+				"sit aspernatur aut odit aut",
+				"fugit, sed",
+				"quia consequuntur magni dolores eos qui ratione",
+			],
+			[
+				"voluptatem sequi nesciunt",
+				"Neque porro quisquam est,",
+				"qui dolorem ipsum",
+				"quia dolor sit amet, consectetur, adipisci",
+			],
+			[
+				"velit, sed",
+				"quia non numquam eius modi",
+				"tempora incidunt ut",
+				"labore et dolore magnam aliquam quaerat voluptatem. Ut",
+			],
+			[
+				"enim ad minima",
+				"veniam, quis nostrum exercitationem",
+				"ullam corporis suscipit",
+				"laboriosam, nisi ut aliquid ex ea",
+			],
+			[
+				"commodi consequatur?",
+				"Quis autem vel eum iure",
+				"reprehenderit qui in",
+				"ea voluptate velit esse quam nihil molestiae",
+			],
+			[
+				"consequatur, vel",
+				"illum qui dolorem eum fugiat",
+				"quo voluptas nulla",
+				"pariatur?",
+			],
+		];
+		
+		let column_defs = vec![
+			ColumnDef::new()
+				.with_header("COLUMN A")
+				.with_footer("COLUMN A"),
+			ColumnDef::new()
+				.with_header("COLUMN B")
+				.with_footer("COLUMN B"),
+			ColumnDef::new()
+				.with_header("COLUMN C")
+				.with_footer("COLUMN C"),
+			ColumnDef::new()
+				.with_header("COLUMN D")
+				.with_footer("COLUMN D"),
+		];
+
+		let mut table = Table::new_builder(data, MarkdownMultilineRenderer::new()
+				.with_wrap_options(WrapOptions::new()
+					.with_break_words(false))
+				.with_padded_trailing_column(false))
+			.with_column_defs(&column_defs)
+			.with_max_table_width(80)
+			.finish();
+
+		let mut out: Vec<u8> = Vec::new();
+		assert!(table.render(&mut out).is_ok());
+		let out = String::from_utf8(out).unwrap();
+		//println!("{}", out);
+
+		assert_eq!(out, "\
+--------------------------------------------------------------------------------
+COLUMN A  COLUMN B            COLUMN C   COLUMN D
+--------- ------------------- ---------- ---------------------------------------
+Sed ut    unde omnis iste     sit        doloremque laudantium, totam rem
+perspici… natus error         voluptatem aperiam,
+                              accusanti… 
+
+eaque     ab illo inventore   quasi      vitae dicta sunt explicabo. Nemo enim
+ipsa quae veritatis et        architecto ipsam
+                              beatae     
+
+voluptat… sit aspernatur aut  fugit, sed quia consequuntur magni dolores eos
+quia      odit aut                       qui ratione
+voluptas                                 
+
+voluptat… Neque porro         qui        quia dolor sit amet, consectetur,
+sequi     quisquam est,       dolorem    adipisci
+nesciunt                      ipsum      
+
+velit,    quia non numquam    tempora    labore et dolore magnam aliquam quaerat
+sed       eius modi           incidunt   voluptatem. Ut
+                              ut         
+
+enim ad   veniam,             ullam      laboriosam, nisi ut aliquid ex ea
+minima    quis nostrum        corporis   
+          exercitationem      suscipit   
+
+commodi   Quis autem vel      reprehend… ea voluptate velit esse quam nihil
+consequa… eum iure            qui in     molestiae
+
+consequa… illum qui dolorem   quo        pariatur?
+vel       eum fugiat          voluptas   
+                              nulla      
+--------------------------------------------------------------------------------
+
+COLUMN A  COLUMN B            COLUMN C   COLUMN D
 ");
 	}
 }

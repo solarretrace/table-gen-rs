@@ -17,7 +17,6 @@ name = "table_gen_markdown"
 [dependencies]
 bitflags.workspace = true
 table-gen.workspace = true
-textwrap = "0.16"
 
 [lints]
 workspace = true

@@ -5,9 +5,8 @@
 
 # Implementation tasks:
 
-+ Implement Features:
-	- Support custom line wrapping
-	- Support text coloring
+
++ Support text coloring
 + Support outer border elision in terminal renderers
 + Support independent header/footer alignment
 + Implement parallelism

@@ -16,10 +16,13 @@ use table_gen::CellContext;
 use table_gen::Features;
 use table_gen::RenderContext;
 use table_gen::Renderer;
+use table_gen::util::fill;
+use table_gen::util::WrapOptions;
 use table_gen::util::write_cell_formatted;
 
 // Standard library imports.
 use std::fmt::Display;
+use std::rc::Rc;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -126,6 +129,8 @@ pub struct BoxTileRenderer {
 	extra_column_width: u8,
 	/// The `BoxTileStyle` to render with.
 	style: BoxTileStyle,
+	/// Indicates that text wrapping should be used.
+	wrap_options: Option<WrapOptions>,
 }
 
 impl Default for BoxTileRenderer {
@@ -142,6 +147,7 @@ impl BoxTileRenderer {
 			column_padding: 1,
 			extra_column_width: 0,
 			style: BoxTileStyle::new(),
+			wrap_options: Some(WrapOptions::new()),
 		}
 	}
 
@@ -163,6 +169,18 @@ impl BoxTileRenderer {
 	#[must_use]
 	pub fn with_style(mut self, style: BoxTileStyle) -> Self {
 		self.style = style;
+		self
+	}
+
+	/// Sets the text wrap options and returns the `BoxTileRenderer`.
+	///
+	/// Note: this method overrides any value previously specified with
+	/// `with_late_format_fn`.
+	#[must_use]
+	pub fn with_wrap_options<O>(mut self, wrap_options: O) -> Self 
+		where O: Into<Option<WrapOptions>>
+	{
+		self.wrap_options = wrap_options.into();
 		self
 	}
 
@@ -223,14 +241,20 @@ impl BoxTileRenderer {
 impl Renderer for BoxTileRenderer {
 	fn features(&self) -> Features {
 		let padding: usize = self.column_padding.into();
-		Features::default()
+		let mut features = Features::default()
 			.with_extra_column_width(self.extra_column_width.into())
 			.with_width_contribution_fn(Box::new(move |col_count| {
 				// Width of dividers
 				(col_count * 2) 
 				// Width of cell padding
 				+ (col_count * padding * 2)
-			}))
+			}));
+		if let Some(wrap_options) = self.wrap_options.clone() {
+			features = features
+				.with_late_format_fn(Rc::new(move |s, _, w| 
+					fill(s, wrap_options.as_options(w))))
+		}
+		features
 	}
 
 	fn write_data_cell_line<W>(
@@ -788,7 +812,8 @@ mod test {
 				.with_footer("COLUMN D"),
 		];
 
-		let mut table = Table::new_builder(data, BoxTileRenderer::new())
+		let mut table = Table::new_builder(data, BoxTileRenderer::new()
+				.with_wrap_options(None))
 			.with_column_defs(&column_defs)
 			.with_max_table_width(80)
 			.finish();
@@ -825,6 +850,135 @@ mod test {
 └────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
 ┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
 │ conse… ││ illum qui dolor… ││ quo vo… ││ pariatur?                           │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+╔════════╗╔══════════════════╗╔═════════╗╔═════════════════════════════════════╗
+║ COLUM… ║║ COLUMN B         ║║ COLUMN… ║║ COLUMN D                            ║
+╚════════╝╚══════════════════╝╚═════════╝╚═════════════════════════════════════╝
+");
+	}
+
+	#[test]
+	fn cicero_wrap() {
+		let data: Vec<[&str; 4]> = vec![
+			[
+				"Sed ut perspiciatis",
+				"unde omnis iste natus error",
+				"sit voluptatem accusantium",
+				"doloremque laudantium, totam rem aperiam,",
+			],
+			[
+				"eaque ipsa quae",
+				"ab illo inventore veritatis et",
+				"quasi architecto beatae",
+				"vitae dicta sunt explicabo. Nemo enim ipsam",
+			],
+			[
+				"voluptatem quia voluptas",
+				"sit aspernatur aut odit aut",
+				"fugit, sed",
+				"quia consequuntur magni dolores eos qui ratione",
+			],
+			[
+				"voluptatem sequi nesciunt",
+				"Neque porro quisquam est,",
+				"qui dolorem ipsum",
+				"quia dolor sit amet, consectetur, adipisci",
+			],
+			[
+				"velit, sed",
+				"quia non numquam eius modi",
+				"tempora incidunt ut",
+				"labore et dolore magnam aliquam quaerat voluptatem. Ut",
+			],
+			[
+				"enim ad minima",
+				"veniam, quis nostrum exercitationem",
+				"ullam corporis suscipit",
+				"laboriosam, nisi ut aliquid ex ea",
+			],
+			[
+				"commodi consequatur?",
+				"Quis autem vel eum iure",
+				"reprehenderit qui in",
+				"ea voluptate velit esse quam nihil molestiae",
+			],
+			[
+				"consequatur, vel",
+				"illum qui dolorem eum fugiat",
+				"quo voluptas nulla",
+				"pariatur?",
+			],
+		];
+		
+		let column_defs = vec![
+			ColumnDef::new()
+				.with_header("COLUMN A")
+				.with_footer("COLUMN A"),
+			ColumnDef::new()
+				.with_header("COLUMN B")
+				.with_footer("COLUMN B"),
+			ColumnDef::new()
+				.with_header("COLUMN C")
+				.with_footer("COLUMN C"),
+			ColumnDef::new()
+				.with_header("COLUMN D")
+				.with_footer("COLUMN D"),
+		];
+
+		let mut table = Table::new_builder(data, BoxTileRenderer::new()
+				.with_wrap_options(WrapOptions::new()
+					.with_break_words(false)))
+			.with_column_defs(&column_defs)
+			.with_max_table_width(80)
+			.finish();
+
+		let mut out: Vec<u8> = Vec::new();
+		assert!(table.render(&mut out).is_ok());
+		let out = String::from_utf8(out).unwrap();
+		//println!("{}", out);
+
+		assert_eq!(out, "\
+╔════════╗╔══════════════════╗╔═════════╗╔═════════════════════════════════════╗
+║ COLUM… ║║ COLUMN B         ║║ COLUMN… ║║ COLUMN D                            ║
+╚════════╝╚══════════════════╝╚═════════╝╚═════════════════════════════════════╝
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ Sed ut ││ unde omnis iste  ││ sit     ││ doloremque laudantium, totam rem    │
+│ persp… ││ natus error      ││ volupt… ││ aperiam,                            │
+│        ││                  ││ accusa… ││                                     │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ eaque  ││ ab illo          ││ quasi   ││ vitae dicta sunt explicabo. Nemo    │
+│ ipsa   ││ inventore        ││ archit… ││ enim ipsam                          │
+│ quae   ││ veritatis et     ││ beatae  ││                                     │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ volup… ││ sit aspernatur   ││ fugit,  ││ quia consequuntur magni dolores eos │
+│ quia   ││ aut odit aut     ││ sed     ││ qui ratione                         │
+│ volup… ││                  ││         ││                                     │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ volup… ││ Neque porro      ││ qui     ││ quia dolor sit amet, consectetur,   │
+│ sequi  ││ quisquam est,    ││ dolorem ││ adipisci                            │
+│ nesci… ││                  ││ ipsum   ││                                     │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ velit, ││ quia non numquam ││ tempora ││ labore et dolore magnam aliquam     │
+│ sed    ││ eius modi        ││ incidu… ││ quaerat voluptatem. Ut              │
+│        ││                  ││ ut      ││                                     │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ enim   ││ veniam,          ││ ullam   ││ laboriosam, nisi ut aliquid ex ea   │
+│ ad     ││ quis nostrum     ││ corpor… ││                                     │
+│ minima ││ exercitationem   ││ suscip… ││                                     │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ commo… ││ Quis autem vel   ││ repreh… ││ ea voluptate velit esse quam nihil  │
+│ conse… ││ eum iure         ││ qui in  ││ molestiae                           │
+└────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
+┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
+│ conse… ││ illum qui        ││ quo     ││ pariatur?                           │
+│ vel    ││ dolorem eum      ││ volupt… ││                                     │
+│        ││ fugiat           ││ nulla   ││                                     │
 └────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
 ╔════════╗╔══════════════════╗╔═════════╗╔═════════════════════════════════════╗
 ║ COLUM… ║║ COLUMN B         ║║ COLUMN… ║║ COLUMN D                            ║

@@ -20,6 +20,7 @@ seq-macro = "0.3"
 smallvec = "1.15"
 unicode-segmentation = "1.13"
 unicode-display-width = "0.3"
+textwrap = "0.16"
 
 [lints]
 workspace = true

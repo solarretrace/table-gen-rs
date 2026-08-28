@@ -15,8 +15,8 @@ homepage.workspace = true
 name = "table_gen_terminal"
 
 [dependencies]
-table-gen.workspace = true
 anstyle = "1.0"
+table-gen.workspace = true
 
 [lints]
 workspace = true

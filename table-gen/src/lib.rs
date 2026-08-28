@@ -18,6 +18,7 @@ mod render;
 mod row;
 mod sort;
 mod split;
+mod wrap;
 
 // Public modules.
 pub mod util;
