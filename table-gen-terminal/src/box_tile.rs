@@ -947,9 +947,7 @@ mod test {
 				.with_footer("COLUMN D"),
 		];
 
-		let mut table = Table::new_builder(data, BoxTileRenderer::new()
-				.with_wrap_options(WrapOptions::new()
-					.with_break_words(false)))
+		let mut table = Table::new_builder(data, BoxTileRenderer::new())
 			.with_column_defs(&column_defs)
 			.with_max_table_width(80)
 			.finish();

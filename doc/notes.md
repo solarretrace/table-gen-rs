@@ -7,6 +7,7 @@
 
 
 + Support text coloring
++ Attach formatting functions to ColumnDefs
 + Support outer border elision in terminal renderers
 + Support independent header/footer alignment
 + Implement parallelism

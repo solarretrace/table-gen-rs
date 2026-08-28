@@ -150,6 +150,8 @@ For most use-cases, it should be very simple to generate a table with access to 
 
 ## Examples
 
+The following are demonstrations of the default output of available renderers:
+
 ### Minimal renderer
 
 `table_gen_terminal::MinimalRenderer`:
@@ -175,21 +177,36 @@ COLUMN A  COLUMN B            COLUMN C   COLUMN D
 ┌─────────┬──────────────────┬──────────┬──────────────────────────────────────┐
 │ COLUMN… ┆ COLUMN B         ┆ COLUMN C ┆ COLUMN D                             │
 ╞═════════╪══════════════════╪══════════╪══════════════════════════════════════╡
-│ Sed ut… ┆ unde omnis iste… ┆ sit vol… ┆ doloremque laudantium, totam rem ap… │
+│ Sed ut  ┆ unde omnis iste  ┆ sit      ┆ doloremque laudantium, totam rem     │
+│ perspi… ┆ natus error      ┆ volupta… ┆ aperiam,                             │
+│         ┆                  ┆ accusan… ┆                                      │
 ├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
-│ eaque … ┆ ab illo invento… ┆ quasi a… ┆ vitae dicta sunt explicabo. Nemo en… │
+│ eaque   ┆ ab illo          ┆ quasi    ┆ vitae dicta sunt explicabo. Nemo     │
+│ ipsa    ┆ inventore        ┆ archite… ┆ enim ipsam                           │
+│ quae    ┆ veritatis et     ┆ beatae   ┆                                      │
 ├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
-│ volupt… ┆ sit aspernatur … ┆ fugit, … ┆ quia consequuntur magni dolores eos… │
+│ volupt… ┆ sit aspernatur   ┆ fugit,   ┆ quia consequuntur magni dolores eos  │
+│ quia    ┆ aut odit aut     ┆ sed      ┆ qui ratione                          │
+│ volupt… ┆                  ┆          ┆                                      │
 ├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
-│ volupt… ┆ Neque porro qui… ┆ qui dol… ┆ quia dolor sit amet, consectetur, a… │
+│ volupt… ┆ Neque porro      ┆ qui      ┆ quia dolor sit amet, consectetur,    │
+│ sequi   ┆ quisquam est,    ┆ dolorem  ┆ adipisci                             │
+│ nesciu… ┆                  ┆ ipsum    ┆                                      │
 ├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
-│ velit,… ┆ quia non numqua… ┆ tempora… ┆ labore et dolore magnam aliquam qua… │
+│ velit,  ┆ quia non numquam ┆ tempora  ┆ labore et dolore magnam aliquam      │
+│ sed     ┆ eius modi        ┆ incidunt ┆ quaerat voluptatem. Ut               │
+│         ┆                  ┆ ut       ┆                                      │
 ├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
-│ enim a… ┆ veniam, quis no… ┆ ullam c… ┆ laboriosam, nisi ut aliquid ex ea    │
+│ enim ad ┆ veniam,          ┆ ullam    ┆ laboriosam, nisi ut aliquid ex ea    │
+│ minima  ┆ quis nostrum     ┆ corporis ┆                                      │
+│         ┆ exercitationem   ┆ suscipit ┆                                      │
 ├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
-│ commod… ┆ Quis autem vel … ┆ reprehe… ┆ ea voluptate velit esse quam nihil … │
+│ commodi ┆ Quis autem vel   ┆ reprehe… ┆ ea voluptate velit esse quam nihil   │
+│ conseq… ┆ eum iure         ┆ qui in   ┆ molestiae                            │
 ├─────────┼──────────────────┼──────────┼──────────────────────────────────────┤
-│ conseq… ┆ illum qui dolor… ┆ quo vol… ┆ pariatur?                            │
+│ conseq… ┆ illum qui        ┆ quo      ┆ pariatur?                            │
+│ vel     ┆ dolorem eum      ┆ voluptas ┆                                      │
+│         ┆ fugiat           ┆ nulla    ┆                                      │
 ╞═════════╪══════════════════╪══════════╪══════════════════════════════════════╡
 │ COLUMN… ┆ COLUMN B         ┆ COLUMN C ┆ COLUMN D                             │
 └─────────┴──────────────────┴──────────┴──────────────────────────────────────┘
@@ -204,28 +221,43 @@ COLUMN A  COLUMN B            COLUMN C   COLUMN D
 ║ COLUM… ║║ COLUMN B         ║║ COLUMN… ║║ COLUMN D                            ║
 ╚════════╝╚══════════════════╝╚═════════╝╚═════════════════════════════════════╝
 ┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
-│ Sed u… ││ unde omnis iste… ││ sit vo… ││ doloremque laudantium, totam rem a… │
+│ Sed ut ││ unde omnis iste  ││ sit     ││ doloremque laudantium, totam rem    │
+│ persp… ││ natus error      ││ volupt… ││ aperiam,                            │
+│        ││                  ││ accusa… ││                                     │
 └────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
 ┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
-│ eaque… ││ ab illo invento… ││ quasi … ││ vitae dicta sunt explicabo. Nemo e… │
+│ eaque  ││ ab illo          ││ quasi   ││ vitae dicta sunt explicabo. Nemo    │
+│ ipsa   ││ inventore        ││ archit… ││ enim ipsam                          │
+│ quae   ││ veritatis et     ││ beatae  ││                                     │
 └────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
 ┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
-│ volup… ││ sit aspernatur … ││ fugit,… ││ quia consequuntur magni dolores eo… │
+│ volup… ││ sit aspernatur   ││ fugit,  ││ quia consequuntur magni dolores eos │
+│ quia   ││ aut odit aut     ││ sed     ││ qui ratione                         │
+│ volup… ││                  ││         ││                                     │
 └────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
 ┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
-│ volup… ││ Neque porro qui… ││ qui do… ││ quia dolor sit amet, consectetur, … │
+│ volup… ││ Neque porro      ││ qui     ││ quia dolor sit amet, consectetur,   │
+│ sequi  ││ quisquam est,    ││ dolorem ││ adipisci                            │
+│ nesci… ││                  ││ ipsum   ││                                     │
 └────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
 ┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
-│ velit… ││ quia non numqua… ││ tempor… ││ labore et dolore magnam aliquam qu… │
+│ velit, ││ quia non numquam ││ tempora ││ labore et dolore magnam aliquam     │
+│ sed    ││ eius modi        ││ incidu… ││ quaerat voluptatem. Ut              │
+│        ││                  ││ ut      ││                                     │
 └────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
 ┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
-│ enim … ││ veniam, quis no… ││ ullam … ││ laboriosam, nisi ut aliquid ex ea   │
+│ enim   ││ veniam,          ││ ullam   ││ laboriosam, nisi ut aliquid ex ea   │
+│ ad     ││ quis nostrum     ││ corpor… ││                                     │
+│ minima ││ exercitationem   ││ suscip… ││                                     │
 └────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
 ┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
-│ commo… ││ Quis autem vel … ││ repreh… ││ ea voluptate velit esse quam nihil… │
+│ commo… ││ Quis autem vel   ││ repreh… ││ ea voluptate velit esse quam nihil  │
+│ conse… ││ eum iure         ││ qui in  ││ molestiae                           │
 └────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
 ┌────────┐┌──────────────────┐┌─────────┐┌─────────────────────────────────────┐
-│ conse… ││ illum qui dolor… ││ quo vo… ││ pariatur?                           │
+│ conse… ││ illum qui        ││ quo     ││ pariatur?                           │
+│ vel    ││ dolorem eum      ││ volupt… ││                                     │
+│        ││ fugiat           ││ nulla   ││                                     │
 └────────┘└──────────────────┘└─────────┘└─────────────────────────────────────┘
 ╔════════╗╔══════════════════╗╔═════════╗╔═════════════════════════════════════╗
 ║ COLUM… ║║ COLUMN B         ║║ COLUMN… ║║ COLUMN D                            ║
@@ -254,7 +286,7 @@ COLUMN A  COLUMN B            COLUMN C   COLUMN D
 
 ### Pandoc 'Pipe' Markdown renderer
 
-`table_gen_markdown::MarkdownSimpleRenderer`:
+`table_gen_markdown::MarkdownPipeRenderer`:
 
 ```
 | COLUMN… | COLUMN B         | COLUMN C | COLUMN D                             |
@@ -276,26 +308,41 @@ COLUMN A  COLUMN B            COLUMN C   COLUMN D
 
 ```
 --------------------------------------------------------------------------------
-COLUMN A  COLUMN B            COLUMN C   COLUMN D                               
+COLUMN A  COLUMN B            COLUMN C   COLUMN D
 --------- ------------------- ---------- ---------------------------------------
-Sed ut p… unde omnis iste na… sit volup… doloremque laudantium, totam rem aperi…
+Sed ut    unde omnis iste     sit        doloremque laudantium, totam rem
+perspici… natus error         voluptatem aperiam,
+                              accusanti…
 
-eaque ip… ab illo inventore … quasi arc… vitae dicta sunt explicabo. Nemo enim …
+eaque     ab illo inventore   quasi      vitae dicta sunt explicabo. Nemo enim
+ipsa quae veritatis et        architecto ipsam
+                              beatae
 
-voluptat… sit aspernatur aut… fugit, sed quia consequuntur magni dolores eos qu…
+voluptat… sit aspernatur aut  fugit, sed quia consequuntur magni dolores eos
+quia      odit aut                       qui ratione
+voluptas
 
-voluptat… Neque porro quisqu… qui dolor… quia dolor sit amet, consectetur, adip…
+voluptat… Neque porro         qui        quia dolor sit amet, consectetur,
+sequi     quisquam est,       dolorem    adipisci
+nesciunt                      ipsum
 
-velit, s… quia non numquam e… tempora i… labore et dolore magnam aliquam quaera…
+velit,    quia non numquam    tempora    labore et dolore magnam aliquam quaerat
+sed       eius modi           incidunt   voluptatem. Ut
+                              ut
 
-enim ad … veniam, quis nostr… ullam cor… laboriosam, nisi ut aliquid ex ea      
+enim ad   veniam,             ullam      laboriosam, nisi ut aliquid ex ea
+minima    quis nostrum        corporis
+          exercitationem      suscipit
 
-commodi … Quis autem vel eum… reprehend… ea voluptate velit esse quam nihil mol…
+commodi   Quis autem vel      reprehend… ea voluptate velit esse quam nihil
+consequa… eum iure            qui in     molestiae
 
-consequa… illum qui dolorem … quo volup… pariatur?                              
+consequa… illum qui dolorem   quo        pariatur?
+vel       eum fugiat          voluptas
+                              nulla
 --------------------------------------------------------------------------------
 
-COLUMN A  COLUMN B            COLUMN C   COLUMN D                               
+COLUMN A  COLUMN B            COLUMN C   COLUMN D
 ```
 
 ### Pandoc 'Grid' Markdown renderer
@@ -306,21 +353,36 @@ COLUMN A  COLUMN B            COLUMN C   COLUMN D
 +---------+------------------+----------+--------------------------------------+
 | COLUMN… | COLUMN B         | COLUMN C | COLUMN D                             |
 +=========+==================+==========+======================================+
-| Sed ut… | unde omnis iste… | sit vol… | doloremque laudantium, totam rem ap… |
+| Sed ut  | unde omnis iste  | sit      | doloremque laudantium, totam rem     |
+| perspi… | natus error      | volupta… | aperiam,                             |
+|         |                  | accusan… |                                      |
 +---------+------------------+----------+--------------------------------------+
-| eaque … | ab illo invento… | quasi a… | vitae dicta sunt explicabo. Nemo en… |
+| eaque   | ab illo          | quasi    | vitae dicta sunt explicabo. Nemo     |
+| ipsa    | inventore        | archite… | enim ipsam                           |
+| quae    | veritatis et     | beatae   |                                      |
 +---------+------------------+----------+--------------------------------------+
-| volupt… | sit aspernatur … | fugit, … | quia consequuntur magni dolores eos… |
+| volupt… | sit aspernatur   | fugit,   | quia consequuntur magni dolores eos  |
+| quia    | aut odit aut     | sed      | qui ratione                          |
+| volupt… |                  |          |                                      |
 +---------+------------------+----------+--------------------------------------+
-| volupt… | Neque porro qui… | qui dol… | quia dolor sit amet, consectetur, a… |
+| volupt… | Neque porro      | qui      | quia dolor sit amet, consectetur,    |
+| sequi   | quisquam est,    | dolorem  | adipisci                             |
+| nesciu… |                  | ipsum    |                                      |
 +---------+------------------+----------+--------------------------------------+
-| velit,… | quia non numqua… | tempora… | labore et dolore magnam aliquam qua… |
+| velit,  | quia non numquam | tempora  | labore et dolore magnam aliquam      |
+| sed     | eius modi        | incidunt | quaerat voluptatem. Ut               |
+|         |                  | ut       |                                      |
 +---------+------------------+----------+--------------------------------------+
-| enim a… | veniam, quis no… | ullam c… | laboriosam, nisi ut aliquid ex ea    |
+| enim ad | veniam,          | ullam    | laboriosam, nisi ut aliquid ex ea    |
+| minima  | quis nostrum     | corporis |                                      |
+|         | exercitationem   | suscipit |                                      |
 +---------+------------------+----------+--------------------------------------+
-| commod… | Quis autem vel … | reprehe… | ea voluptate velit esse quam nihil … |
+| commodi | Quis autem vel   | reprehe… | ea voluptate velit esse quam nihil   |
+| conseq… | eum iure         | qui in   | molestiae                            |
 +---------+------------------+----------+--------------------------------------+
-| conseq… | illum qui dolor… | quo vol… | pariatur?                            |
+| conseq… | illum qui        | quo      | pariatur?                            |
+| vel     | dolorem eum      | voluptas |                                      |
+|         | fugiat           | nulla    |                                      |
 +---------+------------------+----------+--------------------------------------+
 | COLUMN… | COLUMN B         | COLUMN C | COLUMN D                             |
 ```

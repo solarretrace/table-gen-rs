@@ -40,7 +40,7 @@ impl WrapOptions {
 		Self {
 			initial_indent: "".to_owned().into_boxed_str(),
 			subsequent_indent: "".to_owned().into_boxed_str(),
-			break_words: true,
+			break_words: false,
 			wrap_algorithm: WrapAlgorithm::new_optimal_fit(),
 			word_separator: WordSeparator::UnicodeBreakProperties,
 			word_splitter: WordSplitter::HyphenSplitter,

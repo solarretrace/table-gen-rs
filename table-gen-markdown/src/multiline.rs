@@ -739,8 +739,6 @@ COLUMN A  COLUMN B            COLUMN C   COLUMN D
 		];
 
 		let mut table = Table::new_builder(data, MarkdownMultilineRenderer::new()
-				.with_wrap_options(WrapOptions::new()
-					.with_break_words(false))
 				.with_padded_trailing_column(false))
 			.with_column_defs(&column_defs)
 			.with_max_table_width(80)
