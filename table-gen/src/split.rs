@@ -53,20 +53,21 @@ impl<'a, R> SplitRow<'a, R>
 	pub (in crate) fn new(
 		inner: FormatRow<'a, R>,
 		col_widths: &[usize],
-		post_width_format_fn: Option<fn(&str, usize) -> String>)
+		late_format_fn: Option<fn(&str, usize, usize) -> String>)
 		-> Self
 	{
-		let cache = if post_width_format_fn.is_some() {
+		let cache = if late_format_fn.is_some() {
 			vec![OnceCell::new(); inner.len()]
 		} else {
 			Vec::new()
 		};
 		let mut height = 0;
 		for idx in 0..inner.len() {
-			let text =if let Some(post_width_format_fn) = post_width_format_fn {
+			let text = if let Some(f) = late_format_fn {
 				cache[idx]
-					.get_or_init(|| (post_width_format_fn)(
+					.get_or_init(|| (f)(
 							inner.text(idx),
+							idx,
 							col_widths[idx])
 						.into_boxed_str())
 			} else {

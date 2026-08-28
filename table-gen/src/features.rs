@@ -21,11 +21,11 @@ pub struct Features {
 	/// column widths should not be calculated
 	pub str_width_fn: Option<fn(&str) -> usize>,
 
-	/// Function to apply post-display processing to formatted cell text.
-	pub post_display_format_fn: fn(String) -> String,
+	/// Function to apply processing to formatted cell text before aggregation.
+	pub early_format_fn: fn(String) -> String,
 
-	/// Function to apply post-width processing to formatted cell text.
-	pub post_width_format_fn: Option<fn(&str, usize) -> String>,
+	/// Function to apply processing to formatted cell text after aggregation.
+	pub late_format_fn: Option<fn(&str, usize, usize) -> String>,
 
 	/// Function for computing the table width contribution of the renderer. It
 	/// will be provided the number of columns being rendered.
@@ -47,8 +47,8 @@ impl Features {
 	pub fn new() -> Self {
 		Self {
 			str_width_fn: Some(unicode_display_width),
-			post_display_format_fn: std::convert::identity,
-			post_width_format_fn: None,
+			early_format_fn: std::convert::identity,
+			late_format_fn: None,
 			width_contribution_fn: Some(
 				Box::new(Self::interspersed_space_width)),
 			extra_column_width: 0,
@@ -69,19 +69,37 @@ impl Features {
 		self
 	}
 
-	/// Sets the function to use for post-processing cell formatting and returns
+	/// Sets the function to use for pre-aggregation cell formatting and returns
 	/// the `Features`.
 	///
 	/// The following functions are available as suitable arguments:
 	/// + `std::convert::identity` is the default value.
 	/// + `Features::remove_line_breaks` to prevent multiline cells.
 	#[must_use]
-	pub fn with_post_display_format_fn(
+	pub fn with_early_format_fn(
 		mut self,
-		post_display_format_fn: fn(String) -> String)
+		early_format_fn: fn(String) -> String)
 		-> Self
 	{
-		self.post_display_format_fn = post_display_format_fn;
+		self.early_format_fn = early_format_fn;
+		self
+	}
+
+	/// Sets the function to use for post-aggregation cell formatting and
+	/// returns the `Features`.
+	///
+	/// The function parameters are as follows:
+	///
+	/// 1. The formatted cell text.
+	/// 2. The column index.
+	/// 3. The column width.
+	#[must_use]
+	pub fn with_late_format_fn(
+		mut self,
+		late_format_fn: fn(&str, usize, usize) -> String)
+		-> Self
+	{
+		self.late_format_fn = Some(late_format_fn);
 		self
 	}
 

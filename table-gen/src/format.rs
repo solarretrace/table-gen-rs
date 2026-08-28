@@ -116,7 +116,7 @@ impl<'a, R, S> Iterator for Format<'a, S>
 			.map(|collate_row| FormatRow::new(
 				collate_row,
 				self.inner.column_defs().columns(),
-				self.features().post_display_format_fn))
+				self.features().early_format_fn))
 	}
 }
 
@@ -134,7 +134,7 @@ pub (in crate) struct FormatRow<'a, R> {
 	/// The cached final cell texts.
 	cache: Vec<OnceCell<Box<str>>>,
 	/// Function to apply post-display processing to formatted cell text.
-	post_display_format_fn: fn(String) -> String,
+	early_format_fn: fn(String) -> String,
 }
 
 impl<R> Row for FormatRow<'_, R>
@@ -158,7 +158,7 @@ impl<'a, R> FormatRow<'a, R>
 	pub (in crate) fn new(
 		inner: CollateRow<'a, R>,
 		column_defs: &'a [ColumnDef<'a>],
-		post_display_format_fn: fn(String) -> String)
+		early_format_fn: fn(String) -> String)
 		-> Self
 	{
 		let cache = vec![OnceCell::new(); inner.len()];
@@ -166,7 +166,7 @@ impl<'a, R> FormatRow<'a, R>
 			inner,
 			column_defs,
 			cache,
-			post_display_format_fn
+			early_format_fn
 		}
 	}
 
@@ -175,7 +175,7 @@ impl<'a, R> FormatRow<'a, R>
 	pub (in crate) fn text(&self, col_idx: usize) -> &str {
 		self.cache[col_idx].get_or_init(|| match self.inner.cell(col_idx) {
 			Some(cell) => {
-				(self.post_display_format_fn)(self.column_defs
+				(self.early_format_fn)(self.column_defs
 						.get(col_idx)
 						.map_or_else(
 							DisplayFmt::default,
