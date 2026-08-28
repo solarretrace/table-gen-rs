@@ -39,6 +39,8 @@ pub struct MarkdownMultilineRenderer {
 	padded_trailing_column: bool,
 	/// Indicates that text wrapping should be used.
 	wrap_options: Option<WrapOptions>,
+	/// Indicates which columns the wrapping should be applied to.
+	wrap_columns: Option<Vec<usize>>,
 }
 
 impl Default for MarkdownMultilineRenderer {
@@ -56,6 +58,7 @@ impl MarkdownMultilineRenderer {
 			extra_column_width: 2,
 			padded_trailing_column: true,
 			wrap_options: Some(WrapOptions::new()),
+			wrap_columns: None,
 		}
 	}
 
@@ -96,6 +99,17 @@ impl MarkdownMultilineRenderer {
 		self.wrap_options = wrap_options.into();
 		self
 	}
+
+	/// Sets the text wrap columns and returns the `MarkdownMultilineRenderer`.
+	///
+	/// A `None` value will apply the wrapping to all columns.
+	#[must_use]
+	pub fn with_wrap_columns<O>(mut self, wrap_columns: O) -> Self 
+		where O: Into<Option<Vec<usize>>>
+	{
+		self.wrap_columns = wrap_columns.into();
+		self
+	}
 }
 
 impl Renderer for MarkdownMultilineRenderer {
@@ -103,9 +117,17 @@ impl Renderer for MarkdownMultilineRenderer {
 		let mut features = Features::default()
 			.with_extra_column_width(self.extra_column_width.into());
 		if let Some(wrap_options) = self.wrap_options.clone() {
+			let wrap_columns = self.wrap_columns.clone();
 			features = features
-				.with_late_format_fn(Rc::new(move |s, _, w| 
-					fill(s, wrap_options.as_options(w))))
+				.with_late_format_fn(Rc::new(move |s, idx, w| if wrap_columns
+					.as_ref()
+					.map(|v| v.contains(&idx))
+					.unwrap_or(true)
+				{
+					fill(s, wrap_options.as_options(w))
+				} else {
+					s.to_string()
+				}))
 		}
 		features
 	}
