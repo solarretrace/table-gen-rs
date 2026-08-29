@@ -14,10 +14,43 @@ use crate::util::Wrap;
 // Standard library imports.
 use std::rc::Rc;
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Alignment
+////////////////////////////////////////////////////////////////////////////////
+/// Horizontal alignment specifier for cell text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum HorzAlign {
+	/// Align to the left of the cell.
+	Left,
+	/// Align to the center of the cell.
+	Center,
+	/// Align to the right of the cell.
+	Right,
+}
+
+/// Vertical alignment specifier for cell text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum VertAlign {
+	/// Align to the top of the cell.
+	Top,
+	/// Align to the center of the cell.
+	Center,
+	/// Align to the bottom of the cell.
+	Bottom,
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // ColumnDef
 ////////////////////////////////////////////////////////////////////////////////
-/// Provides formatting and metadata for a table column.
+/// Provides behavior for formatting and handling table columns.
+///
+/// The effectiveness of the available options depends on the specific
+/// `Renderer` used: renderers must provide the table driver with the
+/// appropriate `SupportFlags` to ensure the `ColumnDef` options are exposed.
+/// E.g., if the renderer does not provide the `MULTILINE` flag, then cell text
+/// will have its line endings stripped before being provided to the renderer
+/// for output.
 #[derive(Clone)]
 pub struct ColumnDef<'a> {
 	/// The `DisplayFmt` to use for cells in this column.
@@ -199,32 +232,6 @@ impl<'a> ColumnDef<'a> {
 	pub fn clamp_to_valid_width(&self, value: usize) -> usize {
 		value.clamp(self.min_width, self.max_width)
 	}
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Alignment
-////////////////////////////////////////////////////////////////////////////////
-/// Horizontal alignment specifier for cell text.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum HorzAlign {
-	/// Align to the left of the cell.
-	Left,
-	/// Align to the center of the cell.
-	Center,
-	/// Align to the right of the cell.
-	Right,
-}
-
-/// Vertical alignment specifier for cell text.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum VertAlign {
-	/// Align to the top of the cell.
-	Top,
-	/// Align to the center of the cell.
-	Center,
-	/// Align to the bottom of the cell.
-	Bottom,
 }
 
 

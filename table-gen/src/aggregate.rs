@@ -6,7 +6,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Internal library imports.
-use crate::ColumnDef;
 use crate::ColumnDefs;
 use crate::Diagnostic;
 use crate::FormatRow;
@@ -37,9 +36,8 @@ pub (in crate) struct Aggregate<'a, R> {
 	rows: IntoIter<FormatRow<'a, R>>,
 	/// The column output specifications.
 	column_defs: ColumnDefs<'a>,
-	/// Function to use for calculating column widths. A `None` value means
-	/// column widths should not be calculated.
-	str_width_fn: Option<fn(&str) -> usize>,
+	/// Function to use for calculating column widths.
+	str_width_fn: fn(&str) -> usize,
 	/// The post-aggregation style information.
 	style: SplitRowStyle,
 	/// The table header row.
@@ -126,18 +124,16 @@ impl<'a, R> Aggregate<'a, R>
 		let column_defs = inner.column_defs().clone();
 
 		// Compute initial column widths from header/footer rows if available.
-		let mut col_widths: Vec<usize> = match str_width_fn {
-			Some(str_width) if width_support
-				=> match (header_row.as_ref(), footer_row.as_ref())
-			{
+		let mut col_widths: Vec<usize> = if width_support {
+			match (header_row.as_ref(), footer_row.as_ref()) {
 				(Some(h), Some(f)) => (0..column_defs.len())
 					.map(|idx| std::cmp::max(
 						h.lines(idx)
-							.map(str_width)
+							.map(str_width_fn)
 							.max()
 							.unwrap_or(column_defs.min_width(idx)),
 						f.lines(idx)
-							.map(str_width)
+							.map(str_width_fn)
 							.max()
 							.unwrap_or(column_defs.min_width(idx))))
 					.collect(),
@@ -146,7 +142,7 @@ impl<'a, R> Aggregate<'a, R>
 				(None,    Some(r)) => (0..column_defs.len())
 					.map(|idx| r
 						.lines(idx)
-						.map(str_width)
+						.map(str_width_fn)
 						.max()
 						.unwrap_or(column_defs.min_width(idx)))
 					.collect(),
@@ -154,8 +150,9 @@ impl<'a, R> Aggregate<'a, R>
 				_ => (0..column_defs.len())
 					.map(|idx| column_defs.min_width(idx))
 					.collect(),
-			},
-			_ => Vec::new(),
+			}
+		} else {
+			Vec::new()
 		};
 
 		// Prepare quantile estimators observing the current widths.
@@ -182,7 +179,7 @@ impl<'a, R> Aggregate<'a, R>
 				max_row_len = std::cmp::max(max_row_len, row.len());
 
 				// Expand the column widths if needed.
-				if width_support && let Some(str_width) = str_width_fn {
+				if width_support {
 					for idx in 0..row.len() {
 						// Expand widths arrays if past the end of the 
 						// header/footer.
@@ -214,7 +211,7 @@ impl<'a, R> Aggregate<'a, R>
 						// The col width is dynamic. Get the width of the
 						// cell.
 						let mut cell_width = row.lines(idx)
-							.map(str_width)
+							.map(str_width_fn)
 							.max()
 							.unwrap_or(0);
 						// Have the quantile estimator process the value.
@@ -341,10 +338,9 @@ impl<'a, R> Aggregate<'a, R>
 		self.footer_row.as_ref()
 	}
 
-	/// The Function to use for calculating column widths. A `None` value means
-	/// column widths should not be calculated.
+	/// The Function to use for calculating column widths.
 	#[must_use]
-	pub (in crate) fn str_width_fn(&self) -> Option<fn(&str) -> usize> {
+	pub (in crate) fn str_width_fn(&self) -> fn(&str) -> usize {
 		self.str_width_fn
 	}
 }

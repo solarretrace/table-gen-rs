@@ -68,15 +68,6 @@ impl<'a, R, S> Collate<'a, S>
 		}
 	}
 
-	/// Sets the supported features and returns the `Collate`.
-	#[must_use]
-	pub (in crate) fn with_features(mut self, features: Features)
-		-> Self
-	{
-		self.features = features;
-		self
-	}
-
 	/// Sets the column selection and returns the `Collate`.
 	#[must_use]
 	pub (in crate) fn with_column_selection(mut self, col_select: &'a [usize])
@@ -110,12 +101,6 @@ impl<'a, R, S> Collate<'a, S>
 	#[must_use]
 	pub (in crate) fn features(&self) -> &Features {
 		&self.features
-	}
-
-	/// Returns a mutable reference to the supported features for the renderer.
-	#[must_use]
-	pub (in crate) fn features_mut(&mut self) -> &mut Features {
-		&mut self.features
 	}
 
 	/// Returns a reference to the row selection bounds.

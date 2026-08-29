@@ -18,7 +18,6 @@ use crate::Row;
 use crate::SplitRow;
 use crate::SupportFlags;
 use crate::TextRow;
-use crate::util::Wrap;
 
 // Standard library imports.
 use std::ops::RangeBounds;
@@ -92,7 +91,7 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 	#[must_use]
 	pub fn with_default_column_def(
 		mut self,
-		mut default_column_def: ColumnDef<'a>)
+		default_column_def: ColumnDef<'a>)
 		-> Self
 	{
 		*self.inner.column_defs_mut().column_default_mut() = default_column_def;
@@ -223,8 +222,7 @@ impl<'a, R, T> Table<'a, R, T>
 		let data_rows = self.inner.drain_rows();
 		let str_width_fn = support_flags
 			.contains(SupportFlags::COLUMN_WIDTH)
-			.then(|| self.inner.str_width_fn())
-			.flatten();
+			.then(|| self.inner.str_width_fn());
 		let mut ctx = RenderContext {
 			column_defs: self.inner.column_defs(),
 			col_widths: self.inner.col_widths(),

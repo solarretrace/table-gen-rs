@@ -21,12 +21,14 @@ use std::rc::Rc;
 ////////////////////////////////////////////////////////////////////////////////
 bitflags! {
 	/// Renderer feature support flags.
+	///
+	/// Used to enable table driver behavior and `ColumnDef` functionality.
 	#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 	#[repr(transparent)]
 	pub struct SupportFlags: u32 {
 		/// Indicates that the renderer supports header rendering.
 		const HEADERS                  = 1;
-		/// Indictaes that the renderer supports footer rendering.
+		/// Indicates that the renderer supports footer rendering.
 		const FOOTERS                  = 1 << 1;
 		/// Indicates that the renderer supports column widths.
 		const COLUMN_WIDTH             = 1 << 2;
@@ -46,11 +48,14 @@ bitflags! {
 		/// Indicates that the renderer supports ANSI styling.
 		const ANSI_STYLE               = 1 << 9;
 
+		/// Indicates that the renderer supports all column width operations.
 		const COLUMN_WIDTH_ALL = Self::COLUMN_WIDTH.bits()
 			| Self::COLUMN_WIDTH_CONSTRAINTS.bits()
 			| Self::COLUMN_WIDTH_DYNAMIC.bits()
 			| Self::HORZ_ALIGN.bits();
 
+		/// Indicates that the renderer supports all multiline row and cell
+		/// operations.
 		const MULTILINE_ALL = Self::MULTILINE.bits()
 			| Self::VERT_ALIGN.bits()
 			| Self::TEXT_WRAP.bits();
@@ -81,9 +86,8 @@ pub struct Features {
 	/// The supported driver behavior flags.
 	pub flags: SupportFlags,
 
-	/// Function to use for calculating column widths. A `None` value means
-	/// column widths should not be calculated
-	pub str_width_fn: Option<fn(&str) -> usize>,
+	/// Function to use for calculating column widths.
+	pub str_width_fn: fn(&str) -> usize,
 
 	/// Function for computing the table width contribution of the renderer. It
 	/// will be provided the number of columns being rendered.
@@ -120,9 +124,8 @@ impl Features {
 	pub fn new(flags: SupportFlags) -> Self {
 		Self {
 			flags,
-			str_width_fn: Some(unicode_display_width),
-			width_contribution_fn: Some(
-				Rc::new(Self::interspersed_space_width)),
+			str_width_fn: unicode_display_width,
+			width_contribution_fn: Some(Rc::new(|cols| cols.saturating_sub(1))),
 			extra_column_width: 0,
 			default_column_width: 15,
 			default_text_wrap: flags
@@ -134,11 +137,14 @@ impl Features {
 	/// Sets the function to use for calculating column widths and returns the 
 	/// `Features`.
 	///
+	/// This function will only be used if the `COLUMN_WIDTH` support flag is
+	/// set.
+	///
 	/// The following functions are available as suitable arguments:
-	/// + `Features::unicode_display_width` is the default value.
+	/// + `utils::unicode_display_width` is the default value.
 	/// + `str::len` is suitable if the inputs are always ASCII.
 	#[must_use]
-	pub fn with_str_width_fn(mut self, str_width_fn: Option<fn(&str) -> usize>)
+	pub fn with_str_width_fn(mut self, str_width_fn: fn(&str) -> usize)
 		-> Self
 	{
 		self.str_width_fn = str_width_fn;
@@ -187,9 +193,5 @@ impl Features {
 	{
 		self.default_text_wrap = default_text_wrap.into();
 		self
-	}
-
-	fn interspersed_space_width(col_count: usize) -> usize {
-		col_count.saturating_sub(1)
 	}
 }

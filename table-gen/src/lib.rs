@@ -26,7 +26,6 @@ pub mod util;
 // Internal exports.
 pub (in crate) use aggregate::Aggregate;
 pub (in crate) use collate::Collate;
-pub (in crate) use column::ColumnDefs;
 pub (in crate) use collate::CollateRow;
 pub (in crate) use format::Format;
 pub (in crate) use format::FormatRow;
@@ -37,6 +36,7 @@ pub (in crate) use split::SplitRowStyle;
 
 // Public exports.
 pub use column::ColumnDef;
+pub use column::ColumnDefs;
 pub use column::HorzAlign;
 pub use column::VertAlign;
 pub use context::CellContext;

@@ -91,14 +91,7 @@ impl Wrap {
 			}
 		};
 
-		opt.map(|wo| Options::new(width)
-			.line_ending(LineEnding::LF)
-			.initial_indent(&wo.initial_indent)
-			.subsequent_indent(&wo.subsequent_indent)
-			.break_words(wo.break_words)
-			.wrap_algorithm(wo.wrap_algorithm.clone())
-			.word_separator(wo.word_separator.clone())
-			.word_splitter(wo.word_splitter.clone()))
+		opt.map(|wo| wo.as_options(width))
 	}
 }
 
