@@ -5,8 +5,8 @@
 //! Box drawing unicode styles.
 ////////////////////////////////////////////////////////////////////////////////
 
-// Internal library imports.
-use crate::Style;
+// Workspace library imports.
+use table_gen::util::Style;
 
 // Standard library imports.
 use std::fmt::Display;

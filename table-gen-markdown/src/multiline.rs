@@ -15,12 +15,9 @@ use table_gen::Features;
 use table_gen::HorzAlign;
 use table_gen::RenderContext;
 use table_gen::Renderer;
-use table_gen::util::fill;
+use table_gen::SupportFlags;
 use table_gen::util::WrapOptions;
 use table_gen::util::write_cell_formatted;
-
-// Standard library imports.
-use std::rc::Rc;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,10 +34,6 @@ pub struct MarkdownMultilineRenderer {
 	extra_column_width: u8,
 	/// Indicates that the last column should be padded on the right.
 	padded_trailing_column: bool,
-	/// Indicates that text wrapping should be used.
-	wrap_options: Option<WrapOptions>,
-	/// Indicates which columns the wrapping should be applied to.
-	wrap_columns: Option<Vec<usize>>,
 }
 
 impl Default for MarkdownMultilineRenderer {
@@ -57,8 +50,6 @@ impl MarkdownMultilineRenderer {
 			column_padding: 0,
 			extra_column_width: 2,
 			padded_trailing_column: true,
-			wrap_options: Some(WrapOptions::new()),
-			wrap_columns: None,
 		}
 	}
 
@@ -87,49 +78,15 @@ impl MarkdownMultilineRenderer {
 		self.padded_trailing_column = padded_trailing_column;
 		self
 	}
-
-	/// Sets the text wrap options and returns the `MarkdownMultilineRenderer`.
-	///
-	/// Note: this method overrides any value previously specified with
-	/// `with_late_format_fn`.
-	#[must_use]
-	pub fn with_wrap_options<O>(mut self, wrap_options: O) -> Self 
-		where O: Into<Option<WrapOptions>>
-	{
-		self.wrap_options = wrap_options.into();
-		self
-	}
-
-	/// Sets the text wrap columns and returns the `MarkdownMultilineRenderer`.
-	///
-	/// A `None` value will apply the wrapping to all columns.
-	#[must_use]
-	pub fn with_wrap_columns<O>(mut self, wrap_columns: O) -> Self 
-		where O: Into<Option<Vec<usize>>>
-	{
-		self.wrap_columns = wrap_columns.into();
-		self
-	}
 }
 
 impl Renderer for MarkdownMultilineRenderer {
 	fn features(&self) -> Features {
-		let mut features = Features::default()
-			.with_extra_column_width(self.extra_column_width.into());
-		if let Some(wrap_options) = self.wrap_options.clone() {
-			let wrap_columns = self.wrap_columns.clone();
-			features = features
-				.with_late_format_fn(Rc::new(move |s, idx, w| if wrap_columns
-					.as_ref()
-					.map(|v| v.contains(&idx))
-					.unwrap_or(true)
-				{
-					fill(s, wrap_options.as_options(w))
-				} else {
-					s.to_string()
-				}))
-		}
-		features
+		Features::new(SupportFlags::new()
+				| SupportFlags::COLUMN_WIDTH_ALL
+				| SupportFlags::MULTILINE_ALL)
+			.with_extra_column_width(self.extra_column_width.into())
+			.with_default_text_wrap(WrapOptions::new())
 	}
 
 	fn write_header_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
@@ -258,6 +215,7 @@ mod test {
 	use table_gen::ColumnDef;
 	use table_gen::ColumnOrd;
 	use table_gen::Table;
+	use table_gen::util::Wrap;
 
 	#[test]
 	fn empty_table() {
@@ -546,7 +504,9 @@ mod test {
 			[23, 35, 46, 58, 69, 709, 8, 19],
 		];
 
-		let mut table = Table::new_builder(data, MarkdownMultilineRenderer::new())
+		let mut table = Table::new_builder(
+				data,
+				MarkdownMultilineRenderer::new())
 			.with_min_table_width(80)
 			.finish();
 
@@ -634,8 +594,11 @@ mod test {
 				.with_footer("COLUMN D"),
 		];
 
-		let mut table = Table::new_builder(data, MarkdownMultilineRenderer::new()
-				.with_wrap_options(None))
+		let mut table = Table::new_builder(
+				data,
+				MarkdownMultilineRenderer::new())
+			.with_default_column_def(ColumnDef::new()
+				.with_text_wrap(Wrap::Disabled))
 			.with_column_defs(&column_defs)
 			.with_max_table_width(80)
 			.finish();
@@ -666,7 +629,6 @@ commodi … Quis autem vel eum… reprehend… ea voluptate velit esse quam nihi
 consequa… illum qui dolorem … quo volup… pariatur?                              
 --------------------------------------------------------------------------------
 
-COLUMN A  COLUMN B            COLUMN C   COLUMN D                               
 ");
 	}
 
@@ -785,7 +747,6 @@ vel       eum fugiat          voluptas
                               nulla      
 --------------------------------------------------------------------------------
 
-COLUMN A  COLUMN B            COLUMN C   COLUMN D
 ");
 	}
 }

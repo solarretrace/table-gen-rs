@@ -87,12 +87,6 @@ impl<'a, R, S> Sort<'a, R, S>
 		self.inner.features()
 	}
 
-	/// Returns a mutable reference to the supported features for the renderer.
-	#[must_use]
-	pub (in crate) fn features_mut(&mut self) -> &mut Features {
-		self.inner.features_mut()
-	}
-
 	/// Returns a reference to the row selection bounds.
 	#[must_use]
 	pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {

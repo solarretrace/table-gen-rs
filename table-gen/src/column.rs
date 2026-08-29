@@ -6,21 +6,26 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Internal library imports.
+use crate::Cell;
 use crate::DisplayFmt;
+use crate::util::Style;
+use crate::util::Wrap;
 
+// Standard library imports.
+use std::rc::Rc;
 
 ////////////////////////////////////////////////////////////////////////////////
 // ColumnDef
 ////////////////////////////////////////////////////////////////////////////////
 /// Provides formatting and metadata for a table column.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone)]
 pub struct ColumnDef<'a> {
+	/// The `DisplayFmt` to use for cells in this column.
+	pub display_fmt: DisplayFmt,
 	/// The column header text.
 	pub header: &'a str,
 	/// The column footer text.
 	pub footer: &'a str,
-	/// The `DisplayFmt` to use for cells in this column.
-	pub display_fmt: DisplayFmt,
 	/// The minimum width of the column.
 	pub min_width: usize,
 	/// The maximum width of the column.
@@ -34,8 +39,30 @@ pub struct ColumnDef<'a> {
 	pub horz_align: HorzAlign,
 	/// The vertical alignment of text in the column.
 	pub vert_align: VertAlign,
+	/// The text wrap options.
+	pub text_wrap: Wrap,
+	/// The text styling function for the cell values.
+	pub text_style_fn: Option<Rc<dyn Fn(&dyn Cell, usize) -> Style>>,
 }
 
+impl std::fmt::Debug for ColumnDef<'_> {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("ColumnDef")
+			.field("header", &self.header)
+			.field("footer", &self.footer)
+			.field("min_width", &self.min_width)
+			.field("max_width", &self.max_width)
+			.field("dynamic_width_quantile", &self.dynamic_width_quantile)
+			.field("dynamic_width_weight", &self.dynamic_width_weight)
+			.field("horz_align", &self.horz_align)
+			.field("vert_align", &self.vert_align)
+			.field("text_wrap", &self.text_wrap)
+			.field("text_style_fn",
+				&self.text_style_fn.as_ref().map(Rc::as_ptr))
+         	.finish()
+	}
+}
+	
 impl Default for ColumnDef<'_> {
 	fn default() -> Self {
 		Self::new()
@@ -47,15 +74,17 @@ impl<'a> ColumnDef<'a> {
 	#[must_use]
 	pub fn new() -> Self {
 		Self {
+			display_fmt: DisplayFmt::new(),
 			header: "",
 			footer: "",
-			display_fmt: DisplayFmt::new(),
 			min_width: 0,
 			max_width: usize::MAX,
 			dynamic_width_quantile: 1.0,
 			dynamic_width_weight: 1.0,
 			horz_align: HorzAlign::Left,
 			vert_align: VertAlign::Top,
+			text_wrap: Wrap::default(),
+			text_style_fn: None,
 		}
 	}
 	
@@ -128,7 +157,6 @@ impl<'a> ColumnDef<'a> {
 		self
 	}
 	
-	
 	/// Sets the horizontal text alignment and returns the `ColumnDef`.
 	#[must_use]
 	pub fn with_horz_align(mut self, horz_align: HorzAlign) -> Self {
@@ -140,6 +168,24 @@ impl<'a> ColumnDef<'a> {
 	#[must_use]
 	pub fn with_vert_align(mut self, vert_align: VertAlign) -> Self {
 		self.vert_align = vert_align;
+		self
+	}
+	
+	/// Sets text wrap mode and returns the `ColumnDef`.
+	#[must_use]
+	pub fn with_text_wrap(mut self, text_wrap: Wrap) -> Self {
+		self.text_wrap = text_wrap;
+		self
+	}
+	
+	/// Sets text style function and returns the `ColumnDef`.
+	#[must_use]
+	pub fn with_text_style_fn(
+		mut self,
+		text_style_fn: Option<Rc<dyn Fn(&dyn Cell, usize) -> Style>>)
+		-> Self
+	{
+		self.text_style_fn = text_style_fn;
 		self
 	}
 
@@ -187,7 +233,7 @@ pub enum VertAlign {
 ////////////////////////////////////////////////////////////////////////////////
 /// A collection of `ColumnDef`s.
 #[derive(Debug, Clone)]
-pub (in crate) struct ColumnDefs<'a> {
+pub struct ColumnDefs<'a> {
 	column_default: ColumnDef<'a>,
 	columns: &'a [ColumnDef<'a>],
 	extra_column_width: usize,
@@ -202,9 +248,10 @@ impl Default for ColumnDefs<'_> {
 impl<'a> ColumnDefs<'a>  {
 	/// Constructs a new `ColumnDefs`.
 	#[must_use]
-	pub (in crate) fn new() -> Self {
+	pub fn new() -> Self {
 		Self {
-			column_default: ColumnDef::new(),
+			column_default: ColumnDef::new()
+				.with_text_wrap(Wrap::RendererDefault),
 			columns: &[],
 			extra_column_width: 0,
 		}
@@ -212,7 +259,7 @@ impl<'a> ColumnDefs<'a>  {
 
 	/// Constructs a new `ColumnDefs` from its components.
 	#[must_use]
-	pub (in crate) fn from_parts(
+	pub fn from_parts(
 		column_default: ColumnDef<'a>,
 		columns: &'a [ColumnDef<'a>],
 		extra_column_width: usize)
@@ -227,7 +274,7 @@ impl<'a> ColumnDefs<'a>  {
 
 	/// Sets the column_default `ColumnDef` and returns the `ColumnDefs`.
 	#[must_use]
-	pub (in crate) fn with_column_default(
+	pub fn with_column_default(
 		mut self,
 		column_default: ColumnDef<'a>)
 		-> Self
@@ -238,7 +285,7 @@ impl<'a> ColumnDefs<'a>  {
 
 	/// Sets the `ColumnDef` for each column and returns the `ColumnDefs`.
 	#[must_use]
-	pub (in crate) fn with_columns(
+	pub fn with_columns(
 		mut self,
 		columns: &'a [ColumnDef<'a>])
 		-> Self
@@ -249,7 +296,7 @@ impl<'a> ColumnDefs<'a>  {
 
 	/// Sets the extra column width and returns the `ColumnDefs`.
 	#[must_use]
-	pub (in crate) fn with_extra_column_width(
+	pub fn with_extra_column_width(
 		mut self,
 		extra_column_width: usize)
 		-> Self
@@ -260,7 +307,7 @@ impl<'a> ColumnDefs<'a>  {
 
 	/// Consumes the `ColumnDefs` and returns its components.
 	#[must_use]
-	pub (in crate) fn into_parts(self)
+	pub fn into_parts(self)
 		-> (ColumnDef<'a>, &'a [ColumnDef<'a>], usize)
 	{
 		(
@@ -272,76 +319,108 @@ impl<'a> ColumnDefs<'a>  {
 
 	/// The number of non-column_default `ColumnDef`s defined.
 	#[must_use]
-	pub (in crate) fn len(&self) -> usize {
+	pub fn len(&self) -> usize {
 		self.columns.len()
 	}
 
 	/// Returns a reference to the column_default `ColumnDef`.
 	#[must_use]
-	pub (in crate) fn column_default(&self) -> &ColumnDef<'a> {
+	pub fn column_default(&self) -> &ColumnDef<'a> {
 		&self.column_default
 	}
 
 	/// Returns a mutable reference to the column_default `ColumnDef`.
 	#[must_use]
-	pub (in crate) fn column_default_mut(&mut self) -> &mut ColumnDef<'a> {
+	pub fn column_default_mut(&mut self) -> &mut ColumnDef<'a> {
 		&mut self.column_default
+	}
+
+	/// Returns a reference to the `ColumnDef` for the column at the given
+	/// index.
+	#[must_use]
+	pub fn get(&self, idx: usize) -> &ColumnDef<'a> {
+		self.columns.get(idx).unwrap_or(&self.column_default)
 	}
 
 	/// Returns a reference to the `ColumnDef`s array.
 	#[must_use]
-	pub (in crate) fn columns(&self) -> &'a [ColumnDef<'a>] {
+	pub fn columns(&self) -> &'a [ColumnDef<'a>] {
 		self.columns
 	}
 
 	/// Returns a mutable reference to the `ColumnDef`s array.
 	#[must_use]
-	pub (in crate) fn columns_mut(&mut self) -> &mut &'a [ColumnDef<'a>] {
+	pub fn columns_mut(&mut self) -> &mut &'a [ColumnDef<'a>] {
 		&mut self.columns
 	}
 
 	/// Returns the extra column width.
 	#[must_use]
-	pub (in crate) fn extra_column_width(&self) -> usize {
+	pub fn extra_column_width(&self) -> usize {
 		self.extra_column_width
 	}
 
 	/// Returns a mutable reference to the extra column width.
 	#[must_use]
-	pub (in crate) fn extra_column_width_mut(&mut self) -> &mut usize {
+	pub fn extra_column_width_mut(&mut self) -> &mut usize {
 		&mut self.extra_column_width
 	}
 
-	/// The column header text.
+	/// Returns `true` if there are no headers to render for column indices up
+	/// to the given index.
 	#[must_use]
-	pub (in crate) fn header(&self, idx: usize) -> &'a str {
+	pub fn is_headerless(&self, upto: usize) -> bool {
+		self.columns
+				.iter()
+				.take(upto)
+				.all(|column_def| column_def.header.is_empty())
+			&& upto <= self.len()
+			|| ( upto > self.len() && self.column_default.header.is_empty())
+	}
+
+	/// Returns `true` if there are no footers to render for column indices up
+	/// to the given index.
+	#[must_use]
+	pub fn is_footerless(&self, upto: usize) -> bool {
+		self.columns
+				.iter()
+				.take(upto)
+				.all(|column_def| column_def.footer.is_empty())
+			&& upto <= self.len()
+			|| ( upto > self.len() && self.column_default.footer.is_empty())
+	}
+
+	/// Returns the column header text for the column at the given index.
+	#[must_use]
+	pub fn header(&self, idx: usize) -> &'a str {
 		self.columns
 			.get(idx)
 			.unwrap_or(&self.column_default)
 			.header
 	}
 
-	/// The column footer text.
+	/// Returns the column footer text for the column at the given index.
 	#[must_use]
-	pub (in crate) fn footer(&self, idx: usize) -> &'a str {
+	pub fn footer(&self, idx: usize) -> &'a str {
 		self.columns
 			.get(idx)
 			.unwrap_or(&self.column_default)
 			.footer
 	}
 
-	/// The `DisplayFmt` to use for cells in this column.
+	/// Returns the `DisplayFmt` to use for cells in the column at the given
+	/// index.
 	#[must_use]
-	pub (in crate) fn display_fmt(&self, idx: usize) -> DisplayFmt {
+	pub fn display_fmt(&self, idx: usize) -> DisplayFmt {
 		self.columns
 			.get(idx)
 			.unwrap_or(&self.column_default)
 			.display_fmt
 	}
 
-	/// The minimum width of the column.
+	/// Returns the minimum width of the column at the given index.
 	#[must_use]
-	pub (in crate) fn min_width(&self, idx: usize) -> usize {
+	pub fn min_width(&self, idx: usize) -> usize {
 		let w = self.columns
 			.get(idx)
 			.unwrap_or(&self.column_default)
@@ -349,9 +428,9 @@ impl<'a> ColumnDefs<'a>  {
 		self.extra_column_width.saturating_add(w)
 	}
 
-	/// The maximum width of the column.
+	/// Returns the maximum width of the column at the given index.
 	#[must_use]
-	pub (in crate) fn max_width(&self, idx: usize) -> usize {
+	pub fn max_width(&self, idx: usize) -> usize {
 		let w = self.columns
 			.get(idx)
 			.unwrap_or(&self.column_default)
@@ -360,46 +439,49 @@ impl<'a> ColumnDefs<'a>  {
 		self.extra_column_width.saturating_add(w)
 	}
 
-	/// The  quantile of the widest cell values to ignore for computing dynamic
-	/// column widths.
+	/// Returns the quantile of the widest cell values to ignore for computing
+	/// dynamic column widths for the column at the given index.
 	#[must_use]
-	pub (in crate) fn dynamic_width_quantile(&self, idx: usize) -> f64 {
+	pub fn dynamic_width_quantile(&self, idx: usize) -> f64 {
 		self.columns
 			.get(idx)
 			.unwrap_or(&self.column_default)
 			.dynamic_width_quantile
 	}
 
-	/// The relative weight of the column in allocating width under constraint.
+	/// Returns the relative weight of the column in allocating width under
+	/// constraint for the column at the given index.
 	#[must_use]
-	pub (in crate) fn dynamic_width_weight(&self, idx: usize) -> f64 {
+	pub fn dynamic_width_weight(&self, idx: usize) -> f64 {
 		self.columns
 			.get(idx)
 			.unwrap_or(&self.column_default)
 			.dynamic_width_weight
 	}
 
-	/// The horizontal alignment of text in the column.
+	/// Returns the horizontal alignment of text in the column at the given
+	/// index.
 	#[must_use]
-	pub (in crate) fn horz_align(&self, idx: usize) -> HorzAlign {
+	pub fn horz_align(&self, idx: usize) -> HorzAlign {
 		self.columns
 			.get(idx)
 			.unwrap_or(&self.column_default)
 			.horz_align
 	}
 
-	/// The vertical alignment of text in the column.
+	/// Returns the vertical alignment of text in the column at the given index.
 	#[must_use]
-	pub (in crate) fn vert_align(&self, idx: usize) -> VertAlign {
+	pub fn vert_align(&self, idx: usize) -> VertAlign {
 		self.columns
 			.get(idx)
 			.unwrap_or(&self.column_default)
 			.vert_align
 	}
 
-	/// Returns `true` if the column width is fully constrained.
+	/// Returns `true` if the column width is fully constrained for the column
+	/// at the given index.
 	#[must_use]
-	pub (in crate) fn is_fixed_width(&self, idx: usize) -> bool {
+	pub fn is_fixed_width(&self, idx: usize) -> bool {
 		self.columns
 			.get(idx)
 			.unwrap_or(&self.column_default)
@@ -407,9 +489,9 @@ impl<'a> ColumnDefs<'a>  {
 	}
 
 	/// Clamps the given value between the min and max width allowed for the
-	/// column.
+	/// column at the given index.
 	#[must_use]
-	pub (in crate) fn clamp_to_valid_width(&self, idx: usize, value: usize)
+	pub fn clamp_to_valid_width(&self, idx: usize, value: usize)
 		-> usize
 	{
 		self.columns

@@ -7,6 +7,7 @@
 
 // Internal library imports.
 use crate::ColumnDef;
+use crate::ColumnDefs;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -15,10 +16,8 @@ use crate::ColumnDef;
 /// Contextual information provided to `Renderer` method calls.
 #[derive(Debug, Clone, Copy)]
 pub struct RenderContext<'a> {
-	/// The default `ColumnDef` for the table.
-	pub column_default_def: &'a ColumnDef<'a>,
-	/// The `ColumnDef`s, in column order.
-	pub column_defs: &'a [ColumnDef<'a>],
+	/// The table `ColumnDefs`.
+	pub column_defs: &'a ColumnDefs<'a>,
 	/// The column widths, in column order.
 	pub col_widths: &'a [usize],
 	/// The number of rows in the table.
@@ -71,25 +70,13 @@ impl RenderContext<'_> {
 	/// Returns `true` if there are no headers to render.
 	#[must_use]
 	pub fn is_headerless(&self) -> bool {
-		self.column_defs
-				.iter()
-				.take(self.column_count())
-				.all(|column_def| column_def.header.is_empty())
-			&& self.column_count() <= self.column_defs.len()
-			|| ( self.column_count() > self.column_defs.len() 
-				&& self.column_default_def.header.is_empty())
+		self.column_defs.is_headerless(self.column_count())
 	}
 
 	/// Returns `true` if there are no footers to render.
 	#[must_use]
 	pub fn is_footerless(&self) -> bool {
-		self.column_defs
-				.iter()
-				.take(self.column_count())
-				.all(|column_def| column_def.footer.is_empty())
-			&& self.column_count() <= self.column_defs.len()
-			|| ( self.column_count() > self.column_defs.len() 
-				&& self.column_default_def.footer.is_empty())
+		self.column_defs.is_footerless(self.column_count())
 	}
 }
 

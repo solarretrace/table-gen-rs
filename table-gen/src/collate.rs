@@ -46,7 +46,7 @@ impl<R, S, I> From<I> for Collate<'_, S>
 		I: IntoIterator<Item=R, IntoIter=S>,
 {
 	fn from(inner: I) -> Self {
-		Collate::new(inner.into_iter())
+		Collate::new(inner.into_iter(), Features::new(Default::default()))
 	}
 }
 
@@ -57,14 +57,14 @@ impl<'a, R, S> Collate<'a, S>
 {
 	/// Constructs a new `Collate` for the given data source.
 	#[must_use]
-	pub (in crate) fn new(inner: S) -> Self {
+	pub (in crate) fn new(inner: S, features: Features) -> Self {
 		Self {
 			inner,
 			col_select: &[],
 			row_select: (Bound::Included(0), Bound::Unbounded),
 			column_defs: ColumnDefs::new(),
 			col_order: &[],
-			features: Features::default(),
+			features,
 		}
 	}
 

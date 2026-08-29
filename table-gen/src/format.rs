@@ -14,14 +14,38 @@ use crate::ColumnDefs;
 use crate::ColumnOrd;
 use crate::Features;
 use crate::Row;
+use crate::SupportFlags;
 
 // Standard library imports.
 use std::cell::OnceCell;
 use std::fmt::Display;
 use std::ops::Bound;
-use std::rc::Rc;
 use std::str::Lines;
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Line break removal function
+////////////////////////////////////////////////////////////////////////////////
+/// Replaces line break chars ("\r\n", "\r", "\n") in the given `String` with
+/// spaces.
+#[must_use]
+fn remove_line_breaks(text: &str) -> String {
+	let mut out = String::with_capacity(text.len());
+	let mut chars = text.chars().peekable();
+	while let Some(c) = chars.next() {
+		match c {
+			'\r' => {
+				if chars.peek() == Some(&'\n') {
+					let _ = chars.next(); // Consume the \n.
+				}
+				out.push(' ');
+			},
+			'\n' => out.push(' '),
+			_    => out.push(c),
+		}
+	}
+	out
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Format
@@ -74,12 +98,6 @@ impl<'a, R, S> Format<'a, S>
 		self.inner.features()
 	}
 
-	/// Returns a mutable reference to the supported features for the renderer.
-	#[must_use]
-	pub (in crate) fn features_mut(&mut self) -> &mut Features {
-		self.inner.features_mut()
-	}
-
 	/// Returns a reference to the row selection bounds.
 	#[must_use]
 	pub (in crate) fn row_selection(&self) -> &(Bound<usize>, Bound<usize>) {
@@ -117,7 +135,7 @@ impl<'a, R, S> Iterator for Format<'a, S>
 			.map(|collate_row| FormatRow::new(
 				collate_row,
 				self.inner.column_defs().columns(),
-				self.features().early_format_fn.as_ref().map(Rc::clone)))
+				!self.features().flags.contains(SupportFlags::MULTILINE)))
 	}
 }
 
@@ -135,8 +153,8 @@ pub (in crate) struct FormatRow<'a, R> {
 	column_defs: &'a [ColumnDef<'a>],
 	/// The cached final cell texts.
 	cache: Vec<OnceCell<Box<str>>>,
-	/// Function to apply post-display processing to formatted cell text.
-	early_format_fn: Option<Rc<dyn Fn(String) -> String>>,
+	/// Indicates that the renderer does not support line breaks in cells.
+	uniline: bool,
 }
 
 impl<R> Row for FormatRow<'_, R>
@@ -160,7 +178,7 @@ impl<'a, R> FormatRow<'a, R>
 	pub (in crate) fn new(
 		inner: CollateRow<'a, R>,
 		column_defs: &'a [ColumnDef<'a>],
-		early_format_fn: Option<Rc<dyn Fn(String) -> String>>)
+		uniline: bool)
 		-> Self
 	{
 		let cache = vec![OnceCell::new(); inner.len()];
@@ -168,7 +186,7 @@ impl<'a, R> FormatRow<'a, R>
 			inner,
 			column_defs,
 			cache,
-			early_format_fn
+			uniline,
 		}
 	}
 
@@ -183,9 +201,8 @@ impl<'a, R> FormatRow<'a, R>
 						DisplayFmt::default,
 						|spec| spec.display_fmt)
 					.apply(cell);
-				if let Some(early_format_fn) = self.early_format_fn.as_ref() {
-					(*early_format_fn)(text)
-						.into_boxed_str()
+				if self.uniline {
+					remove_line_breaks(&text).into_boxed_str()
 				} else {
 					text.into_boxed_str()
 				}

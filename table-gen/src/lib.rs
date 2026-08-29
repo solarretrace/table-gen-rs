@@ -33,6 +33,7 @@ pub (in crate) use format::FormatRow;
 pub (in crate) use sort::Sort;
 pub (in crate) use split::SplitRow;
 pub (in crate) use split::TextRow;
+pub (in crate) use split::SplitRowStyle;
 
 // Public exports.
 pub use column::ColumnDef;
@@ -44,6 +45,7 @@ pub use diagnostic::Diagnostic;
 pub use driver::Table;
 pub use driver::TableBuilder;
 pub use features::Features;
+pub use features::SupportFlags;
 pub use format::DisplayFmt;
 pub use format::Sign;
 pub use render::Renderer;

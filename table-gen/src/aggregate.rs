@@ -9,17 +9,18 @@
 use crate::ColumnDef;
 use crate::ColumnDefs;
 use crate::Diagnostic;
-use crate::Row;
 use crate::FormatRow;
+use crate::Row;
 use crate::Sort;
 use crate::SplitRow;
+use crate::SplitRowStyle;
+use crate::SupportFlags;
 use crate::TextRow;
 use crate::util::QuantileEstimator;
 
 // Standard library imports.
 use std::collections::HashSet;
 use std::ops::RangeBounds as _;
-use std::rc::Rc;
 use std::vec::IntoIter;
 
 
@@ -35,14 +36,12 @@ pub (in crate) struct Aggregate<'a, R> {
 	/// The materialized rows of the table.
 	rows: IntoIter<FormatRow<'a, R>>,
 	/// The column output specifications.
-	column_defs: &'a [ColumnDef<'a>],
+	column_defs: ColumnDefs<'a>,
 	/// Function to use for calculating column widths. A `None` value means
 	/// column widths should not be calculated.
 	str_width_fn: Option<fn(&str) -> usize>,
-	/// The column widths.
-	col_widths: Vec<usize>,
-	/// Function to apply post-width processing to formatted cell text.
-	late_format_fn: Option<Rc<dyn Fn(&str, usize, usize) -> String>>,
+	/// The post-aggregation style information.
+	style: SplitRowStyle,
 	/// The table header row.
 	header_row: Option<TextRow<'a>>,
 	/// The table footer row.
@@ -56,7 +55,6 @@ impl<'a, R> Aggregate<'a, R>
 	#[must_use]
 	pub (in crate) fn new<S, T>(
 		inner: T,
-		column_default_def: ColumnDef<'a>,
 		min_table_width: usize,
 		max_table_width: usize,
 		diagnostic_sink_fn: &mut (dyn FnMut(Diagnostic) + 'static))
@@ -67,35 +65,60 @@ impl<'a, R> Aggregate<'a, R>
 			R: Row
 	{
 		let mut inner = inner.into();
+		let support_flags = inner.features().flags;
+		let width_support = support_flags.contains(SupportFlags::COLUMN_WIDTH);
+		let width_support_dyn = width_support && support_flags
+			.contains(SupportFlags::COLUMN_WIDTH_DYNAMIC);
+		let default_column_width = inner.features().default_column_width;
+		let default_renderer_wrap = inner.features().default_text_wrap.clone();
+		let default_column_wrap = inner
+			.column_defs()
+			.column_default()
+			.text_wrap
+			.clone();
+		let default_text_style_fn = inner
+			.column_defs()
+			.column_default()
+			.text_style_fn
+			.clone();
+		let width_support_constraints = width_support && support_flags
+			.contains(SupportFlags::COLUMN_WIDTH_DYNAMIC);
 		let extra_column_width = inner.features().extra_column_width;
-		let late_format_fn = inner.features()
-			.late_format_fn
-			.as_ref()
-			.map(Rc::clone);
-		*inner.column_defs_mut().column_default_mut() = column_default_def;
+
 		*inner.column_defs_mut().extra_column_width_mut() = extra_column_width;
 		let str_width_fn = inner.features().str_width_fn;
-		let width_contribution_fn = inner.features_mut()
+		let width_contribution_fn = inner.features()
 			.width_contribution_fn
-			.take()
-			.unwrap_or_else(|| Box::new(|_| 0));
+			.clone();
 		let row_select = *inner.row_selection();
 
 		// Build the header row.
 		let mut header_used = false;
-		let header_cells: Vec<&str> = inner.column_defs().columns().iter()
-			.map(|column_def| column_def.header)
-			.inspect(|c| header_used |= !c.is_empty())
-			.collect();
+		let header_cells: Vec<&str> = if support_flags
+			.contains(SupportFlags::HEADERS)
+		{
+			inner.column_defs().columns().iter()
+				.map(|column_def| column_def.header)
+				.inspect(|c| header_used |= !c.is_empty())
+				.collect()
+		} else {
+			Vec::new()
+		};
 		let mut header_row = header_used
 			.then_some(header_cells)
 			.map(TextRow::new);
 		// Build the footer row.
 		let mut footer_used = false;
-		let footer_cells: Vec<&str> = inner.column_defs().columns().iter()
-			.map(|column_def| column_def.footer)
-			.inspect(|c| footer_used |= !c.is_empty())
-			.collect();
+		let footer_cells: Vec<&str> = if support_flags
+			.contains(SupportFlags::FOOTERS)
+		{
+			inner.column_defs().columns().iter()
+				.map(|column_def| column_def.footer)
+				.inspect(|c| footer_used |= !c.is_empty())
+				.collect()
+		} else {
+			Vec::new()
+		};
 		let mut footer_row = footer_used
 			.then_some(footer_cells)
 			.map(TextRow::new);
@@ -104,7 +127,8 @@ impl<'a, R> Aggregate<'a, R>
 
 		// Compute initial column widths from header/footer rows if available.
 		let mut col_widths: Vec<usize> = match str_width_fn {
-			Some(str_width) => match (header_row.as_ref(), footer_row.as_ref())
+			Some(str_width) if width_support
+				=> match (header_row.as_ref(), footer_row.as_ref())
 			{
 				(Some(h), Some(f)) => (0..column_defs.len())
 					.map(|idx| std::cmp::max(
@@ -131,7 +155,7 @@ impl<'a, R> Aggregate<'a, R>
 					.map(|idx| column_defs.min_width(idx))
 					.collect(),
 			},
-			None => Vec::new(),
+			_ => Vec::new(),
 		};
 
 		// Prepare quantile estimators observing the current widths.
@@ -158,7 +182,7 @@ impl<'a, R> Aggregate<'a, R>
 				max_row_len = std::cmp::max(max_row_len, row.len());
 
 				// Expand the column widths if needed.
-				if let Some(str_width) = str_width_fn {
+				if width_support && let Some(str_width) = str_width_fn {
 					for idx in 0..row.len() {
 						// Expand widths arrays if past the end of the 
 						// header/footer.
@@ -175,11 +199,21 @@ impl<'a, R> Aggregate<'a, R>
 							// The col width is fixed, so set it.
 							col_widths[idx] = column_defs.max_width(idx);
 							continue;
-						} 
+						} else if !width_support_dyn {
+							// Dynamic col width is not supported, use the
+							// default width.
+							col_widths[idx] = default_column_width;
+							if width_support_constraints {
+								col_widths[idx] = col_widths[idx].clamp(
+									column_defs.min_width(idx),
+									column_defs.max_width(idx));
+							}
+							continue;
+						}
 
 						// The col width is dynamic. Get the width of the
 						// cell.
-						let cell_width = row.lines(idx)
+						let mut cell_width = row.lines(idx)
 							.map(str_width)
 							.max()
 							.unwrap_or(0);
@@ -189,16 +223,16 @@ impl<'a, R> Aggregate<'a, R>
 								.unwrap_or(u32::MAX))
 									.unwrap());
 
-						// The cell width is at least as wide as the
-						// min_width.
-						let cell_width = std::cmp::max(
-							column_defs.min_width(idx),
-							cell_width);
-						// If the cell widens the current width, do so, but
-						// do not exceed the maximum allowed.
-						col_widths[idx] = std::cmp::min(
-							std::cmp::max(cell_width, col_widths[idx]),
-							column_defs.max_width(idx));
+						if width_support_constraints {
+							// Clamp the cell width to the constraints.
+							cell_width = cell_width.clamp(
+								column_defs.min_width(idx),
+								column_defs.max_width(idx));
+						}
+						// Expand the column width if needed.
+						col_widths[idx] = std::cmp::max(
+							cell_width,
+							col_widths[idx]);
 					}
 				}
 
@@ -213,37 +247,57 @@ impl<'a, R> Aggregate<'a, R>
 		// Add extra column width.
 		for w in col_widths.iter_mut() { *w += extra_column_width; }
 
-		// Adjust table constraints for the renderer padding, which cannot be
-		// allocated away.
-		let render_contrib = (width_contribution_fn)(max_row_len);
-		// println!("render_contrib = {:?}", render_contrib);
-		let min_table_width = min_table_width.saturating_sub(render_contrib);
-		let max_table_width = max_table_width.saturating_sub(render_contrib);
+		if width_support_constraints {
+			// Adjust table constraints for the renderer padding, which cannot
+			// be allocated away.
+			let render_contrib: usize = width_contribution_fn
+				.map(|f| (f)(max_row_len))
+				.unwrap_or(0);
+			// println!("render_contrib = {:?}", render_contrib);
+			let min_table_width = min_table_width
+				.saturating_sub(render_contrib);
+			let max_table_width = max_table_width
+				.saturating_sub(render_contrib);
+		
+			// Compute final column width distribution from constraints and
+			// estimates.
+			// println!("natural {:?}", col_widths);
+			let quant_widths: Vec<usize> = col_width_quantile_estimates
+				.into_iter()
+				.map(|e| e.estimate().round() as usize )
+				.collect();
+			distribute_column_widths(
+				&mut col_widths,
+				&column_defs,
+				&quant_widths,
+				min_table_width,
+				max_table_width,
+				diagnostic_sink_fn);
+			// println!("distributed {:?}", col_widths);
+		}
 
-
-		// Compute final column width distribution from constraints and
-		// estimates.
-		// println!("natural {:?}", col_widths);
-		let quant_widths: Vec<usize> = col_width_quantile_estimates
-			.into_iter()
-			.map(|e| e.estimate().round() as usize )
-			.collect();
-		distribute_column_widths(
-			&mut col_widths,
-			&column_defs,
-			&quant_widths,
-			min_table_width,
-			max_table_width,
-			diagnostic_sink_fn);
-		// println!("distributed {:?}", col_widths);
-
+		let style = SplitRowStyle {
+			col_widths,
+			col_text_wraps: column_defs
+				.columns()
+				.iter()
+				.map(|def| def.text_wrap.clone())
+				.collect(),
+			col_text_style_fn: column_defs
+				.columns()
+				.iter()
+				.map(|def| def.text_style_fn.clone())
+				.collect(),
+			default_renderer_wrap,
+			default_column_wrap,
+			default_text_style_fn,
+		};
 		Self {
 			row_count: rows.len(),
 			rows: rows.into_iter(),
-			column_defs: column_defs.into_parts().1,
+			column_defs,
 			str_width_fn,
-			col_widths,
-			late_format_fn,
+			style,
 			header_row,
 			footer_row,
 		}
@@ -260,20 +314,19 @@ impl<'a, R> Aggregate<'a, R>
 	pub (in crate) fn drain_rows(&mut self) -> RowsDrainIter<'a, R> {
 		RowsDrainIter::new(
 			std::mem::take(&mut self.rows),
-			self.col_widths.clone(),
-			self.late_format_fn.as_ref().map(Rc::clone))
+			self.style.clone())
 	}
 
 	/// Returns a slice of the column definitions.
 	#[must_use]
-	pub (in crate) fn column_defs(&self) -> &'a [ColumnDef<'a>] {
-		self.column_defs
+	pub (in crate) fn column_defs(&self) -> &ColumnDefs<'a> {
+		&self.column_defs
 	}
 
 	/// Returns a slice of the column widths.
 	#[must_use]
 	pub (in crate) fn col_widths(&self) -> &[usize] {
-		&self.col_widths
+		&self.style.col_widths
 	}
 
 	/// Returns a reference to the header row.
@@ -304,8 +357,7 @@ impl<'a, R> Aggregate<'a, R>
 #[allow(missing_debug_implementations)]
 pub (in crate) struct RowsDrainIter<'a, R> {
 	rows: IntoIter<FormatRow<'a, R>>,
-	col_widths: Vec<usize>,
-	late_format_fn: Option<Rc<dyn Fn(&str, usize, usize) -> String>>,
+	style: SplitRowStyle,
 }
 
 impl<'a, R> RowsDrainIter<'a, R>
@@ -314,14 +366,12 @@ impl<'a, R> RowsDrainIter<'a, R>
 	/// Constructs a new `RowsDrainIter` over the given rows.
 	pub (in crate) fn new(
 		rows: IntoIter<FormatRow<'a, R>>,
-		col_widths: Vec<usize>,
-		late_format_fn: Option<Rc<dyn Fn(&str, usize, usize) -> String>>)
+		style: SplitRowStyle)
 		-> Self
 	{
 		RowsDrainIter {
 			rows,
-			col_widths,
-			late_format_fn,
+			style,
 		}
 	}
 }
@@ -331,10 +381,7 @@ impl<'a, R> Iterator for RowsDrainIter<'a, R>
 {
 	type Item = SplitRow<'a, R>;
 	fn next(&mut self) -> Option<Self::Item> {
-		self.rows.next().map(|row| SplitRow::new(
-			row,
-			&self.col_widths,
-			self.late_format_fn.as_deref()))
+		self.rows.next().map(|row| SplitRow::new(row, &self.style))
 	}
 }
 

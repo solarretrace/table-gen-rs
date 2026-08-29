@@ -9,14 +9,14 @@
 // Internal library imports.
 use crate::LineShape;
 use crate::LineStyle;
-use crate::Style;
 
 // Workspace library imports.
 use table_gen::CellContext;
 use table_gen::Features;
 use table_gen::RenderContext;
 use table_gen::Renderer;
-use table_gen::util::fill;
+use table_gen::SupportFlags;
+use table_gen::util::Style;
 use table_gen::util::WrapOptions;
 use table_gen::util::write_cell_formatted;
 
@@ -134,10 +134,6 @@ pub struct BoxGridRenderer {
 	extra_column_width: u8,
 	/// The `BoxGridStyle` to render with.
 	style: BoxGridStyle,
-	/// Indicates that text wrapping should be used.
-	wrap_options: Option<WrapOptions>,
-	/// Indicates which columns the wrapping should be applied to.
-	wrap_columns: Option<Vec<usize>>,
 }
 
 impl Default for BoxGridRenderer {
@@ -154,8 +150,6 @@ impl BoxGridRenderer {
 			column_padding: 1,
 			extra_column_width: 0,
 			style: BoxGridStyle::new(),
-			wrap_options: Some(WrapOptions::new()),
-			wrap_columns: None,
 		}
 	}
 
@@ -177,29 +171,6 @@ impl BoxGridRenderer {
 	#[must_use]
 	pub fn with_style(mut self, style: BoxGridStyle) -> Self {
 		self.style = style;
-		self
-	}
-
-	/// Sets the text wrap options and returns the `BoxGridRenderer`.
-	///
-	/// Note: this method overrides any value previously specified with
-	/// `with_late_format_fn`.
-	#[must_use]
-	pub fn with_wrap_options<O>(mut self, wrap_options: O) -> Self 
-		where O: Into<Option<WrapOptions>>
-	{
-		self.wrap_options = wrap_options.into();
-		self
-	}
-
-	/// Sets the text wrap columns and returns the `BoxGridRenderer`.
-	///
-	/// A `None` value will apply the wrapping to all columns.
-	#[must_use]
-	pub fn with_wrap_columns<O>(mut self, wrap_columns: O) -> Self 
-		where O: Into<Option<Vec<usize>>>
-	{
-		self.wrap_columns = wrap_columns.into();
 		self
 	}
 
@@ -343,28 +314,19 @@ impl BoxGridRenderer {
 impl Renderer for BoxGridRenderer {
 	fn features(&self) -> Features {
 		let padding: usize = self.column_padding.into();
-		let mut features = Features::default()
+		Features::new(SupportFlags::new()
+				| SupportFlags::FOOTERS
+				| SupportFlags::COLUMN_WIDTH_ALL
+				| SupportFlags::MULTILINE_ALL
+				| SupportFlags::ANSI_STYLE)
 			.with_extra_column_width(self.extra_column_width.into())
-			.with_width_contribution_fn(Box::new(move |col_count| {
+			.with_width_contribution_fn(Rc::new(move |col_count| {
 				// Width of dividers
 				(col_count + 1) 
 				// Width of cell padding
 				+ (col_count * padding * 2)
-			}));
-		if let Some(wrap_options) = self.wrap_options.clone() {
-			let wrap_columns = self.wrap_columns.clone();
-			features = features
-				.with_late_format_fn(Rc::new(move |s, idx, w| if wrap_columns
-					.as_ref()
-					.map(|v| v.contains(&idx))
-					.unwrap_or(true)
-				{
-					fill(s, wrap_options.as_options(w))
-				} else {
-					s.to_string()
-				}))
-		}
-		features
+			}))
+			.with_default_text_wrap(WrapOptions::new())
 	}
 
 	fn write_data_cell_line<W>(
@@ -472,6 +434,7 @@ mod test {
 	use table_gen::ColumnOrd;
 	use table_gen::HorzAlign;
 	use table_gen::Table;
+	use table_gen::util::Wrap;
 
 	#[test]
 	fn empty_table() {
@@ -812,8 +775,9 @@ mod test {
 				.with_footer("COLUMN D"),
 		];
 
-		let mut table = Table::new_builder(data, BoxGridRenderer::new()
-				.with_wrap_options(None))
+		let mut table = Table::new_builder(data, BoxGridRenderer::new())
+			.with_default_column_def(ColumnDef::new()
+				.with_text_wrap(Wrap::Disabled))
 			.with_column_defs(&column_defs)
 			.with_max_table_width(80)
 			.finish();

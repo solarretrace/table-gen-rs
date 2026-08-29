@@ -14,6 +14,7 @@ use table_gen::Features;
 use table_gen::HorzAlign;
 use table_gen::RenderContext;
 use table_gen::Renderer;
+use table_gen::SupportFlags;
 use table_gen::util::write_cell_formatted;
 
 // External library imports.
@@ -174,10 +175,10 @@ impl MarkdownPipeRenderer {
 impl Renderer for MarkdownPipeRenderer {
 	fn features(&self) -> Features {
 		let padding: usize = self.column_padding.into();
-		Features::default()
-			.with_early_format_fn(Rc::new(Features::remove_line_breaks))
+		Features::new(SupportFlags::new()
+				| SupportFlags::COLUMN_WIDTH_ALL)
 			.with_extra_column_width(self.extra_column_width.into())
-			.with_width_contribution_fn(Box::new(move |col_count| {
+			.with_width_contribution_fn(Rc::new(move |col_count| {
 				// Width of dividers
 				col_count + 1
 				// Width of cell padding
@@ -246,7 +247,10 @@ impl Renderer for MarkdownPipeRenderer {
 		let im = if header_pipes { pm } else { "+" }; // internal div marker
 		
 		for (col, col_width) in ctx.col_widths.iter().copied().enumerate() {
-			let cur_align = ctx.column_defs.get(col).map(|d| d.horz_align);
+			let cur_align = ctx.column_defs
+				.columns()
+				.get(col)
+				.map(|d| d.horz_align);
 			if col == 0 {
 				let r = if matches!(cur_align, Some(Right|Center)) {
 					am
@@ -259,7 +263,7 @@ impl Renderer for MarkdownPipeRenderer {
 
 			let (l, r) = match (
 				cur_align,
-				ctx.column_defs.get(col + 1).map(|d| d.horz_align))
+				ctx.column_defs.columns().get(col + 1).map(|d| d.horz_align))
 			{
 				(Some(Right|Center), Some(Left|Center)) => (am, am),
 				(Some(Right|Center), _)                 => (am, dm),
@@ -767,7 +771,6 @@ mod test {
 | enim a… | veniam, quis no… | ullam c… | laboriosam, nisi ut aliquid ex ea    |
 | commod… | Quis autem vel … | reprehe… | ea voluptate velit esse quam nihil … |
 | conseq… | illum qui dolor… | quo vol… | pariatur?                            |
-| COLUMN… | COLUMN B         | COLUMN C | COLUMN D                             |
 ");
 	}
 }

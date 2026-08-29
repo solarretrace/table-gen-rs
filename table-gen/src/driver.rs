@@ -6,17 +6,19 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Internal library imports.
-use crate::Row;
-use crate::Renderer;
-use crate::Collate;
 use crate::Aggregate;
-use crate::TextRow;
-use crate::SplitRow;
+use crate::CellContext;
+use crate::Collate;
 use crate::ColumnDef;
 use crate::ColumnOrd;
-use crate::RenderContext;
-use crate::CellContext;
 use crate::Diagnostic;
+use crate::RenderContext;
+use crate::Renderer;
+use crate::Row;
+use crate::SplitRow;
+use crate::SupportFlags;
+use crate::TextRow;
+use crate::util::Wrap;
 
 // Standard library imports.
 use std::ops::RangeBounds;
@@ -32,8 +34,6 @@ pub struct TableBuilder<'a, S, T> {
 	inner: Collate<'a, S>,
 	/// The table renderer.
 	renderer: T,
-	/// The default `ColumnDef`.
-	column_default_def: ColumnDef<'a>,
 	/// The minimum table width.
 	min_table_width: usize,
 	/// The maximum table width.
@@ -55,12 +55,11 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 	{
 		let features = renderer.features();
 		Self {
-			inner: Collate::new(source.into_iter()).with_features(features),
+			inner: Collate::new(source.into_iter(), features),
 			renderer,
-			column_default_def: ColumnDef::new(),
 			min_table_width: 0,
 			max_table_width: usize::MAX,
-			diagnostic_sink_fn: Box::new(|_| {/* Do nothing. */})
+			diagnostic_sink_fn: Box::new(|_| {/* Do nothing. */}),
 		}
 	}
 
@@ -91,10 +90,12 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 
 	/// Sets the default column descriptor and returns the `TableBuilder`.
 	#[must_use]
-	pub fn with_column_default_def(mut self, column_default_def: ColumnDef<'a>)
+	pub fn with_default_column_def(
+		mut self,
+		mut default_column_def: ColumnDef<'a>)
 		-> Self
 	{
-		*self.inner.column_defs_mut().column_default_mut() = column_default_def;
+		*self.inner.column_defs_mut().column_default_mut() = default_column_def;
 		self
 	}
 
@@ -137,7 +138,6 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 		Table::new(
 			self.inner,
 			self.renderer,
-			self.column_default_def,
 			self.diagnostic_sink_fn,
 			self.min_table_width,
 			self.max_table_width)
@@ -166,8 +166,6 @@ pub struct Table<'a, R, T> {
 	inner: Aggregate<'a, R>,
 	/// The table renderer.
 	renderer: T,
-	/// The default `ColumnDef`.
-	column_default_def: ColumnDef<'a>,
 	/// The diagnostic sink function.
 	diagnostic_sink_fn: Box<dyn FnMut(Diagnostic) + 'static>,
 }
@@ -193,7 +191,6 @@ impl<'a, R, T> Table<'a, R, T>
 	pub (in crate) fn new<S>(
 		source: Collate<'a, S>,
 		renderer: T,
-		column_default_def: ColumnDef<'a>,
 		mut diagnostic_sink_fn: Box<dyn FnMut(Diagnostic) + 'static>,
 		min_table_width: usize,
 		max_table_width: usize) -> Self
@@ -201,14 +198,12 @@ impl<'a, R, T> Table<'a, R, T>
 	{
 		let inner = Aggregate::new(
 			source,
-			column_default_def.clone(),
 			min_table_width,
 			max_table_width,
 			&mut diagnostic_sink_fn);
 		Self {
 			inner,
 			renderer,
-			column_default_def,
 			diagnostic_sink_fn,
 		}
 	}
@@ -224,10 +219,13 @@ impl<'a, R, T> Table<'a, R, T>
 		-> std::io::Result<()>
 		where W: std::io::Write
 	{
+		let support_flags = self.renderer.features().flags;
 		let data_rows = self.inner.drain_rows();
-		let str_width_fn = self.inner.str_width_fn();
+		let str_width_fn = support_flags
+			.contains(SupportFlags::COLUMN_WIDTH)
+			.then(|| self.inner.str_width_fn())
+			.flatten();
 		let mut ctx = RenderContext {
-			column_default_def: &self.column_default_def,
 			column_defs: self.inner.column_defs(),
 			col_widths: self.inner.col_widths(),
 			row_count: self.inner.row_count(),
@@ -239,8 +237,11 @@ impl<'a, R, T> Table<'a, R, T>
 		self.renderer.init(&ctx);
 
 		self.renderer.write_table_start(out, &ctx)?;
+		
 		// Write the header.
-		if let Some(row) = self.inner.header_row().as_ref() {
+		if support_flags.contains(SupportFlags::HEADERS) &&
+			let Some(row) = self.inner.header_row().as_ref()
+		{
 			self.renderer.write_header_start(out, &ctx)?;
 			Self::render_header_row(
 				&mut self.renderer,
@@ -265,7 +266,9 @@ impl<'a, R, T> Table<'a, R, T>
 		self.renderer.write_data_end(out, &ctx)?;
 
 		// Write the footer.
-		if let Some(row) = self.inner.footer_row().as_ref() {
+		if support_flags.contains(SupportFlags::FOOTERS) &&
+			let Some(row) = self.inner.footer_row().as_ref()
+		{
 			self.renderer.write_footer_start(out, &ctx)?;
 			Self::render_footer_row(
 				&mut self.renderer,
@@ -301,9 +304,7 @@ impl<'a, R, T> Table<'a, R, T>
 					renderer.write_header_cell_start(out, ctx)?;
 				}
 
-				let desc = ctx.column_defs
-					.get(col_idx)
-					.unwrap_or(ctx.column_default_def);
+				let desc = ctx.column_defs.get(col_idx);
 				let text = row.line_vert_aligned(
 					col_idx,
 					line_idx,
@@ -351,9 +352,7 @@ impl<'a, R, T> Table<'a, R, T>
 					renderer.write_data_cell_start(out, ctx)?;
 				}
 
-				let desc = ctx.column_defs
-					.get(col_idx)
-					.unwrap_or(ctx.column_default_def);
+				let desc = ctx.column_defs.get(col_idx);
 				let text = row.line_vert_aligned(
 					col_idx,
 					line_idx,
@@ -401,9 +400,7 @@ impl<'a, R, T> Table<'a, R, T>
 					renderer.write_footer_cell_start(out, ctx)?;
 				}
 
-				let desc = ctx.column_defs
-					.get(col_idx)
-					.unwrap_or(ctx.column_default_def);
+				let desc = ctx.column_defs.get(col_idx);
 				let text = row.line_vert_aligned(
 					col_idx,
 					line_idx,

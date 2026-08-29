@@ -11,7 +11,7 @@ use table_gen::Features;
 use table_gen::HorzAlign;
 use table_gen::RenderContext;
 use table_gen::Renderer;
-use table_gen::util::fill;
+use table_gen::SupportFlags;
 use table_gen::util::WrapOptions;
 use table_gen::util::write_cell_formatted;
 
@@ -28,10 +28,6 @@ use std::rc::Rc;
 pub struct MarkdownGridRenderer {
 	/// The amount of space to allocate between columns.
 	column_padding: u8,
-	/// Indicates that text wrapping should be used.
-	wrap_options: Option<WrapOptions>,
-	/// Indicates which columns the wrapping should be applied to.
-	wrap_columns: Option<Vec<usize>>,
 }
 
 impl Default for MarkdownGridRenderer {
@@ -46,8 +42,6 @@ impl MarkdownGridRenderer {
 	pub fn new() -> Self {
 		Self {
 			column_padding: 1,
-			wrap_options: Some(WrapOptions::new()),
-			wrap_columns: None,
 		}
 	}
 
@@ -55,29 +49,6 @@ impl MarkdownGridRenderer {
 	#[must_use]
 	pub fn with_column_padding(mut self, column_padding: u8) -> Self {
 		self.column_padding = std::cmp::max(column_padding, 1);
-		self
-	}
-
-	/// Sets the text wrap options and returns the `MarkdownGridRenderer`.
-	///
-	/// Note: this method overrides any value previously specified with
-	/// `with_late_format_fn`.
-	#[must_use]
-	pub fn with_wrap_options<O>(mut self, wrap_options: O) -> Self 
-		where O: Into<Option<WrapOptions>>
-	{
-		self.wrap_options = wrap_options.into();
-		self
-	}
-
-	/// Sets the text wrap columns and returns the `MarkdownGridRenderer`.
-	///
-	/// A `None` value will apply the wrapping to all columns.
-	#[must_use]
-	pub fn with_wrap_columns<O>(mut self, wrap_columns: O) -> Self 
-		where O: Into<Option<Vec<usize>>>
-	{
-		self.wrap_columns = wrap_columns.into();
 		self
 	}
 
@@ -122,27 +93,17 @@ impl MarkdownGridRenderer {
 impl Renderer for MarkdownGridRenderer {
 	fn features(&self) -> Features {
 		let padding: usize = self.column_padding.into();
-		let mut features = Features::default()
-			.with_width_contribution_fn(Box::new(move |col_count| {
+		Features::new(SupportFlags::new()
+				| SupportFlags::FOOTERS
+				| SupportFlags::COLUMN_WIDTH_ALL
+				| SupportFlags::MULTILINE_ALL)
+			.with_width_contribution_fn(Rc::new(move |col_count| {
 				// Width of dividers
 				col_count + 1
 				// Width of cell padding
 				+ (col_count * padding * 2)
-			}));
-		if let Some(wrap_options) = self.wrap_options.clone() {
-			let wrap_columns = self.wrap_columns.clone();
-			features = features
-				.with_late_format_fn(Rc::new(move |s, idx, w| if wrap_columns
-					.as_ref()
-					.map(|v| v.contains(&idx))
-					.unwrap_or(true)
-				{
-					fill(s, wrap_options.as_options(w))
-				} else {
-					s.to_string()
-				}))
-		}
-		features
+			}))
+			.with_default_text_wrap(WrapOptions::new())
 	}
 
 	fn write_header_start<W>(&mut self, out: &mut W, ctx: &RenderContext<'_>)
@@ -248,6 +209,7 @@ mod test {
 	use super::*;
 	use table_gen::ColumnDef;
 	use table_gen::Table;
+	use table_gen::util::Wrap;
 
 	#[test]
 	fn empty_table() {
@@ -496,8 +458,9 @@ mod test {
 				.with_footer("COLUMN D"),
 		];
 
-		let mut table = Table::new_builder(data, MarkdownGridRenderer::new()
-				.with_wrap_options(None))
+		let mut table = Table::new_builder(data, MarkdownGridRenderer::new())
+			.with_default_column_def(ColumnDef::new()
+				.with_text_wrap(Wrap::Disabled))
 			.with_column_defs(&column_defs)
 			.with_max_table_width(80)
 			.finish();
@@ -505,7 +468,7 @@ mod test {
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		//println!("{}", out);
+		println!("{}", out);
 
 		assert_eq!(out, "\
 +---------+------------------+----------+--------------------------------------+

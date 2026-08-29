@@ -15,6 +15,94 @@ pub use textwrap::WordSeparator;
 pub use textwrap::fill;
 
 ////////////////////////////////////////////////////////////////////////////////
+// Wrap
+////////////////////////////////////////////////////////////////////////////////
+/// Column text wrapping configuration.
+#[derive(Debug, Clone)]
+pub enum Wrap {
+	/// Do not do text wrapping.
+	Disabled,
+	/// Use the renderer's default text wrapping.
+	RendererDefault,
+	/// Use the column default text wrapping.
+	ColumnDefault,
+	/// Use the specified text wrapping options.
+	Enabled(WrapOptions),
+}
+
+impl From<WrapOptions> for Wrap {
+	fn from(wrap_options: WrapOptions) -> Self {
+		Self::Enabled(wrap_options)
+	}
+}
+
+impl Default for Wrap {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
+impl Wrap {
+	/// Constructs a new `Wrap` with the `RendererDefault` value.
+	#[must_use]
+	pub fn new() -> Self {
+		Self::ColumnDefault
+	}
+
+	/// Returns `true` if the `Wrap` will perform text wrapping.
+	#[must_use]
+	pub fn is_enabled(
+		&self,
+		renderer_wrap: Option<&WrapOptions>,
+		column_wrap: &Wrap)
+		-> bool
+	{
+		match self {
+			Self::Disabled        => false,
+			Self::Enabled(_)      => true,
+			Self::RendererDefault => renderer_wrap.is_some(),
+			Self::ColumnDefault   => match column_wrap {
+				Self::Disabled        => false,
+				Self::Enabled(_)      => true,
+				Self::ColumnDefault   |
+				Self::RendererDefault => renderer_wrap.is_some(),
+			}
+		}
+	}
+
+	/// Returns a `textwrap::Options` for the `Wrap`, if enabled.
+	#[must_use]
+	pub fn as_options<'a>(
+		&'a self,
+		renderer_wrap: Option<&'a WrapOptions>,
+		column_wrap: &'a Wrap,
+		width: usize)
+		-> Option<Options<'a>>
+	{
+		let opt: Option<&WrapOptions> = match self {
+			Self::Disabled        => None,
+			Self::Enabled(wo)     => Some(wo),
+			Self::RendererDefault => renderer_wrap,
+			Self::ColumnDefault   => match column_wrap {
+				Self::Disabled        => None,
+				Self::Enabled(wo)     => Some(wo),
+				Self::ColumnDefault   |
+				Self::RendererDefault => renderer_wrap,
+			}
+		};
+
+		opt.map(|wo| Options::new(width)
+			.line_ending(LineEnding::LF)
+			.initial_indent(&wo.initial_indent)
+			.subsequent_indent(&wo.subsequent_indent)
+			.break_words(wo.break_words)
+			.wrap_algorithm(wo.wrap_algorithm.clone())
+			.word_separator(wo.word_separator.clone())
+			.word_splitter(wo.word_splitter.clone()))
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // WrapOptions
 ////////////////////////////////////////////////////////////////////////////////
 /// Options for specifying the text wrapping behavior.
@@ -100,7 +188,7 @@ impl WrapOptions {
 
 	/// Returns a `textwrap::Options` for the `WrapOptions`.
 	#[must_use]
-	pub fn as_options(&self, width: usize) -> Options<'_> {
+	fn as_options(&self, width: usize) -> Options<'_> {
 		Options::new(width)
 			.line_ending(LineEnding::LF)
 			.initial_indent(&self.initial_indent)

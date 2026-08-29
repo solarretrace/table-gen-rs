@@ -9,21 +9,113 @@
 use crate::Cell;
 use crate::FormatRow;
 use crate::Row;
+use crate::util::Style;
+use crate::util::Wrap;
+use crate::util::WrapOptions;
 use crate::VertAlign;
 
 // External library imports.
 use smallvec::SmallVec;
+use textwrap::fill;
 
 // Standard library imports.
 use std::cell::OnceCell;
+use std::rc::Rc;
 use std::str::Lines;
+
+
+////////////////////////////////////////////////////////////////////////////////
+// SplitRowStyle
+////////////////////////////////////////////////////////////////////////////////
+/// Post-aggregation column styling information.
+#[derive(Clone)]
+pub (in crate) struct SplitRowStyle {
+	/// The final column widths.
+	pub col_widths: Vec<usize>,
+	/// The column text wrap settings.
+	pub col_text_wraps: Vec<Wrap>,
+	/// The column text styling function.
+	pub col_text_style_fn: Vec<Option<Rc<dyn Fn(&dyn Cell, usize) -> Style>>>,
+	/// The default renderer text wrapping.
+	pub default_renderer_wrap: Option<WrapOptions>,
+	/// The default column text wraping.
+	pub default_column_wrap: Wrap,
+	/// The default column text styling.
+	pub default_text_style_fn: Option<Rc<dyn Fn(&dyn Cell, usize) -> Style>>,
+}
+
+impl std::fmt::Debug for SplitRowStyle {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		let col_text_style_fn_debug: Vec<_> = self.col_text_style_fn
+			.iter()
+			.map(|f| f.as_ref().map(Rc::as_ptr))
+			.collect();
+		f.debug_struct("SplitRowStyle")
+			.field("col_widths", &self.col_widths)
+			.field("col_text_wraps", &self.col_text_wraps)
+			.field("col_text_style_fn", &col_text_style_fn_debug)
+			.field("default_renderer_wrap", &self.default_renderer_wrap)
+			.field("default_column_wrap", &self.default_column_wrap)
+			.field("default_text_style_fn",
+				&self.default_text_style_fn.as_ref().map(Rc::as_ptr))
+         	.finish()
+	}
+}
+
+
+impl SplitRowStyle {
+	/// Returns `true` if any of the columns have wrapping or text styling
+	/// enabled.
+	#[must_use]
+	pub (in crate) fn any_formatting_enabled(&self) -> bool {
+		self.any_wrapping_enabled() || self.any_text_style_enabled()
+	}
+
+	/// Returns `true` if any of the columns have wrapping enabled.
+	#[must_use]
+	pub (in crate) fn any_wrapping_enabled(&self) -> bool {
+		self.col_text_wraps
+			.iter()
+			.any(|wrap| wrap.is_enabled(
+				self.default_renderer_wrap.as_ref(),
+				&self.default_column_wrap))
+			|| (self.col_text_wraps.len() < self.col_widths.len()
+				&& self.default_column_wrap.is_enabled(
+					self.default_renderer_wrap.as_ref(),
+					&Wrap::RendererDefault))
+	}
+
+	/// Returns `true` if any of the columns text styling enabled.
+	#[must_use]
+	pub (in crate) fn any_text_style_enabled(&self) -> bool {
+		self.col_text_style_fn.iter().any(|ts| ts.is_some())
+			|| (self.col_text_style_fn.len() < self.col_widths.len()
+				&& self.default_text_style_fn.is_some())
+	}
+
+	/// Returns `true` if any of the columns have wrapping enabled.
+	#[must_use]
+	pub (in crate) fn apply(&self, text: &str, idx: usize)
+		-> Option<String>
+	{
+		let width = self.col_widths[idx];
+		let wrap = self.col_text_wraps.get(idx)
+			.unwrap_or(&self.default_column_wrap);
+		let opts = wrap.as_options(
+			self.default_renderer_wrap.as_ref(),
+			&self.default_column_wrap,
+			width);
+		
+		opts.map(|o| fill(text, o))
+	}
+
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // SplitRow
 ////////////////////////////////////////////////////////////////////////////////
 /// A single table row with line splitting.
-#[allow(missing_copy_implementations)]
 #[allow(missing_debug_implementations)]
 pub (in crate) struct SplitRow<'a, R> {
 	/// The row to format.
@@ -51,26 +143,20 @@ impl<'a, R> SplitRow<'a, R>
 {
 	/// Returns a new `SplitRow` over the given `FormatRow`.
 	#[must_use]
-	pub (in crate) fn new(
-		inner: FormatRow<'a, R>,
-		col_widths: &[usize],
-		late_format_fn: Option<&dyn Fn(&str, usize, usize) -> String>)
+	pub (in crate) fn new(inner: FormatRow<'a, R>, style: &SplitRowStyle)
 		-> Self
 	{
-		let cache = if late_format_fn.is_some() {
+		let cache = if style.any_formatting_enabled() {
 			vec![OnceCell::new(); inner.len()]
 		} else {
 			Vec::new()
 		};
 		let mut height = 0;
 		for idx in 0..inner.len() {
-			let text = if let Some(f) = late_format_fn {
-				cache[idx]
-					.get_or_init(|| (f)(
-							inner.text(idx),
-							idx,
-							col_widths[idx])
-						.into_boxed_str())
+			let text = if let Some(formatted) = style
+				.apply(inner.text(idx), idx)
+			{
+				cache[idx].get_or_init(|| formatted.into_boxed_str())
 			} else {
 				inner.text(idx)
 			};

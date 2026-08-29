@@ -118,7 +118,7 @@ The table-gen library generates a table through the following linear data flow s
     ╭┈┈┈┈┈┈┈┈┈┈┈╮
     │ Aggregate ╞═> Runs column-based aggregation on the rows of the table. This
     ╰┈┈┈┈┈┈┈┈┈┈┈╯   will compute the required column widths and apply post-width
-      │             formatting such as line wrapping.
+      │             formatting such as line wrapping & styling.
       v
     ┌──────────┐
     │ "Driver" ╞═> Drives the table renderer by calling the renderer hooks in
@@ -150,7 +150,7 @@ For most use-cases, it should be very simple to generate a table with access to 
 
 ## Examples
 
-The following are demonstrations of the default output of available renderers:
+The following are demonstrations of the default output of available renderers (with max table width set to 80 columns.):
 
 ### Minimal renderer
 

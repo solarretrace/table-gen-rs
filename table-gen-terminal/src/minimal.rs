@@ -9,6 +9,7 @@
 use table_gen::Features;
 use table_gen::RenderContext;
 use table_gen::Renderer;
+use table_gen::SupportFlags;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -29,7 +30,11 @@ impl MinimalRenderer {
 
 impl Renderer for MinimalRenderer {
 	fn features(&self) -> Features {
-		Features::default()
+		Features::new(SupportFlags::new()
+			| SupportFlags::FOOTERS
+			| SupportFlags::COLUMN_WIDTH_ALL
+			| SupportFlags::MULTILINE
+			| SupportFlags::ANSI_STYLE)
 	}
 
 	fn write_data_cell_line_end<W>(
@@ -331,24 +336,25 @@ N <-1-> <-2-> <-3->
 			.with_column_defs(&column_defs)
 			.with_column_selection(&[0, 1, 2, 3, 2, 3])
 			.with_sort_columns(&order)
+			.with_max_table_width(80)
 			.finish();
 
 		let mut out: Vec<u8> = Vec::new();
 		assert!(table.render(&mut out).is_ok());
 		let out = String::from_utf8(out).unwrap();
-		//println!("{}", out);
+		println!("{}", out);
 
 		assert_eq!(out, "\
-i64                    f64         bool left-aligned             bool …t-aligned
-values (wide)        values      values strings                 again    strings
-0                  +180000.000          A                                      A
-                                   true multi-                            multi-
-                                        line                                line
-                                        column                   true     column
--15                  +18.000       true A two-                            A two-
-                                        line column              true …ne column
-15                   +0.000       false A single line column    false …ne column
-COLUMN 0            COLUMN 1   COLUMN 2 COLUMN 3             COLUMN 4   COLUMN 5
+i64                   f64        bool left-aligned            bool right-aligned
+values (wide)        values    values strings                again       strings
+0                  …80000.00…         A                                        A
+                                 true multi-                              multi-
+                                      line                                  line
+                                      column                  true        column
+-15                 +18.000      true A two-                              A two-
+                                      line column             true   line column
+15                   +0.000     false A single line colu…    false … line column
+COLUMN 0            COLUMN 1  …LUMN 2 COLUMN 3            COLUMN 4      COLUMN 5
 ");
 	}
 

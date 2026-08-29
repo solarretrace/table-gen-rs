@@ -10,6 +10,7 @@ use table_gen::CellContext;
 use table_gen::Features;
 use table_gen::RenderContext;
 use table_gen::Renderer;
+use table_gen::SupportFlags;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -21,7 +22,7 @@ pub struct DebugRenderer;
 
 impl Renderer for DebugRenderer {
 	fn features(&self) -> Features {
-		Features::default()
+		Features::new(SupportFlags::all())
 	}
 
 	// Data writing hooks

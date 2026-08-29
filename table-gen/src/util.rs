@@ -12,8 +12,10 @@ use crate::HorzAlign;
 use unicode_segmentation::UnicodeSegmentation as _;
 
 // Re-exports.
-pub use unicode_display_width::width;
+pub use anstyle::Color;
+pub use anstyle::Style;
 pub use crate::wrap::*;
+pub use unicode_display_width::width;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -216,7 +218,7 @@ pub fn unicode_grapheme_aware_truncation(
 		},
 
 		HorzAlign::Center => {
-			let overflow = cell_width - text_width;
+			let overflow = cell_width.saturating_sub(text_width);
 			let left_budget = overflow / 2;
 			let right_budget = overflow - left_budget;
 

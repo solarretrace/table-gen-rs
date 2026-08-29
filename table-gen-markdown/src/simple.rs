@@ -14,6 +14,7 @@ use table_gen::Features;
 use table_gen::HorzAlign;
 use table_gen::RenderContext;
 use table_gen::Renderer;
+use table_gen::SupportFlags;
 use table_gen::util::write_cell_formatted;
 
 
@@ -78,7 +79,8 @@ impl MarkdownSimpleRenderer {
 
 impl Renderer for MarkdownSimpleRenderer {
 	fn features(&self) -> Features {
-		Features::default()
+		Features::new(SupportFlags::new()
+				| SupportFlags::COLUMN_WIDTH_ALL)
 			.with_extra_column_width(self.extra_column_width.into())
 	}
 
@@ -487,7 +489,6 @@ velit, s… quia non numquam e… tempora i… labore et dolore magnam aliquam q
 enim ad … veniam, quis nostr… ullam cor… laboriosam, nisi ut aliquid ex ea      
 commodi … Quis autem vel eum… reprehend… ea voluptate velit esse quam nihil mol…
 consequa… illum qui dolorem … quo volup… pariatur?                              
-COLUMN A  COLUMN B            COLUMN C   COLUMN D                               
 ");
 	}
 }
