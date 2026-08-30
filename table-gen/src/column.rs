@@ -9,7 +9,7 @@
 use crate::Cell;
 use crate::DisplayFmt;
 use crate::util::Style;
-use crate::util::Wrap;
+use crate::Wrap;
 
 // Standard library imports.
 use std::rc::Rc;
@@ -241,9 +241,12 @@ impl<'a> ColumnDef<'a> {
 /// A collection of `ColumnDef`s.
 #[derive(Debug, Clone)]
 pub struct ColumnDefs<'a> {
-	column_default: ColumnDef<'a>,
-	columns: &'a [ColumnDef<'a>],
+	/// Extra width 
 	extra_column_width: usize,
+	/// The user-provided `ColumnDef`s list.
+	columns: &'a [ColumnDef<'a>],
+	/// The `ColumnDef` to use for columns not provided in the above list.
+	column_default: ColumnDef<'a>,
 }
 
 impl Default for ColumnDefs<'_> {
@@ -257,10 +260,10 @@ impl<'a> ColumnDefs<'a>  {
 	#[must_use]
 	pub fn new() -> Self {
 		Self {
+			extra_column_width: 0,
+			columns: &[],
 			column_default: ColumnDef::new()
 				.with_text_wrap(Wrap::RendererDefault),
-			columns: &[],
-			extra_column_width: 0,
 		}
 	}
 
@@ -365,12 +368,6 @@ impl<'a> ColumnDefs<'a>  {
 	#[must_use]
 	pub fn extra_column_width(&self) -> usize {
 		self.extra_column_width
-	}
-
-	/// Returns a mutable reference to the extra column width.
-	#[must_use]
-	pub fn extra_column_width_mut(&mut self) -> &mut usize {
-		&mut self.extra_column_width
 	}
 
 	/// Returns `true` if there are no headers to render for column indices up

@@ -53,8 +53,9 @@ impl<'a, R, S, T> TableBuilder<'a, S, T>
 		where I: IntoIterator<Item=R, IntoIter=S>
 	{
 		let features = renderer.features();
+		let inner = Collate::new(source.into_iter(), features);
 		Self {
-			inner: Collate::new(source.into_iter(), features),
+			inner,
 			renderer,
 			min_table_width: 0,
 			max_table_width: usize::MAX,

@@ -16,7 +16,7 @@ use table_gen::HorzAlign;
 use table_gen::RenderContext;
 use table_gen::Renderer;
 use table_gen::SupportFlags;
-use table_gen::util::WrapOptions;
+use table_gen::WrapOptions;
 use table_gen::util::write_cell_formatted;
 
 
@@ -215,7 +215,7 @@ mod test {
 	use table_gen::ColumnDef;
 	use table_gen::ColumnOrd;
 	use table_gen::Table;
-	use table_gen::util::Wrap;
+	use table_gen::Wrap;
 
 	#[test]
 	fn empty_table() {

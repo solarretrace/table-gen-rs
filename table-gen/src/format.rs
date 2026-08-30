@@ -110,12 +110,6 @@ impl<'a, R, S> Format<'a, S>
 		self.inner.column_defs()
 	}
 
-	/// Returns a mutable reference to the column definitions.
-	#[must_use]
-	pub (in crate) fn column_defs_mut(&mut self) -> &mut ColumnDefs<'a> {
-		self.inner.column_defs_mut()
-	}
-
 	/// Returns a reference to the column orderings, in order of sort priority.
 	#[must_use]
 	pub (in crate) fn column_order(&self) -> &'a [ColumnOrd] {

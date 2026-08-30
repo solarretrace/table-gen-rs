@@ -14,7 +14,6 @@ use unicode_segmentation::UnicodeSegmentation as _;
 // Re-exports.
 pub use anstyle::Color;
 pub use anstyle::Style;
-pub use crate::wrap::*;
 pub use unicode_display_width::width;
 
 

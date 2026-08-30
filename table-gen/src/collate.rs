@@ -58,11 +58,13 @@ impl<'a, R, S> Collate<'a, S>
 	/// Constructs a new `Collate` for the given data source.
 	#[must_use]
 	pub (in crate) fn new(inner: S, features: Features) -> Self {
+		let column_defs = ColumnDefs::new()
+			.with_extra_column_width(features.extra_column_width);
 		Self {
 			inner,
 			col_select: &[],
 			row_select: (Bound::Included(0), Bound::Unbounded),
-			column_defs: ColumnDefs::new(),
+			column_defs,
 			col_order: &[],
 			features,
 		}

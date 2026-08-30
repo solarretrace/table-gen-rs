@@ -10,8 +10,8 @@ use crate::Cell;
 use crate::FormatRow;
 use crate::Row;
 use crate::util::Style;
-use crate::util::Wrap;
-use crate::util::WrapOptions;
+use crate::Wrap;
+use crate::WrapOptions;
 use crate::VertAlign;
 
 // External library imports.
@@ -22,6 +22,7 @@ use textwrap::fill;
 use std::cell::OnceCell;
 use std::rc::Rc;
 use std::str::Lines;
+use std::fmt::Write as _;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -95,9 +96,14 @@ impl SplitRowStyle {
 
 	/// Returns `true` if any of the columns have wrapping enabled.
 	#[must_use]
-	pub (in crate) fn apply(&self, text: &str, idx: usize)
+	pub (in crate) fn apply(
+		&self,
+		text: &str,
+		idx: usize,
+		cell: Option<&dyn Cell>)
 		-> Option<String>
 	{
+		// Apply line wrapping to the text, if needed.
 		let width = self.col_widths[idx];
 		let wrap = self.col_text_wraps.get(idx)
 			.unwrap_or(&self.default_column_wrap);
@@ -105,8 +111,33 @@ impl SplitRowStyle {
 			self.default_renderer_wrap.as_ref(),
 			&self.default_column_wrap,
 			width);
-		
-		opts.map(|o| fill(text, o))
+		let wrapped = opts.map(|o| fill(text, o));
+
+		// Apply styling to each line if possible.
+		match (
+			cell,
+			self.col_text_style_fn
+				.get(idx)
+				.and_then(Option::as_deref)
+				.or(self.default_text_style_fn.as_deref())) 
+		{
+			(Some(cell), Some(style_fn)) => {
+				let text = wrapped.as_deref().unwrap_or(text);
+				if text.is_empty() { return None; }
+
+				let mut out = String::with_capacity(text.len() + 16);
+				let style = (style_fn)(cell, idx);
+				for line in text.lines() {
+					write!(&mut out, "{}{}{}",
+							style.render(),
+							line,
+							style.render_reset())
+						.expect("write styled line");
+				}
+				Some(out)
+			},
+			_ => wrapped,
+		}
 	}
 
 }
@@ -154,7 +185,7 @@ impl<'a, R> SplitRow<'a, R>
 		let mut height = 0;
 		for idx in 0..inner.len() {
 			let text = if let Some(formatted) = style
-				.apply(inner.text(idx), idx)
+				.apply(inner.text(idx), idx, inner.cell(idx))
 			{
 				cache[idx].get_or_init(|| formatted.into_boxed_str())
 			} else {

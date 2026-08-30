@@ -52,3 +52,4 @@ pub use render::Renderer;
 pub use row::Cell;
 pub use row::Row;
 pub use sort::ColumnOrd;
+pub use wrap::*;

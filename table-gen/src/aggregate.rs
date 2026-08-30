@@ -62,7 +62,7 @@ impl<'a, R> Aggregate<'a, R>
 			S: Iterator<Item=R>,
 			R: Row
 	{
-		let mut inner = inner.into();
+		let inner = inner.into();
 		let support_flags = inner.features().flags;
 		let width_support = support_flags.contains(SupportFlags::COLUMN_WIDTH);
 		let width_support_dyn = width_support && support_flags
@@ -83,7 +83,6 @@ impl<'a, R> Aggregate<'a, R>
 			.contains(SupportFlags::COLUMN_WIDTH_DYNAMIC);
 		let extra_column_width = inner.features().extra_column_width;
 
-		*inner.column_defs_mut().extra_column_width_mut() = extra_column_width;
 		let str_width_fn = inner.features().str_width_fn;
 		let width_contribution_fn = inner.features()
 			.width_contribution_fn

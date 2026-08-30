@@ -7,7 +7,7 @@
 
 // Internal library imports.
 use crate::util::unicode_display_width;
-use crate::util::WrapOptions;
+use crate::WrapOptions;
 
 // External library imports.
 use bitflags::bitflags;
