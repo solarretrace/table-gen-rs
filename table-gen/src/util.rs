@@ -12,7 +12,11 @@ use crate::HorzAlign;
 use unicode_segmentation::UnicodeSegmentation as _;
 
 // Re-exports.
+pub use anstyle::Ansi256Color;
+pub use anstyle::AnsiColor;
 pub use anstyle::Color;
+pub use anstyle::Effects;
+pub use anstyle::RgbColor;
 pub use anstyle::Style;
 pub use unicode_display_width::width;
 

@@ -215,7 +215,7 @@ mod test {
 	use table_gen::ColumnDef;
 	use table_gen::ColumnOrd;
 	use table_gen::Table;
-	use table_gen::Wrap;
+	use table_gen::TextWrap;
 
 	#[test]
 	fn empty_table() {
@@ -598,7 +598,7 @@ mod test {
 				data,
 				MarkdownMultilineRenderer::new())
 			.with_default_column_def(ColumnDef::new()
-				.with_text_wrap(Wrap::Disabled))
+				.with_text_wrap(TextWrap::Disabled))
 			.with_column_defs(&column_defs)
 			.with_max_table_width(80)
 			.finish();

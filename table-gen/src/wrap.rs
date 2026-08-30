@@ -15,11 +15,11 @@ pub use textwrap::WordSeparator;
 pub use textwrap::fill;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Wrap
+// TextWrap
 ////////////////////////////////////////////////////////////////////////////////
 /// Column text wrapping configuration.
 #[derive(Debug, Clone)]
-pub enum Wrap {
+pub enum TextWrap {
 	/// Do not do text wrapping.
 	Disabled,
 	/// Use the renderer's default text wrapping.
@@ -30,31 +30,31 @@ pub enum Wrap {
 	Enabled(WrapOptions),
 }
 
-impl From<WrapOptions> for Wrap {
+impl From<WrapOptions> for TextWrap {
 	fn from(wrap_options: WrapOptions) -> Self {
 		Self::Enabled(wrap_options)
 	}
 }
 
-impl Default for Wrap {
+impl Default for TextWrap {
 	fn default() -> Self {
 		Self::new()
 	}
 }
 
-impl Wrap {
-	/// Constructs a new `Wrap` with the `RendererDefault` value.
+impl TextWrap {
+	/// Constructs a new `TextWrap` with the `RendererDefault` value.
 	#[must_use]
 	pub fn new() -> Self {
 		Self::ColumnDefault
 	}
 
-	/// Returns `true` if the `Wrap` will perform text wrapping.
+	/// Returns `true` if the `TextWrap` will perform text wrapping.
 	#[must_use]
 	pub fn is_enabled(
 		&self,
 		renderer_wrap: Option<&WrapOptions>,
-		column_wrap: &Wrap)
+		column_wrap: &TextWrap)
 		-> bool
 	{
 		match self {
@@ -70,12 +70,12 @@ impl Wrap {
 		}
 	}
 
-	/// Returns a `textwrap::Options` for the `Wrap`, if enabled.
+	/// Returns a `textwrap::Options` for the `TextWrap`, if enabled.
 	#[must_use]
 	pub fn as_options<'a>(
 		&'a self,
 		renderer_wrap: Option<&'a WrapOptions>,
-		column_wrap: &'a Wrap,
+		column_wrap: &'a TextWrap,
 		width: usize)
 		-> Option<Options<'a>>
 	{

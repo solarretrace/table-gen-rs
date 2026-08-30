@@ -9,7 +9,7 @@
 use crate::Cell;
 use crate::DisplayFmt;
 use crate::util::Style;
-use crate::Wrap;
+use crate::TextWrap;
 
 // Standard library imports.
 use std::rc::Rc;
@@ -73,7 +73,7 @@ pub struct ColumnDef<'a> {
 	/// The vertical alignment of text in the column.
 	pub vert_align: VertAlign,
 	/// The text wrap options.
-	pub text_wrap: Wrap,
+	pub text_wrap: TextWrap,
 	/// The text styling function for the cell values.
 	pub text_style_fn: Option<Rc<dyn Fn(&dyn Cell, usize) -> Style>>,
 }
@@ -116,7 +116,7 @@ impl<'a> ColumnDef<'a> {
 			dynamic_width_weight: 1.0,
 			horz_align: HorzAlign::Left,
 			vert_align: VertAlign::Top,
-			text_wrap: Wrap::default(),
+			text_wrap: TextWrap::default(),
 			text_style_fn: None,
 		}
 	}
@@ -206,7 +206,7 @@ impl<'a> ColumnDef<'a> {
 	
 	/// Sets text wrap mode and returns the `ColumnDef`.
 	#[must_use]
-	pub fn with_text_wrap(mut self, text_wrap: Wrap) -> Self {
+	pub fn with_text_wrap(mut self, text_wrap: TextWrap) -> Self {
 		self.text_wrap = text_wrap;
 		self
 	}
@@ -263,7 +263,7 @@ impl<'a> ColumnDefs<'a>  {
 			extra_column_width: 0,
 			columns: &[],
 			column_default: ColumnDef::new()
-				.with_text_wrap(Wrap::RendererDefault),
+				.with_text_wrap(TextWrap::RendererDefault),
 		}
 	}
 

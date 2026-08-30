@@ -10,7 +10,7 @@ use crate::Cell;
 use crate::FormatRow;
 use crate::Row;
 use crate::util::Style;
-use crate::Wrap;
+use crate::TextWrap;
 use crate::WrapOptions;
 use crate::VertAlign;
 
@@ -34,13 +34,13 @@ pub (in crate) struct SplitRowStyle {
 	/// The final column widths.
 	pub col_widths: Vec<usize>,
 	/// The column text wrap settings.
-	pub col_text_wraps: Vec<Wrap>,
+	pub col_text_wraps: Vec<TextWrap>,
 	/// The column text styling function.
 	pub col_text_style_fn: Vec<Option<Rc<dyn Fn(&dyn Cell, usize) -> Style>>>,
 	/// The default renderer text wrapping.
 	pub default_renderer_wrap: Option<WrapOptions>,
 	/// The default column text wraping.
-	pub default_column_wrap: Wrap,
+	pub default_column_wrap: TextWrap,
 	/// The default column text styling.
 	pub default_text_style_fn: Option<Rc<dyn Fn(&dyn Cell, usize) -> Style>>,
 }
@@ -83,7 +83,7 @@ impl SplitRowStyle {
 			|| (self.col_text_wraps.len() < self.col_widths.len()
 				&& self.default_column_wrap.is_enabled(
 					self.default_renderer_wrap.as_ref(),
-					&Wrap::RendererDefault))
+					&TextWrap::RendererDefault))
 	}
 
 	/// Returns `true` if any of the columns text styling enabled.
@@ -133,6 +133,7 @@ impl SplitRowStyle {
 							line,
 							style.render_reset())
 						.expect("write styled line");
+					println!("{:?}", out);
 				}
 				Some(out)
 			},
